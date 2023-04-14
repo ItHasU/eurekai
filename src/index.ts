@@ -1,31 +1,21 @@
-import { writeFileSync } from "fs";
-import sdwebui, { Client, SamplingMethod } from "node-sd-webui";
+import { writeFileSync } from "node:fs";
+import { txt2img } from "./api";
 
 async function main() {
-    // try {
-    //     const result = await fetch(`http://127.0.0.1:7860/sdapi/v1/sd-models`, {
-    //         method: 'GET',
-    //         headers: {
-    //             'Content-Type': 'application/json',
-    //         },
-    //     })
-    //     console.log(result);
-    // } catch (e) {
-    //     console.error(e);
-    // }
+    const apiUrl = "http://192.168.42.20:7860";
 
-    const client: Client = sdwebui({ apiUrl: "http://127.0.0.1:7860" });
     try {
-        const { images } = await client.txt2img({
-            prompt: 'A photo of a mushroom, red cap, white spots',
-            negativePrompt: 'blurry, cartoon, drawing, illustration',
-            samplingMethod: SamplingMethod.Euler_A,
-            width: 640,
-            height: 360,
+        const { images } = await txt2img(apiUrl, {
+            prompt: 'A meteorite falling on earth',
+            negative_prompt: 'bad anatomy',
+            sampler_name: "DPM++ 2M",
+            width: 512,
+            height: 512,
             steps: 20,
-            batchSize: 1,
-            batchCount: 1,
-            save_images: true
+            batch_size: 1,
+            n_iter: 1,
+            cfg_scale: 7,
+            seed: 46012
         });
 
         images.forEach((image, i) =>
