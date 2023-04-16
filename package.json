@@ -24,6 +24,11 @@
   },
   "homepage": "https://github.com/ItHasU/eurekai#readme",
   "devDependencies": {
-    "@types/node": "^18.15.11"
+    "@types/node": "^18.15.11",
+    "@types/pouchdb": "^6.4.0",
+    "typescript": "^4.9.5"
+  },
+  "dependencies": {
+    "pouchdb": "^8.0.1"
   }
 }
