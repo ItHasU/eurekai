@@ -1,8 +1,9 @@
 import { queue } from "./api";
 import { DBConnector } from "./pouch_connector";
 
+const apiUrl = "http://192.168.42.20:7860";
+
 // async function main() {
-//     const apiUrl = "http://192.168.42.20:7860";
 
 //     try {
 //         await queue(apiUrl, "./images/", {
@@ -19,7 +20,7 @@ import { DBConnector } from "./pouch_connector";
 // }
 
 async function main(): Promise<void> {
-    const connector = new DBConnector();
+    const connector = new DBConnector(apiUrl);
     await connector._scheduleNextIfNeeded();
     await connector.queue([
         { positive: "A meteorite falling on the earth", negative: "human" },

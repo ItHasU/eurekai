@@ -1,11 +1,21 @@
 import * as PouchDB from "pouchdb";
 import { Txt2ImgOptions } from "./api";
+import { txt2img } from "./api";
+
+export enum ComputationStatus {
+    PENDING = 1,
+    COMPUTING,
+    DONE,
+
+    ACCEPTED,
+    REJECTED
+}
 
 export interface PictureDTO extends PouchDB.Core.IdMeta, PouchDB.Core.RevisionIdMeta {
     /** Options that were used to generate the picture */
     options: Txt2ImgOptions;
     /** Is picture computed */
-    computed: boolean;
+    computed: ComputationStatus;
     /** Attachments as Base64 */
     _attachments: {
         [filename: string]: {
@@ -17,8 +27,9 @@ export interface PictureDTO extends PouchDB.Core.IdMeta, PouchDB.Core.RevisionId
 
 export class DBConnector {
     protected _db: PouchDB.Database<PictureDTO>;
+    protected _scheduled: Promise<void> | null = null;
 
-    constructor() {
+    constructor(protected _apiUrl: string) {
         this._db = new PouchDB("pictures");
         this._db.changes({
             live: true // repeat
@@ -27,7 +38,7 @@ export class DBConnector {
         });
     }
 
-
+    /** Queue images */
     public async queue(
         prompts: { positive: string, negative?: string }[],
         seeds: number[]): Promise<void> {
@@ -63,7 +74,7 @@ export class DBConnector {
         const picture: PictureDTO = {
             _id: undefined,
             _rev: undefined,
-            computed: false,
+            computed: ComputationStatus.PENDING,
             options,
             _attachments: {}
         };
@@ -89,7 +100,7 @@ export class DBConnector {
             if (!picture.doc) {
                 continue;
             }
-            if (picture.doc.computed) {
+            if (picture.doc.computed != ComputationStatus.PENDING) {
                 continue;
             }
 
@@ -98,9 +109,46 @@ export class DBConnector {
         // -- Check that there is a picture --
         console.log(`${pendingPictures.length} picture(s) pending...`);
 
-        // -- Generate a new image --
-        setTimeout(() => {
-            // Plan generation
-        });
+        if (pendingPictures.length == 0) {
+            // We are done
+            return;
+        } else {
+            // -- Generate a new image --
+            const doc = pendingPictures[0];
+            this._scheduled = this._runNext(doc);
+        }
+    }
+
+    /**
+     * Schedule the 
+     */
+    protected async _runNext(doc: PictureDTO): Promise<void> {
+        try {
+            // -- Change status --
+            doc.computed = ComputationStatus.COMPUTING;
+            await this._db.put(doc);
+
+            // -- Start computation --
+            let result = null;
+            try {
+                result = await txt2img(this._apiUrl, doc.options);
+            } catch (e) {
+                console.error(e);
+                doc.computed = ComputationStatus.PENDING;
+                await this._db.put(doc);
+                return;
+            }
+
+            // -- Save results as attachments --
+            for (let i = 0; i < result.images.length; i++) {
+                doc._attachments[`${i}.png`] = {
+                    content_type: "image/png",
+                    data: result.images[i],
+                };
+            }
+            await this._db.put(doc);
+        } catch (e) {
+            console.error(e);
+        }
     }
 }
