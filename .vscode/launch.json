@@ -7,11 +7,12 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Launch Program",
+            "name": "Server",
             "skipFiles": [
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}/build/index.js",
+            "sourceMaps": true,
             "outFiles": [
                 "${workspaceFolder}/**/*.js"
             ]

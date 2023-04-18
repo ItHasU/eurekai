@@ -46,7 +46,7 @@ export async function txt2img(apiUrl: string, options: Txt2ImgOptions) {
     }
 }
 
-export async function queue(apiUrl: string, output_folder: string, options: {
+async function queue(apiUrl: string, output_folder: string, options: {
     prompts: { positive: string, negative?: string }[],
     seeds: number[]
 }): Promise<void> {
