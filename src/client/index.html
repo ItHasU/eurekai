@@ -134,8 +134,9 @@
                         <div class="card-text pt-2">
                             <div class="d-flex justify-content-between">
                                 <div>123456</div>
-                                <div><span data-bs-toggle="tooltip" data-bs-placement="left" data-bs-title="The detail of the prompt ...">#5</span></div>
-                              </div>
+                                <div><span data-bs-toggle="tooltip" data-bs-placement="left"
+                                        data-bs-title="The detail of the prompt ...">#5</span></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -148,7 +149,7 @@
                             <div class="d-flex justify-content-between">
                                 <div>123456</div>
                                 <div>#5</div>
-                              </div>
+                            </div>
                         </div>
                         <div class="row g-1">
                             <div class="col">
@@ -196,6 +197,8 @@
         const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
         const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
     </script>
+    <script src="//cdn.jsdelivr.net/npm/pouchdb@8.0.1/dist/pouchdb.min.js"></script>
+    <script src="index.js"></script>
 </body>
 
 </html>

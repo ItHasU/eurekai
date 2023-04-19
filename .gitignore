@@ -1,6 +1,14 @@
 build/
 images/
+
+# Database
 pictures/
+_replicator/
+_users/
+pouch__all_dbs__/
+config.json
+log.txt
+
 # System
 **/.DS_Store
 
