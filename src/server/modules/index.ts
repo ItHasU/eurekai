@@ -4,7 +4,7 @@ const apiUrl = "http://192.168.42.20:7860";
 // const apiUrl = "http://localhost:7860";
 
 async function main(): Promise<void> {
-    const connector = new DBConnector(apiUrl);
+    const connector = new ServerDBConnector(apiUrl);
     // await connector.queue([
     //     { positive: "A meteorite falling on the earth", negative: "human" },
     //     { positive: "A meteorite falling on a planet" },
