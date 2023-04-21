@@ -35,7 +35,7 @@ export class ServerDBConnector extends DBConnector {
         // -- Check that there is a picture --
         if (pendingPictures.length == 0) {
             // We are done
-            return 0;
+            return -1;
         }
 
         // -- Sort pictures by priority --
@@ -43,6 +43,7 @@ export class ServerDBConnector extends DBConnector {
 
         // -- Generate a new image --
         const doc = pendingPictures[0];
+        console.log(`Generating ${doc._id}`);
         await this._run(doc);
 
         // -- Done --
@@ -70,7 +71,17 @@ export class ServerDBConnector extends DBConnector {
     }
 
     public async _scheduleNextIfNeeded(): Promise<void> {
-
+        console.log("Waiting for new images to generate");
+        return this.unqueue().then((remaining: number) => {
+            console.log(`${remaining} image(s) to generate`);
+            if (remaining < 0) {
+                this._db.changes({
+                    live: false // Only once
+                }).addListener("changes", this._scheduleNextIfNeeded.bind(this));
+            } else {
+                setTimeout(this._scheduleNextIfNeeded.bind(this), 0);
+            }
+        });
     }
 
     /**

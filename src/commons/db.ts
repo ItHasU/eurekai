@@ -1,4 +1,4 @@
-import * as PouchDB from "pouchdb";
+import PouchDB from "pouchdb";
 import { ComputationStatus, PictureDTO, Txt2ImgOptions } from "./types";
 
 export class DBConnector {
