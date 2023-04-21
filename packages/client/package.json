@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "clean": "rimraf dist tmp",
+    "clean": "rimraf dist tmp tsconfig.tsbuildinfo",
     "build": "tsc && webpack"
   },
   "author": "",
@@ -11,5 +11,8 @@
   "devDependencies": {
     "html-webpack-plugin": "^5.5.1",
     "webpack-cli": "^5.0.2"
+  },
+  "dependencies": {
+    "@eurekai/commons": "*"
   }
 }
