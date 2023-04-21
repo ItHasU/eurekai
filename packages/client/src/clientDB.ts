@@ -1,4 +1,4 @@
-import { DBConnector } from "../commons/db";
+import { DBConnector } from "@eurekai/commons/src/db";
 
 export class ClientDBConnector extends DBConnector {
     constructor() {

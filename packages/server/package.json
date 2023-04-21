@@ -1,0 +1,22 @@
+{
+  "name": "@eurekai/server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "tsc"
+  },
+  "author": "Matthieu Aubry",
+  "license": "ISC",
+  "dependencies": {
+    "@eurekai/commons": "*",
+    "express": "^4.18.2",
+    "pouchdb": "^8.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^18.15.13",
+    "@types/pouchdb": "^6.4.0",
+    "webpack": "^5.80.0"
+  }
+}

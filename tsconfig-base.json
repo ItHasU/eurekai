@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        //Project options
+        "composite": true,
+        "declaration": true,
+        "declarationMap": false, //disable declarationMap while https://github.com/microsoft/TypeScript/issues/44335 is not solved
+        "sourceMap": true,
+        "target": "ES2022",
+        "isolatedModules": false,
+        //Module resolution
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "esModuleInterop": true, //=> "allowSyntheticDefaultImports": true,
+        "skipLibCheck": true,
+        "paths": {
+            "*": [
+                "./node_modules/*"
+            ]
+        }
+    },
+}

@@ -8,7 +8,7 @@ export function init(options: {
     // -- Create app --
     const app = express();
     // -- Register routes --
-    const path: string = join(__dirname, "../../www");
+    const path: string = join(__dirname, "../../client/dist");
     console.log(`Serving ${path}`);
     app.use(express.static(path));
     app.use('/db', require('express-pouchdb')(PouchDB));

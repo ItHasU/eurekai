@@ -1,4 +1,4 @@
-import { Txt2ImgOptions } from "../../commons/types";
+import { Txt2ImgOptions } from "@eurekai/commons/src/types";
 
 export async function txt2img(apiUrl: string, options: Txt2ImgOptions) {
     const result = await fetch(`${apiUrl}/sdapi/v1/txt2img`, {

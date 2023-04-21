@@ -1,0 +1,17 @@
+{
+  "name": "@eurekai/commons",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "tsc"
+  },
+  "author": "Matthieu Aubry",
+  "license": "ISC",
+  "dependencies": {
+    "pouchdb": "^8.0.1"
+  },
+  "devDependencies": {
+    "@types/pouchdb": "^6.4.0"
+  }
+}
