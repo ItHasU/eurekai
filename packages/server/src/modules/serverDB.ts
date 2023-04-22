@@ -1,8 +1,8 @@
 import { txt2img } from "./api";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { ComputationStatus, PictureDTO } from "@eurekai/commons/src/types";
-import { DBConnector } from "@eurekai/commons/src/db";
+import { ComputationStatus, PictureDTO } from "eurekai-commons/src/types";
+import { DBConnector } from "eurekai-commons/src/db";
 
 export class ServerDBConnector extends DBConnector {
     protected _scheduled: Promise<void> | null = null;

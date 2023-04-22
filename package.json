@@ -1,20 +1,21 @@
 {
-  "name": "eurekai2",
+  "name": "eurekai-workspace",
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "clean": "nx run-many -t clean",
+    "clean": "nx run-many -t clean;rimraf **/node_modules/",
     "build": "nx run-many -t build"
   },
   "private": true,
   "devDependencies": {
     "nx": "15.9.2",
+    "rimraf": "^5.0.0",
     "typescript": "^5.0.4"
   },
   "workspaces": [
     "packages/*"
   ],
   "dependencies": {
-    "@eurekai/commons": "^1.0.0"
+    "eurekai-commons": "^1.0.0"
   }
 }

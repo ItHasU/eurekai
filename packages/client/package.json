@@ -1,5 +1,5 @@
 {
-  "name": "@eurekai/client",
+  "name": "eurekai-client",
   "version": "1.0.0",
   "description": "",
   "scripts": {
@@ -13,6 +13,6 @@
     "webpack-cli": "^5.0.2"
   },
   "dependencies": {
-    "@eurekai/commons": "*"
+    "eurekai-commons": "*"
   }
 }
