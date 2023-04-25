@@ -3,7 +3,6 @@ import { ComputationStatus, PictureDTO, Txt2ImgOptions } from "./types";
 
 export class DBConnector {
     protected _db: PouchDB.Database<PictureDTO>;
-    protected _scheduled: Promise<void> | null = null;
 
     constructor() {
         this._db = new PouchDB("pictures");

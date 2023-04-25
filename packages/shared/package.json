@@ -1,13 +1,13 @@
 {
-  "name": "eurekai-commons",
+  "name": "@eurekai/shared",
   "version": "1.0.0",
-  "description": "",
-  "scripts": {
-    "clean": "rimraf dist tsconfig.tsbuildinfo",
-    "build": "tsc"
-  },
+  "description": "Shared code between client and server",
   "author": "Matthieu Aubry",
   "license": "ISC",
+  "scripts": {
+    "build": "tsc"
+  },
+  "main": "index.js",
   "dependencies": {
     "pouchdb": "^8.0.1"
   },

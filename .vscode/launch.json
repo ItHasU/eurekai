@@ -8,14 +8,18 @@
             "type": "node",
             "request": "launch",
             "name": "Server",
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/**",
+                "!**/node_modules/**"
+            ],
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}/packages/server/dist/main.js",
-            "sourceMaps": true,
             "outFiles": [
-                "${workspaceFolder}packages/server/dist/**/*.js"
-            ]
+                "${workspaceFolder}/**/*.js",
+                "!**/node_modules/**"
+            ],
+            "program": "${workspaceFolder}/apps/server/dist/main.js"
         }
     ]
 }

@@ -1,7 +1,7 @@
-import { DBConnector } from "eurekai-commons/src/db";
+import PouchDB from "pouchdb";
 import { ClientDBConnector } from "./clientDB";
 
-const db: DBConnector = new ClientDBConnector();
+const db: ClientDBConnector = new ClientDBConnector();
 
 async function main(): Promise<void> {
   await db.queue([
