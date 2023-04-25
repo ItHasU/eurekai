@@ -10,7 +10,10 @@ export function init(options: {
     // -- Register routes --
     const path: string = resolve("./apps/client/dist");
     app.use(express.static(path));
-    app.use('/db', require('express-pouchdb')(PouchDB));
+    const CustomPouchDB = PouchDB.defaults({
+        prefix: "db/"
+    });
+    app.use('/db', require('express-pouchdb')(CustomPouchDB));
 
     // -- Listen --
     app.listen(options.port)
