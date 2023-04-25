@@ -1,7 +1,9 @@
 import { Txt2ImgOptions } from "@eurekai/shared/src/types";
 
 export async function txt2img(apiUrl: string, options: Txt2ImgOptions) {
-    const result = await fetch(`${apiUrl}/sdapi/v1/txt2img`, {
+    const url = `${apiUrl}/sdapi/v1/txt2img`;
+    console.log("Trying to contact: " + url);
+    const result = await fetch(url, {
         method: 'POST',
         body: JSON.stringify(options),
         headers: {
