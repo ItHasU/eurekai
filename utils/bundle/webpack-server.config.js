@@ -1,9 +1,7 @@
-const path = require('path');
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
-const NodeExternals = require('webpack-node-externals');
 
 /** Inspired by https://github.com/appzuka/project-references-example */
-function getWebpackConfig(dirname, entry = "src/main.ts") {
+function getWebpackConfig(dirname, entry = "src/main.ts", node_modules = []) {
   return {
     mode: "development", // or "production"
     watch: false,
@@ -13,12 +11,10 @@ function getWebpackConfig(dirname, entry = "src/main.ts") {
       path: dirname + '/dist',
       filename: "[name].js"
     },
-    target: 'node', // use require() & use NodeJs CommonJS style
     context: dirname, // to automatically find tsconfig.json
-    externals: [NodeExternals()], // in order to ignore all modules in node_modules folder
-    externalsPresets: {
-        node: true // in order to ignore built-in modules like path, fs, etc. 
-    },
+    externalsPresets: { node: true }, // in order to ignore built-in modules like path, fs, etc.
+    externalsType: "commonjs",
+    externals: node_modules,
     module: {
       "rules": [
         {

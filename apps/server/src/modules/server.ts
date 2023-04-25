@@ -1,6 +1,6 @@
 import express from "express";
 import PouchDB from "pouchdb";
-import { join } from "node:path";
+import { resolve } from "node:path";
 
 export function init(options: {
     port: number;
@@ -8,8 +8,7 @@ export function init(options: {
     // -- Create app --
     const app = express();
     // -- Register routes --
-    const path: string = join(__dirname, "../../../client/dist");
-    console.log(`Serving ${path}`);
+    const path: string = resolve("./apps/client/dist");
     app.use(express.static(path));
     app.use('/db', require('express-pouchdb')(PouchDB));
 
@@ -19,7 +18,3 @@ export function init(options: {
 
     return app;
 }
-
-
-// app.listen(3000);
-// }
