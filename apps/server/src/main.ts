@@ -1,9 +1,14 @@
 import { ServerDBConnector } from "./modules/serverDB";
-import { init } from "./modules/server";
+import { AppServer } from "./modules/server";
 
-const apiUrl = "http://localhost:7860/";
+const apiUrl = "http://127.0.0.1:7860/";
 
-const app = init({
+const app = new AppServer({
     port: 3000
 });
-const db = new ServerDBConnector(apiUrl);
+
+const db = new ServerDBConnector(app.dbConstructor, apiUrl);
+setInterval(async () => {
+    const images = await db.getImages();
+    console.log(images.length, images);
+}, 5000);

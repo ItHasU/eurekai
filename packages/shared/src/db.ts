@@ -4,8 +4,8 @@ import { ComputationStatus, PictureDTO, Txt2ImgOptions } from "./types";
 export class DBConnector {
     protected _db: PouchDB.Database<PictureDTO>;
 
-    constructor() {
-        this._db = new PouchDB("pictures");
+    constructor(dbConstructor: ReturnType<PouchDB.Static["defaults"]>) {
+        this._db = new dbConstructor("pictures");
     }
 
     /** Queue images */
@@ -56,6 +56,14 @@ export class DBConnector {
         } else {
             throw "Failed to save picture";
         }
+    }
+
+    public async getImages(): Promise<PictureDTO[]> {
+        const result = await this._db.allDocs({
+            include_docs: true,
+            attachments: true
+        });
+        return result.rows.map(row => row.doc!);
     }
 
     protected async _update(doc: PictureDTO): Promise<void> {

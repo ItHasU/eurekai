@@ -7,8 +7,8 @@ import { DBConnector } from "@eurekai/shared/src/db";
 export class ServerDBConnector extends DBConnector {
     protected _scheduled: Promise<void> | null = null;
 
-    constructor(protected _apiUrl: string) {
-        super();
+    constructor(dbConstructor: ReturnType<PouchDB.Static["defaults"]>, protected _apiUrl: string) {
+        super(dbConstructor);
         this._scheduleNextIfNeeded();
     }
 
