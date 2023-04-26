@@ -8,6 +8,7 @@ export class GeneratedImageElement extends HTMLElement {
 
     constructor(data: PictureDTO) {
         super();
+        this.classList.add("col-md-4");
         this._data = data;
         this._refresh();
     }
