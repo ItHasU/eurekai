@@ -46,6 +46,7 @@ export class ServerDBConnector extends DBConnector {
         await this._run(doc);
 
         // -- Done --
+        console.log(`${pendingPictures.length - 1} image(s) remaining`);
         return pendingPictures.length - 1;
     }
 
@@ -70,16 +71,8 @@ export class ServerDBConnector extends DBConnector {
     }
 
     public async _scheduleNextIfNeeded(): Promise<void> {
-        console.log("Waiting for new images to generate");
         return this.unqueue().then((remaining: number) => {
-            console.log(`${remaining} image(s) to generate`);
-            if (remaining < 0) {
-                this._db.changes({
-                    live: false // Only once
-                }).addListener("changes", this._scheduleNextIfNeeded.bind(this));
-            } else {
-                setTimeout(this._scheduleNextIfNeeded.bind(this), 0);
-            }
+            setTimeout(this._scheduleNextIfNeeded.bind(this), remaining < 0 ? 1000 : 0);
         });
     }
 

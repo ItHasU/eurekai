@@ -66,6 +66,14 @@ export class DBConnector {
         return result.rows.map(row => row.doc!);
     }
 
+    /** Erase all images */
+    public async clean(): Promise<void> {
+        const images = await this.getImages();
+        for (const image of images) {
+            this._db.remove(image);
+        }
+    }
+
     protected async _update(doc: PictureDTO): Promise<void> {
         const result = await this._db.put(doc);
         if (!result.ok) {

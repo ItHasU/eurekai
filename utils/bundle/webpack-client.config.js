@@ -28,6 +28,10 @@ function getWebpackConfig(dirname, entry = "src/index.ts") {
           }
         },
         {
+          test: /\.html$/i,
+          loader: "html-loader",
+        },
+        {
           test: /\.css$/i,
           use: ["style-loader", "css-loader"],
         },
