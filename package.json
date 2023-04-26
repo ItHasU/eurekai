@@ -9,8 +9,10 @@
     "clean-all": "rimraf -g **/dist **/.tsc-build **/node_modules"
   },
   "devDependencies": {
+    "css-loader": "^6.7.3",
     "html-webpack-plugin": "^5.5.1",
     "rimraf": "^5.0.0",
+    "style-loader": "^3.3.2",
     "ts-loader": "^9.4.2",
     "tsconfig-paths-webpack-plugin": "^4.0.1",
     "typescript": "^5.0.4",
