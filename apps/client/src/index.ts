@@ -45,11 +45,11 @@ class App {
     /** Refresh images */
     protected async _refresh(): Promise<void> {
         try {
-            // -- Clear --
-            this._imagesDiv.innerHTML = "";
             // -- Get images --
             const images = await this._db.getImages();
-
+            
+            // -- Clear --
+            this._imagesDiv.innerHTML = "";
             // -- Render --
             for (const image of images) {
                 const existing: GeneratedImageElement | undefined = this._imagesCache[image._id];

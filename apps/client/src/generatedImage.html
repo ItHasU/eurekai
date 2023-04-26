@@ -1,7 +1,13 @@
 <div class="card mb-3">
-    {images}
-    <div class="card-body">
-        <h5 class="card-title" style="overflow: hidden;">{_id}</h5>
-        <p class="card-text">{positive}<br>Negative: {negative}</p>
-      </div>
+  {{#each _attachments}}
+  <img class="card-img-top" src="data:image/png;base64, {{data}}" alt="" title="">
+  {{/each}}
+  <div class="card-body">
+    <h5 class="card-title" style="overflow: hidden;">{{_id}}</h5>
+    <p class="card-text">
+      {{options.prompt}}<br>
+      Negative: {{optins.negative_prompt}}<br>
+      Seed: <b>{{options.seed}}</b>
+    </p>
+  </div>
 </div>
