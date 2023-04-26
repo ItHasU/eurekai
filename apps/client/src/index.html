@@ -32,9 +32,9 @@
     </nav>
 
     <div class="container-fluid">
-        <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <ul class="nav nav-tabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="prompts-tab" data-bs-toggle="tab" data-bs-target="#prompts-tab-pane"
+                <button class="nav-link active" id="prompts-tab" data-bs-toggle="tab" data-bs-target="#prompts-tab-pane"
                     type="button" role="tab" aria-controls="prompts-tab-pane" aria-selected="true">Prompts</button>
             </li>
             <li class="nav-item" role="presentation">
@@ -42,39 +42,34 @@
                     type="button" role="tab" aria-controls="seeds-tab-pane" aria-selected="false">Seeds</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="images-tab" data-bs-toggle="tab" data-bs-target="#images-tab-pane"
+                <button class="nav-link" id="images-tab" data-bs-toggle="tab" data-bs-target="#images-tab-pane"
                     type="button" role="tab" aria-controls="images-tab-pane" aria-selected="false">Images</button>
             </li>
         </ul>
         <div class="tab-content pt-3">
-            <div class="tab-pane fade" id="prompts-tab-pane" role="tabpanel" aria-labelledby="prompts-tab" tabindex="0">
+            <div class="tab-pane fade show active" id="prompts-tab-pane" role="tabpanel" aria-labelledby="prompts-tab"
+                tabindex="0">
                 <!-- Prompts -->
                 <div class="card">
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-5">
                                 <label for="positiveInput" class="form-label">Prompt</label>
-                                <textarea id="positiveInput" class="form-control"></textarea>
-                                <!-- <input type="text" class="form-control" id="positiveInput"> -->
+                                <textarea id="positiveInput" class="form-control" rows="3"></textarea>
                             </div>
                             <div class="col-md-5">
                                 <label for="negativeInput" class="form-label">Negative prompt</label>
-                                <input type="text" class="form-control" id="negativeInput">
+                                <textarea id="negativeInput" class="form-control" rows="3"></textarea>
                             </div>
-                            <div class="col-md-2">
-                                <label for="countInput" class="form-label">Count</label>
-                                <input type="number" class="form-control" id="countInput" min="1" step="1" value="1">
-                            </div>
-                            <div class="col-8">
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col">
                                 <button id="queueButton" type="button" class="btn btn-primary form-control">
-                                    <i class="bi bi-stack"></i>&nbsp;Queue images
+                                    <i class="bi bi-stack"></i>&nbsp;Add prompt
                                 </button>
                             </div>
-                            <div class="col-4">
-                                <button id="cleanButton" type="button" class="btn btn-danger form-control">
-                                    <i class="bi bi-trash"></i>&nbsp;Delete all images
-                                </button>
-                            </div>
+                        </div>
+                        <div id="promptsDiv" class="row mt-3">
                         </div>
                     </div>
                 </div>
@@ -82,10 +77,16 @@
             <div class="tab-pane fade" id="seeds-tab-pane" role="tabpanel" aria-labelledby="profile-tab" tabindex="0">
                 <!-- Seeds -->
             </div>
-            <div class="tab-pane fade show active" id="images-tab-pane" role="tabpanel" aria-labelledby="contact-tab"
-                tabindex="0">
+            <div class="tab-pane fade" id="images-tab-pane" role="tabpanel" aria-labelledby="contact-tab" tabindex="0">
                 <!-- Images -->
-                <div id="imagesDiv" class="row">
+                <div class="row">
+                    <div class="col">
+                        <button id="cleanButton" type="button" class="btn btn-danger form-control">
+                            <i class="bi bi-trash"></i>&nbsp;Delete all images
+                        </button>
+                    </div>
+                </div>
+                <div id="imagesDiv" class="row mt-3">
                 </div>
             </div>
         </div>

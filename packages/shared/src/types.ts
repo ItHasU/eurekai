@@ -53,4 +53,15 @@ export interface PictureDTO extends PouchDB.Core.IdMeta, PouchDB.Core.RevisionId
     }
 }
 
+export interface PromptDTO extends PouchDB.Core.IdMeta, PouchDB.Core.RevisionIdMeta {
+    /** Virtual index */
+    index: number;
+    /** Is the prompt active for generation */
+    active: boolean;
+    /** Positive prompt for the image */
+    prompt: string;
+    /** Negative prompt for the image */
+    negative_prompt?: string;
+}
+
 //#endregion

@@ -4,6 +4,9 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 
 import { ClientDBConnector } from "./clientDB";
 import { GeneratedImageElement } from "./generatedImage";
+import { PromptElement } from "./components/prompt.element";
+import { PromptManager } from "@eurekai/shared/src/prompt.manager";
+import { ClientPromptManager } from "./managers/client.prompt.manager";
 
 class App {
 
@@ -14,6 +17,11 @@ class App {
     protected _countInput: HTMLInputElement;
     protected _queueButton: HTMLButtonElement;
     protected _cleanButton: HTMLButtonElement;
+
+    // -- Prompt divs --
+    protected _promptsDiv: HTMLDivElement;
+    protected _promptsCache: {[_id:string]: PromptElement} = {};
+    protected _promptsManager: ClientPromptManager = new ClientPromptManager();
 
     // -- Images divs --
     protected _imagesDiv: HTMLDivElement;
@@ -29,9 +37,11 @@ class App {
         this._queueButton = document.getElementById("queueButton") as HTMLButtonElement;
         this._cleanButton = document.getElementById("cleanButton") as HTMLButtonElement;
 
+        this._promptsDiv = document.getElementById("promptsDiv") as HTMLDivElement;
         this._imagesDiv = document.getElementById("imagesDiv") as HTMLDivElement;
 
         this._init();
+        this._refreshPrompts();
         this._refresh();
     }
 
@@ -39,7 +49,36 @@ class App {
     protected _init(): void {
         this._queueButton.addEventListener("click", this._onQueueClick.bind(this));
         this._cleanButton.addEventListener("click", this._onCleanClick.bind(this));
+        this._promptsManager.replication.on("change", this._refreshPrompts.bind(this));
         this._db.replication.on("change", this._refresh.bind(this));
+    }
+
+    /** Refresh prompts */
+    protected async _refreshPrompts(): Promise<void> {
+        try {
+            // -- Get images --
+            const prompts = await this._promptsManager.getAllPrompts();
+            console.log(prompts);
+
+            // -- Clear --
+            this._promptsDiv.innerHTML = "";
+            // -- Render --
+            for (const prompt of prompts) {
+                const existing: PromptElement | undefined = this._promptsCache[prompt._id];
+                if (existing == null) {
+                    // Not existing yet
+                    const element = new PromptElement(prompt);
+                    this._promptsDiv.append(element);
+                } else {
+                    // Existing
+                    existing.setData(prompt); // Maybe image has been updated
+                    this._promptsDiv.append(existing);
+                }
+            }
+        } catch(e) {
+            console.error(e);
+        }
+
     }
 
     /** Refresh images */
@@ -74,17 +113,8 @@ class App {
     protected _onQueueClick(): void {
         const positivePrompt = this._positiveInput.value;
         const negativePrompt = this._negativeInput.value;
-        const count = +this._countInput.value;
 
-        const seeds: number[] = []; 
-        for (let i = 0; i < count; i++) {
-            seeds.push(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
-        }
-
-        this._db.queue([{
-            positive: positivePrompt,
-            negative: negativePrompt ? negativePrompt : undefined
-        }], seeds);
+        this._promptsManager.push(positivePrompt, negativePrompt ? undefined : negativePrompt);
     }
 
     protected async _onCleanClick(): Promise<void> {
