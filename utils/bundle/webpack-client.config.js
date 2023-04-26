@@ -49,7 +49,10 @@ function getWebpackConfig(dirname, entry = "src/index.ts") {
       extensions: [".js", ".ts"],
       plugins: [
         new TsconfigPathsPlugin({})
-      ]
+      ],
+      alias: {
+        handlebars: 'handlebars/dist/handlebars.min.js'
+      }
     },
     plugins: [
       new HtmlWebpackPlugin({ template: "./src/index.html" })
