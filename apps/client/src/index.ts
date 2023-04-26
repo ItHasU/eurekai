@@ -58,7 +58,6 @@ class App {
         try {
             // -- Get images --
             const prompts = await this._promptsManager.getAllPrompts();
-            console.log(prompts);
 
             // -- Clear --
             this._promptsDiv.innerHTML = "";

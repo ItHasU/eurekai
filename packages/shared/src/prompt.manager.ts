@@ -13,7 +13,8 @@ export class PromptManager {
         const result = await this._db.find({
             selector: {
                 "active": { $eq: true }
-            }
+            },
+            sort: ["index"]
         });
         if (result.warning) {
             console.warn(result.warning);
@@ -32,6 +33,7 @@ export class PromptManager {
                 prompts.push(row.doc);
             }
         }
+        prompts.sort((o1, o2) => o1.index - o2.index);
         return prompts;
     }
 
