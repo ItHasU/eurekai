@@ -61,4 +61,13 @@ export class PromptManager {
         // -- Save --
         await this._db.post(dto);
     }
+
+    /** Remove all prompts */
+    public async clean(): Promise<void> {
+        const prompts = await this.getAllPrompts();
+        for (const prompt of prompts) {
+            this._db.remove(prompt);
+        }
+    }
+
 }

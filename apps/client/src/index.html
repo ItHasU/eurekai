@@ -63,10 +63,24 @@
                             </div>
                         </div>
                         <div class="row mt-3">
-                            <div class="col">
+                            <div class="col-md-8">
                                 <button id="queueButton" type="button" class="btn btn-primary form-control">
                                     <i class="bi bi-stack"></i>&nbsp;Add prompt
                                 </button>
+                            </div>
+                            <div class="col-md-4">
+                                <button id="cleanPromptsButton" type="button" class="btn btn-danger form-control">
+                                    <i class="bi bi-trash"></i>&nbsp;Delete all prompts
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col">
+                                <select id="promptsFilterSelect" class="form-control">
+                                    <option value="1">All prompts</option>
+                                    <option value="2">Only active prompts</option>
+                                    <option value="3">Only inactive prompts</option>
+                                </select>
                             </div>
                         </div>
                         <div id="promptsDiv" class="row mt-3">
