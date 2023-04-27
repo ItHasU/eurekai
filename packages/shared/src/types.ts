@@ -23,6 +23,8 @@ export interface Txt2ImgOptions {
     n_iter: number;
 
     cfg_scale: number;
+
+    save_images?: boolean;
 }
 
 //#endregion

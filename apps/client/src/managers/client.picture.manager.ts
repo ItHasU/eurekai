@@ -1,9 +1,9 @@
-import { PictureManager } from "@eurekai/shared/src/picture.manager";
+import { PicturesWrapper } from "@eurekai/shared/src/pictures.wrapper";
 import PouchDB from "pouchdb";
 import { PictureElement } from "src/components/picture.element";
 
-export class ClientPictureManager extends PictureManager {
-    protected readonly _replication: PouchDB.Replication.Sync<{}>;
+export class ClientPictureManager {
+    protected readonly _pictures: PicturesWrapper;
 
     // -- Buttons --
     protected _cleanButton: HTMLButtonElement;
@@ -13,7 +13,9 @@ export class ClientPictureManager extends PictureManager {
     protected _imagesCache: {[_id: string]: PictureElement} = {};
 
     constructor() {
-        super(PouchDB);
+        this._pictures = new PicturesWrapper(PouchDB);
+        this._pictures.addChangeListener(this._refresh.bind(this));
+        this._pictures.setSync(document.location.href + "db/pictures/");
 
         // -- Get components --
         this._cleanButton = document.getElementById("cleanButton") as HTMLButtonElement;
@@ -22,14 +24,6 @@ export class ClientPictureManager extends PictureManager {
         // -- Bind callbacks --
         this._cleanButton.addEventListener("click", this._onCleanClick.bind(this));
 
-        // -- Setup database replication --
-        this._replication = this._db.sync('http://localhost:3000/db/pictures', {
-            live: true,
-            retry: true,
-            since: 0
-        });        
-        this._replication.on("change", this._refresh.bind(this));
-
         this._refresh();
     }
 
@@ -37,7 +31,7 @@ export class ClientPictureManager extends PictureManager {
     protected async _refresh(): Promise<void> {
         try {
             // -- Get images --
-            const images = await this.getImages();
+            const images = await this._pictures.getAll();
             
             // -- Clear --
             this._imagesDiv.innerHTML = "";
@@ -62,7 +56,7 @@ export class ClientPictureManager extends PictureManager {
     protected async _onCleanClick(): Promise<void> {
         console.log("Cleaning");
         try {
-            await this.clean();
+            await this._pictures.clean();
             this._refresh();
         } catch (e) {
             console.error(e);

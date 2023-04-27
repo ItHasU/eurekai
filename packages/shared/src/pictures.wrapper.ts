@@ -1,5 +1,6 @@
 import PouchDB from "pouchdb";
 import { ComputationStatus, PictureDTO, PromptDTO, Txt2ImgOptions } from "./types";
+import { AbstractDatabaseWrapper } from "./abstract.databaseWrapper";
 
 const DEFAULT_PARAMETERS: Txt2ImgOptions = {
     prompt: "",
@@ -14,13 +15,14 @@ const DEFAULT_PARAMETERS: Txt2ImgOptions = {
     n_iter: 1,
     batch_size: 1,
     cfg_scale: 7,
+
+    save_images: true
 };
 
-export class PictureManager {
-    protected _db: PouchDB.Database<PictureDTO>;
+export class PicturesWrapper extends AbstractDatabaseWrapper<PictureDTO> {
 
     constructor(dbConstructor: ReturnType<PouchDB.Static["defaults"]>) {
-        this._db = new dbConstructor("pictures");
+        super(dbConstructor, "pictures");
     }
 
     /** Create a picture from a prompt. Won't run it. */
@@ -50,33 +52,6 @@ export class PictureManager {
         }
     }
 
-    /** Get all images with their attachments */
-    public async getImages(): Promise<PictureDTO[]> {
-        const result = await this._db.allDocs({
-            include_docs: true,
-            attachments: true
-        });
-        return result.rows.map(row => row.doc!);
-    }
-
-    /** Erase all images */
-    public async clean(): Promise<void> {
-        const images = await this.getImages();
-        for (const image of images) {
-            this._db.remove(image);
-        }
-    }
-
-    /** Update a DTO in DB */
-    protected async _update(doc: PictureDTO): Promise<void> {
-        const result = await this._db.put(doc);
-        if (!result.ok) {
-            throw `Failed to update ${doc._id}.${doc._rev}`;
-        } else {
-            doc._rev = result.rev;
-        }
-    }
-
     /**
      * Compute the image and save it to the database
      */
@@ -91,6 +66,7 @@ export class PictureManager {
             const result = await txt2img(picture.options);
             // Save results as attachments
             picture.computed = ComputationStatus.DONE;
+            picture._attachments = {};
             for (let i = 0; i < result.length; i++) {
                 picture._attachments[`${i}.png`] = {
                     content_type: "image/png",

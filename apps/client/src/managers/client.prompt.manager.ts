@@ -1,10 +1,9 @@
-import { PromptManager } from "@eurekai/shared/src/prompt.manager";
+import { PromptsWrapper } from "@eurekai/shared/src/prompts.wrapper";
 import PouchDB from "pouchdb";
 import { PromptElement } from "src/components/prompt.element";
 
-export class ClientPromptManager extends PromptManager {
-
-    protected readonly _replication: PouchDB.Replication.Sync<{}>;
+export class ClientPromptManager {
+    protected readonly _prompts: PromptsWrapper;
 
     // -- Main form --
     protected readonly _positiveInput: HTMLInputElement;
@@ -14,10 +13,12 @@ export class ClientPromptManager extends PromptManager {
 
     // -- Prompt divs --
     protected readonly _promptsDiv: HTMLDivElement;
-    protected _promptsCache: {[_id:string]: PromptElement} = {};
+    protected _promptsCache: { [_id: string]: PromptElement } = {};
 
     constructor() {
-        super(PouchDB);
+        this._prompts = new PromptsWrapper(PouchDB);
+        this._prompts.addChangeListener(this._refresh.bind(this));
+        this._prompts.setSync(document.location.href + "db/prompts/");
 
         // -- Get components --
         this._positiveInput = document.getElementById("positiveInput") as HTMLInputElement;
@@ -29,15 +30,6 @@ export class ClientPromptManager extends PromptManager {
         // -- Bind callbacks for buttons --
         this._queueButton.addEventListener("click", this._onQueueClick.bind(this));
         this._cleanButton.addEventListener("click", this._onCleanClick.bind(this));
-        
-        // -- Setup db replication --
-        // FIXME Read URL from location
-        this._replication = this._db.sync('http://localhost:3000/db/prompts', {
-            live: true,
-            retry: true,
-            since: 0
-        });
-        this._replication.on("change", this._refresh.bind(this));
 
         this._refresh();
     }
@@ -46,7 +38,7 @@ export class ClientPromptManager extends PromptManager {
     protected async _refresh(): Promise<void> {
         try {
             // -- Get images --
-            const prompts = await this.getAllPrompts();
+            const prompts = await this._prompts.getAll();
 
             // -- Clear --
             this._promptsDiv.innerHTML = "";
@@ -63,7 +55,7 @@ export class ClientPromptManager extends PromptManager {
                     this._promptsDiv.append(existing);
                 }
             }
-        } catch(e) {
+        } catch (e) {
             console.error(e);
         }
 
@@ -74,12 +66,12 @@ export class ClientPromptManager extends PromptManager {
         const positivePrompt = this._positiveInput.value;
         const negativePrompt = this._negativeInput.value;
 
-        await this.push(positivePrompt, negativePrompt ? undefined : negativePrompt);
+        await this._prompts.push(positivePrompt, negativePrompt ? undefined : negativePrompt);
     }
 
     protected _onCleanClick(): Promise<void> {
         this._promptsCache = {};
-        return this.toggleAll(false);
+        return this._prompts.clean();
     }
 
 }
