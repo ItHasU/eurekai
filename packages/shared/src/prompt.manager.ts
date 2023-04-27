@@ -56,8 +56,6 @@ export class PromptManager {
             negative_prompt
         };
 
-        console.log("Saving:", dto);
-
         // -- Save --
         await this._db.post(dto);
     }
