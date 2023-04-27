@@ -1,8 +1,8 @@
-import { DBConnector } from "@eurekai/shared/src/db";
+import { PictureManager } from "@eurekai/shared/src/picture.manager";
 import PouchDB from "pouchdb";
 import { PictureElement } from "src/components/picture.element";
 
-export class ClientPictureManager extends DBConnector {
+export class ClientPictureManager extends PictureManager {
     protected readonly _replication: PouchDB.Replication.Sync<{}>;
 
     // -- Buttons --

@@ -10,16 +10,9 @@ export class PromptManager {
     }
 
     public async getActivePrompts(): Promise<PromptDTO[]> {
-        const result = await this._db.find({
-            selector: {
-                "active": { $eq: true }
-            },
-            sort: ["index"]
-        });
-        if (result.warning) {
-            console.warn(result.warning);
-        }
-        return result.docs;
+        const result = (await this.getAllPrompts()).filter(prompt => prompt.active);
+
+        return result;
     }
 
     public async getAllPrompts(): Promise<PromptDTO[]> {
@@ -58,6 +51,25 @@ export class PromptManager {
 
         // -- Save --
         await this._db.post(dto);
+    }
+
+    /** Update a DTO in DB */
+    protected async _update(doc: PromptDTO): Promise<void> {
+        const result = await this._db.put(doc);
+        if (!result.ok) {
+            throw `Failed to update ${doc._id}.${doc._rev}`;
+        } else {
+            doc._rev = result.rev;
+        }
+    }
+
+    /** Remove all prompts */
+    public async toggleAll(active: boolean): Promise<void> {
+        const prompts = await this.getAllPrompts();
+        for (const prompt of prompts) {
+            prompt.active = active;
+            await this._update(prompt);
+        }
     }
 
     /** Remove all prompts */

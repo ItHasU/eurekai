@@ -79,7 +79,7 @@ export class ClientPromptManager extends PromptManager {
 
     protected _onCleanClick(): Promise<void> {
         this._promptsCache = {};
-        return this.clean();
+        return this.toggleAll(false);
     }
 
 }

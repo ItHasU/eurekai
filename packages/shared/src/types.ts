@@ -40,6 +40,8 @@ export enum ComputationStatus {
 }
 
 export interface PictureDTO extends PouchDB.Core.IdMeta, PouchDB.Core.RevisionIdMeta {
+    /** _id field of a prompt */
+    promptId: string;
     /** Options that were used to generate the picture */
     options: Txt2ImgOptions;
     /** Is picture computed */
