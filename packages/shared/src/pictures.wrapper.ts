@@ -66,7 +66,6 @@ export class PicturesWrapper extends AbstractDatabaseWrapper<PictureDTO> {
             const result = await txt2img(picture.options);
             // Save results as attachments
             picture.computed = ComputationStatus.DONE;
-            picture._attachments = {};
             for (let i = 0; i < result.length; i++) {
                 picture._attachments[`${i}.png`] = {
                     content_type: "image/png",

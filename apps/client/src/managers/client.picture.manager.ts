@@ -10,7 +10,7 @@ export class ClientPictureManager {
 
     // -- Images divs --
     protected _imagesDiv: HTMLDivElement;
-    protected _imagesCache: {[_id: string]: PictureElement} = {};
+    protected _imagesCache: { [_id: string]: PictureElement } = {};
 
     constructor() {
         this._pictures = new PicturesWrapper(PouchDB);
@@ -31,8 +31,8 @@ export class ClientPictureManager {
     protected async _refresh(): Promise<void> {
         try {
             // -- Get images --
-            const images = await this._pictures.getAll();
-            
+            const images = await this._pictures.getAll({ attachments: true });
+
             // -- Clear --
             this._imagesDiv.innerHTML = "";
             // -- Render --
@@ -48,7 +48,7 @@ export class ClientPictureManager {
                     this._imagesDiv.append(existing);
                 }
             }
-        } catch(e) {
+        } catch (e) {
             console.error(e);
         }
     }
