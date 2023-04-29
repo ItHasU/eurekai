@@ -17,7 +17,7 @@ export class PromptsWrapper extends AbstractDatabaseWrapper<PromptDTO> {
             console.warn(e);
             return undefined;
         }
-    } 
+    }
 
     /** @returns All active prompts */
     public async getActivePrompts(): Promise<PromptDTO[]> {
@@ -60,9 +60,13 @@ export class PromptsWrapper extends AbstractDatabaseWrapper<PromptDTO> {
     public async toggleAll(active: boolean): Promise<void> {
         const prompts = await this.getAll();
         for (const prompt of prompts) {
-            prompt.active = active;
-            await this._update(prompt);
+            await this.toggle(prompt, active);
         }
     }
 
+    /** Toggle active flag on all prompts */
+    public async toggle(prompt: PromptDTO, active: boolean): Promise<void> {
+        prompt.active = active;
+        await this._update(prompt);
+    }
 }

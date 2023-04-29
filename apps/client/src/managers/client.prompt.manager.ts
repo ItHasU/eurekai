@@ -47,8 +47,22 @@ export class ClientPromptManager {
                 const existing: PromptElement | undefined = this._promptsCache[prompt._id];
                 if (existing == null) {
                     // Not existing yet
-                    const element = new PromptElement(prompt);
+                    const element = new PromptElement(prompt, {
+                        accept: () => {
+                            this._prompts.toggle(prompt, true);
+                            this._refresh();
+                        },
+                        reject: () => {
+                            this._prompts.toggle(prompt, false);
+                            this._refresh();
+                        },
+                        clone: () => {
+                            this._positiveInput.value = prompt.prompt;
+                            this._negativeInput.value = prompt.negative_prompt ?? "";
+                        }
+                    });
                     this._promptsDiv.append(element);
+                    element.refresh();
                 } else {
                     // Existing
                     existing.setData(prompt); // Maybe image has been updated
