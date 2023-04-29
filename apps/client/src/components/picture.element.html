@@ -28,6 +28,15 @@
     </div>
     {{#if isWaitingEvaluation}}
     <div class="row g-1">
+      {{#if prompt.active}}
+      <div class="col">
+        <button ref="stop" type="button" class="btn btn-danger form-control"><i class="bi bi-stop"></i></button>
+      </div>
+      {{else}}
+      <div class="col">
+        <button ref="start" type="button" class="btn btn-success form-control"><i class="bi bi-play"></i></button>
+      </div>
+      {{/if}}
       <div class="col">
         <button ref="reject" type="button" class="btn btn-danger form-control"><i class="bi bi-x-lg"></i></button>
       </div>

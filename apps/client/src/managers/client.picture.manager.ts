@@ -106,6 +106,14 @@ export class ClientPictureManager {
                         reject: async () => {
                             await this._pictures.setStatus(image._id, ComputationStatus.REJECTED);
                             this._refresh();
+                        },
+                        start: async () => {
+                            await this._prompts.toggle(prompt, true);
+                            this._refresh();
+                        },
+                        stop: async () => {
+                            await this._prompts.toggle(prompt, false);
+                            this._refresh();
                         }
                     });
                     this._imagesDiv.append(element);
