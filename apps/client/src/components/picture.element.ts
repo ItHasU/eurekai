@@ -8,7 +8,7 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         reject: () => void
     }) {
         super(data, require("./picture.element.html").default);
-        this.classList.add("col-md-4");
+        this.classList.add("col-md-4", "col-lg-3");
     }
 
     public get isWaitingEvaluation(): boolean {
