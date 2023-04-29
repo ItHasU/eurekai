@@ -1,6 +1,7 @@
 import { PicturesWrapper } from "@eurekai/shared/src/pictures.wrapper";
 import { PromptsWrapper } from "@eurekai/shared/src/prompts.wrapper";
 import { txt2img } from "./api";
+import { ComputationStatus } from "@eurekai/shared/src/types";
 
 const MAX_IMAGES_PER_PROMPT = 10;
 
@@ -29,7 +30,12 @@ export class GeneratorHandler {
         const counts: { [promptId: string]: number } = {};
         const pictures = await this._pictures.getAll();
         for (const picture of pictures) {
-            counts[picture.promptId] = (counts[picture.promptId] ?? 0) + 1;
+            if (picture.computed <= ComputationStatus.DONE) {
+                // Count pictures pending or waiting for evaluation
+                counts[picture.promptId] = (counts[picture.promptId] ?? 0) + 1;
+            } else {
+                // Don't count other images
+            }
         }
         console.debug(`${prompts.length} active prompt(s)`);
             
