@@ -17,7 +17,9 @@ export abstract class AbstractDTOElement<DTO> extends HTMLElement {
 
     /** Refresh the content of the element from the template */
     public refresh(): void {
-        let content: string = this._template(this);
+        let content: string = this._template(this, {
+            allowProtoPropertiesByDefault: true
+        });
         this.innerHTML = content;
     }
 

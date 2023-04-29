@@ -86,6 +86,7 @@ export class PicturesWrapper extends AbstractDatabaseWrapper<PictureDTO> {
             return;
         } else {
             item.computed = status;
+            await this._update(item);
         }
     }
 }

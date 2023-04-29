@@ -1,4 +1,4 @@
-import { PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
+import { ComputationStatus, PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { AbstractDTOElement } from "./abstract.dto.element";
 
 export class PictureElement extends AbstractDTOElement<PictureDTO> {
@@ -9,6 +9,10 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
     }) {
         super(data, require("./picture.element.html").default);
         this.classList.add("col-md-4");
+    }
+
+    public get isWaitingEvaluation(): boolean {
+        return this.data.computed === ComputationStatus.DONE;
     }
 
     public override refresh(): void {
