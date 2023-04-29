@@ -12,7 +12,7 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
     }
 
     public get isWaitingEvaluation(): boolean {
-        return this.data.computed === ComputationStatus.DONE;
+        return this.data.computed >= ComputationStatus.DONE;
     }
 
     public override refresh(): void {

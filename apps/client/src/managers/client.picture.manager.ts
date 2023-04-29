@@ -1,6 +1,6 @@
 import { PicturesWrapper } from "@eurekai/shared/src/pictures.wrapper";
 import { PromptsWrapper } from "@eurekai/shared/src/prompts.wrapper";
-import { ComputationStatus, PromptDTO } from "@eurekai/shared/src/types";
+import { ComputationStatus, PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
 import PouchDB from "pouchdb";
 import { PictureElement } from "src/components/picture.element";
 
@@ -8,8 +8,9 @@ export class ClientPictureManager {
     protected readonly _prompts: PromptsWrapper;
     protected readonly _pictures: PicturesWrapper;
 
-    // -- Buttons --
+    // -- Components --
     protected _cleanButton: HTMLButtonElement;
+    protected _picturesFilterSelect: HTMLSelectElement;
 
     // -- Images divs --
     protected _imagesDiv: HTMLDivElement;
@@ -24,9 +25,11 @@ export class ClientPictureManager {
         // -- Get components --
         this._cleanButton = document.getElementById("cleanButton") as HTMLButtonElement;
         this._imagesDiv = document.getElementById("imagesDiv") as HTMLDivElement;
+        this._picturesFilterSelect = document.getElementById("picturesFilterSelect") as HTMLSelectElement;
 
         // -- Bind callbacks --
         this._cleanButton.addEventListener("click", this._onCleanClick.bind(this));
+        this._picturesFilterSelect.addEventListener("change", this._refresh.bind(this));
 
         this._refresh();
     }
@@ -63,7 +66,24 @@ export class ClientPictureManager {
                 }
 
                 return res;
-            })
+            });
+
+            // -- Get the filter --
+            let filter: (picture: PictureDTO) => boolean = function () { return true };
+            const filterIndex = this._picturesFilterSelect.value;
+            switch (filterIndex) {
+                case "done":
+                    filter = function (picture) { return picture.computed === ComputationStatus.DONE; }
+                    break;
+                    case "accept":
+                    filter = function (picture) { return picture.computed === ComputationStatus.ACCEPTED; }
+                    break;
+                    case "reject":
+                    filter = function (picture) { return picture.computed === ComputationStatus.REJECTED; }
+                    break;
+                default:
+                    console.error(`Invalid value : ${filterIndex}`)
+            }
 
             // -- Clear --
             this._imagesDiv.innerHTML = "";
@@ -71,7 +91,7 @@ export class ClientPictureManager {
             for (const image of images) {
                 const existing: PictureElement | undefined = this._imagesCache[image._id];
 
-                if (image.computed === ComputationStatus.REJECTED) {
+                if (!filter(image)) {
                     continue;
                 }
 
