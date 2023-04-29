@@ -1,6 +1,6 @@
 import { PicturesWrapper } from "@eurekai/shared/src/pictures.wrapper";
 import { PromptsWrapper } from "@eurekai/shared/src/prompts.wrapper";
-import { PromptDTO } from "@eurekai/shared/src/types";
+import { ComputationStatus, PromptDTO } from "@eurekai/shared/src/types";
 import PouchDB from "pouchdb";
 import { PictureElement } from "src/components/picture.element";
 
@@ -70,10 +70,24 @@ export class ClientPictureManager {
             // -- Render --
             for (const image of images) {
                 const existing: PictureElement | undefined = this._imagesCache[image._id];
+
+                if (image.computed === ComputationStatus.REJECTED) {
+                    continue;
+                }
+
                 if (existing == null) {
                     // Not existing yet
                     const prompt = promptsMap[image.promptId];
-                    const element = new PictureElement(image, prompt);
+                    const element = new PictureElement(image, prompt, {
+                        accept: async () => {
+                            await this._pictures.setStatus(image._id, ComputationStatus.ACCEPTED);
+                            this._refresh();
+                        },
+                        reject: async () => {
+                            await this._pictures.setStatus(image._id, ComputationStatus.REJECTED);
+                            this._refresh();
+                        }
+                    });
                     this._imagesDiv.append(element);
                     element.refresh();
                 } else {

@@ -48,12 +48,12 @@ export class ClientPromptManager {
                 if (existing == null) {
                     // Not existing yet
                     const element = new PromptElement(prompt, {
-                        accept: () => {
-                            this._prompts.toggle(prompt, true);
+                        accept: async () => {
+                            await this._prompts.toggle(prompt, true);
                             this._refresh();
                         },
-                        reject: () => {
-                            this._prompts.toggle(prompt, false);
+                        reject: async () => {
+                            await this._prompts.toggle(prompt, false);
                             this._refresh();
                         },
                         clone: () => {

@@ -79,4 +79,13 @@ export class PicturesWrapper extends AbstractDatabaseWrapper<PictureDTO> {
             await this._update(picture);
         }
     }
+
+    public async setStatus(id: string, status: ComputationStatus): Promise<void> {
+        const item = await this.getById(id);
+        if (!item) {
+            return;
+        } else {
+            item.computed = status;
+        }
+    }
 }

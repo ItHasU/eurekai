@@ -15,6 +15,18 @@ export class AbstractDatabaseWrapper<T extends Entry> {
         this._db = new dbConstructor(dbName);
     }
 
+
+    /** Get an item by its id */
+    public async getById(id: string): Promise<T | undefined> {
+        try {
+            const doc = await this._db.get(id);
+            return doc ?? undefined;
+        } catch (e) {
+            console.warn(e);
+            return undefined;
+        }
+    }
+
     /** Get all documents from the database */
     public async getAll(options?: { attachments?: boolean }): Promise<T[]> {
         const result = await this._db.allDocs({
