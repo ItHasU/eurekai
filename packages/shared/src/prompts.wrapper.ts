@@ -8,6 +8,17 @@ export class PromptsWrapper extends AbstractDatabaseWrapper<PromptDTO> {
         super(dbConstructor, "prompts");
     }
 
+    /**  */
+    public async getById(id: string): Promise<PromptDTO | undefined> {
+        try {
+            const doc = await this._db.get(id);
+            return doc ?? undefined;
+        } catch (e) {
+            console.warn(e);
+            return undefined;
+        }
+    } 
+
     /** @returns All active prompts */
     public async getActivePrompts(): Promise<PromptDTO[]> {
         const result = (await this.getAll()).filter(prompt => prompt.active);

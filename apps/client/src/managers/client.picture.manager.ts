@@ -1,8 +1,10 @@
 import { PicturesWrapper } from "@eurekai/shared/src/pictures.wrapper";
+import { PromptsWrapper } from "@eurekai/shared/src/prompts.wrapper";
 import PouchDB from "pouchdb";
 import { PictureElement } from "src/components/picture.element";
 
 export class ClientPictureManager {
+    protected readonly _prompts: PromptsWrapper;
     protected readonly _pictures: PicturesWrapper;
 
     // -- Buttons --
@@ -13,6 +15,7 @@ export class ClientPictureManager {
     protected _imagesCache: { [_id: string]: PictureElement } = {};
 
     constructor() {
+        this._prompts = new PromptsWrapper(PouchDB);
         this._pictures = new PicturesWrapper(PouchDB);
         this._pictures.addChangeListener(this._refresh.bind(this));
         this._pictures.setSync(document.location.href + "db/pictures/");
@@ -40,7 +43,8 @@ export class ClientPictureManager {
                 const existing: PictureElement | undefined = this._imagesCache[image._id];
                 if (existing == null) {
                     // Not existing yet
-                    const element = new PictureElement(image);
+                    const prompt = await this._prompts.getById(image.promptId);
+                    const element = new PictureElement(image, prompt);
                     this._imagesDiv.append(element);
                 } else {
                     // Existing

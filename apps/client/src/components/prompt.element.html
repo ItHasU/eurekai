@@ -1,16 +1,16 @@
 <div class="card mb-3">
   <div class="card-body">
     <div class="card-text pb-2">
-      #{{index}}
-      {{#if active}}
+      #{{data.index}}
+      {{#if data.active}}
       <i class="bi bi-check-lg text-success"></i>
       {{else}}
       <i class="bi bi-x-lg text-danger"></i>
       {{/if}}
     </div>
     <div class="card-text pb-2">
-      <b>Prompt&nbsp;: </b>{{prompt}}<br>
-      <b>Negative&nbsp;: </b>{{negative_prompt}}
+      <b>Prompt&nbsp;: </b>{{data.prompt}}<br>
+      <b>Negative&nbsp;: </b>{{data.negative_prompt}}
     </div>
     <div class="row g-1">
       <div class="col">
