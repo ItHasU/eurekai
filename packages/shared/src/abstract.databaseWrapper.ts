@@ -1,3 +1,5 @@
+import { PictureDTO } from "./types";
+
 export interface Entry extends PouchDB.Core.IdMeta, PouchDB.Core.RevisionIdMeta {
 }
 
@@ -37,9 +39,12 @@ export class AbstractDatabaseWrapper<T extends Entry> {
     }
 
     /** Erase all images */
-    public async clean(): Promise<void> {
+    public async clean(filter?: (picture: T) => boolean): Promise<void> {
         const images = await this.getAll();
         for (const image of images) {
+            if (filter && !filter(image)) {
+                continue;
+            }
             this._db.remove(image);
         }
     }

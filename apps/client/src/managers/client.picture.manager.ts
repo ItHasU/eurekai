@@ -69,21 +69,7 @@ export class ClientPictureManager {
             });
 
             // -- Get the filter --
-            let filter: (picture: PictureDTO) => boolean = function () { return true };
-            const filterIndex = this._picturesFilterSelect.value;
-            switch (filterIndex) {
-                case "done":
-                    filter = function (picture) { return picture.computed === ComputationStatus.DONE; }
-                    break;
-                    case "accept":
-                    filter = function (picture) { return picture.computed === ComputationStatus.ACCEPTED; }
-                    break;
-                    case "reject":
-                    filter = function (picture) { return picture.computed === ComputationStatus.REJECTED; }
-                    break;
-                default:
-                    console.error(`Invalid value : ${filterIndex}`)
-            }
+            let filter: (picture: PictureDTO) => boolean = this._getFilter();
 
             // -- Clear --
             this._imagesDiv.innerHTML = "";
@@ -130,10 +116,29 @@ export class ClientPictureManager {
         }
     }
 
+    protected _getFilter(): (picture: PictureDTO) => boolean {
+        let filter: (picture: PictureDTO) => boolean = function () { return true };
+        const filterIndex = this._picturesFilterSelect.value;
+        switch (filterIndex) {
+            case "done":
+                filter = function (picture) { return picture.computed === ComputationStatus.DONE; }
+                break;
+                case "accept":
+                filter = function (picture) { return picture.computed === ComputationStatus.ACCEPTED; }
+                break;
+                case "reject":
+                filter = function (picture) { return picture.computed === ComputationStatus.REJECTED; }
+                break;
+            default:
+                console.error(`Invalid value : ${filterIndex}`)
+        }
+        return filter;
+    }
+
     protected async _onCleanClick(): Promise<void> {
-        console.log("Cleaning");
         try {
-            await this._pictures.clean();
+            const filter = this._getFilter();
+            await this._pictures.clean(filter);
             this._refresh();
         } catch (e) {
             console.error(e);
