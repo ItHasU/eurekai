@@ -79,8 +79,7 @@ export class ClientPromptManager {
     protected async _onQueueClick(): Promise<void> {
         const positivePrompt = this._positiveInput.value;
         const negativePrompt = this._negativeInput.value;
-
-        await this._prompts.push(positivePrompt, negativePrompt ? undefined : negativePrompt);
+        await this._prompts.push(positivePrompt, negativePrompt ? negativePrompt : undefined);
     }
 
     protected _onCleanClick(): Promise<void> {

@@ -14,13 +14,14 @@
     </div>
     <div class="row g-1">
       <div class="col">
-        <button ref="reject" type="button" class="btn btn-outline-danger form-control"><i class="bi bi-stop"></i></button>
+        {{#if data.active}}
+        <button ref="reject" type="button" class="btn btn-danger form-control"><i class="bi bi-stop"></i></button>
+        {{else}}
+        <button ref="accept" type="button" class="btn btn-success form-control"><i class="bi bi-play"></i></button>
+        {{/if}}
       </div>
       <div class="col">
-        <button ref="accept" type="button" class="btn btn-outline-success form-control"><i class="bi bi-play"></i></button>
-      </div>
-      <div class="col">
-        <button ref="clone" type="button" class="btn btn-outline-primary form-control"><i class="bi bi-clipboard"></i></button>
+        <button ref="clone" type="button" class="btn btn-primary form-control"><i class="bi bi-clipboard"></i></button>
       </div>
     </div>
   </div>
