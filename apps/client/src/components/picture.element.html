@@ -10,9 +10,9 @@
           {{#if prompt}}
           <span title="{{prompt.prompt}} // {{prompt.negative_prompt}}">#{{prompt.index}}</span>
           {{#if prompt.active}}
-          <i class="bi bi-check-lg text-success"></i>
+          <i class="bi bi-play text-success"></i>
           {{else}}
-          <i class="bi bi-x-lg text-danger"></i>
+          <i class="bi bi-stop text-danger"></i>
           {{/if}}
           {{else}}
           <span title="{{data.options.prompt}} // {{data.options.negative_prompt}}">#?</span>
@@ -30,11 +30,11 @@
     <div class="row g-1">
       {{#if prompt.active}}
       <div class="col">
-        <button ref="stop" type="button" class="btn btn-danger form-control"><i class="bi bi-stop"></i></button>
+        <button ref="stop" type="button" class="btn btn-outline-danger form-control"><i class="bi bi-stop"></i></button>
       </div>
       {{else}}
       <div class="col">
-        <button ref="start" type="button" class="btn btn-success form-control"><i class="bi bi-play"></i></button>
+        <button ref="start" type="button" class="btn btn-outline-success form-control"><i class="bi bi-play"></i></button>
       </div>
       {{/if}}
       <div class="col">

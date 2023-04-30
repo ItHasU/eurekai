@@ -3,9 +3,9 @@
     <div class="card-text pb-2">
       #{{data.index}}
       {{#if data.active}}
-      <i class="bi bi-check-lg text-success"></i>
+      <i class="bi bi-play text-success"></i>
       {{else}}
-      <i class="bi bi-x-lg text-danger"></i>
+      <i class="bi bi-stop text-danger"></i>
       {{/if}}
     </div>
     <div class="card-text pb-2">
@@ -14,10 +14,10 @@
     </div>
     <div class="row g-1">
       <div class="col">
-        <button ref="reject" type="button" class="btn btn-outline-danger form-control"><i class="bi bi-x-lg"></i></button>
+        <button ref="reject" type="button" class="btn btn-outline-danger form-control"><i class="bi bi-stop"></i></button>
       </div>
       <div class="col">
-        <button ref="accept" type="button" class="btn btn-outline-success form-control"><i class="bi bi-check-lg"></i></button>
+        <button ref="accept" type="button" class="btn btn-outline-success form-control"><i class="bi bi-play"></i></button>
       </div>
       <div class="col">
         <button ref="clone" type="button" class="btn btn-outline-primary form-control"><i class="bi bi-clipboard"></i></button>
