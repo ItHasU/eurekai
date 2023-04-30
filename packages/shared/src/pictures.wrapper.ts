@@ -33,8 +33,9 @@ export class PicturesWrapper extends AbstractDatabaseWrapper<PictureDTO> {
             _id: undefined as never,
             _rev: undefined as never,
             computed: ComputationStatus.PENDING,
-            _attachments: {},
             promptId: prompt._id,
+            createdAt: new Date().getTime(),
+            _attachments: {},
             options: {
                 ...DEFAULT_PARAMETERS,
                 prompt: prompt.prompt,

@@ -40,6 +40,16 @@ export class ClientPromptManager {
             // -- Get images --
             const prompts = await this._prompts.getAll();
 
+            prompts.sort((p1, p2) => {
+                let res = 0;
+
+                if (res === 0) {
+                    res = -(p1.index - p2.index);
+                }
+
+                return res;
+            });
+
             // -- Clear --
             this._promptsDiv.innerHTML = "";
             // -- Render --

@@ -50,6 +50,10 @@ export class ClientPictureManager {
                 let res = 0;
 
                 if (res === 0) {
+                    res = p1.createdAt - p2.createdAt;
+                }
+
+                if (res === 0) {
                     const prompt1 = promptsMap[p1.promptId];
                     const prompt2 = promptsMap[p2.promptId];
                     if (prompt1 && prompt2) {

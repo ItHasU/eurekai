@@ -46,6 +46,8 @@ export interface PictureDTO extends PouchDB.Core.IdMeta, PouchDB.Core.RevisionId
     promptId: string;
     /** Options that were used to generate the picture */
     options: Txt2ImgOptions;
+    /** Creation timestamp */
+    createdAt: number;
     /** Is picture computed */
     computed: ComputationStatus;
     /** Attachments as Base64 */
