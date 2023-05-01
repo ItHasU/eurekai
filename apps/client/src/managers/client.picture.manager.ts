@@ -1,12 +1,10 @@
 import { PicturesWrapper } from "@eurekai/shared/src/pictures.wrapper";
 import { PromptsWrapper } from "@eurekai/shared/src/prompts.wrapper";
 import { ComputationStatus, PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
-import PouchDB from "pouchdb";
 import { PictureElement } from "src/components/picture.element";
+import { zipPictures } from "@eurekai/shared/src/utils";
 
 export class ClientPictureManager {
-    protected readonly _prompts: PromptsWrapper;
-    protected readonly _pictures: PicturesWrapper;
 
     // -- Components --
     protected _cleanButton: HTMLButtonElement;
@@ -16,11 +14,12 @@ export class ClientPictureManager {
     protected _imagesDiv: HTMLDivElement;
     protected _imagesCache: { [_id: string]: PictureElement } = {};
 
-    constructor() {
-        this._prompts = new PromptsWrapper(PouchDB);
-        this._pictures = new PicturesWrapper(PouchDB);
+    constructor(
+        protected readonly _prompts: PromptsWrapper,
+        protected readonly _pictures: PicturesWrapper
+    ) {
+        this._prompts.addChangeListener(this._refresh.bind(this));
         this._pictures.addChangeListener(this._refresh.bind(this));
-        this._pictures.setSync(document.location.href + "db/pictures/");
 
         // -- Get components --
         this._cleanButton = document.getElementById("cleanButton") as HTMLButtonElement;
@@ -127,10 +126,10 @@ export class ClientPictureManager {
             case "done":
                 filter = function (picture) { return picture.computed === ComputationStatus.DONE; }
                 break;
-                case "accept":
+            case "accept":
                 filter = function (picture) { return picture.computed === ComputationStatus.ACCEPTED; }
                 break;
-                case "reject":
+            case "reject":
                 filter = function (picture) { return picture.computed === ComputationStatus.REJECTED; }
                 break;
             default:
@@ -141,12 +140,28 @@ export class ClientPictureManager {
 
     protected async _onCleanClick(): Promise<void> {
         try {
-            const filter = this._getFilter();
-            await this._pictures.clean(filter);
-            this._refresh();
+            const zip = await zipPictures({
+                prompts: this._prompts,
+                pictures: this._pictures,
+                filter: this._getFilter()
+            });
+            const blob = await zip.generateAsync({ type: "blob" });
+            const a: HTMLAnchorElement = document.createElement("a");
+            const url = window.URL.createObjectURL(blob);
+            a.href = url;
+            a.download = "pictures.zip";
+            a.click();
+            window.URL.revokeObjectURL(url);
         } catch (e) {
             console.error(e);
         }
+        // try {
+        //     const filter = this._getFilter();
+        //     await this._pictures.clean(filter);
+        //     this._refresh();
+        // } catch (e) {
+        //     console.error(e);
+        // }
     }
 
 }

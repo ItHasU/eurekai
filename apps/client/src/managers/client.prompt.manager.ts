@@ -1,10 +1,8 @@
 import { PromptsWrapper } from "@eurekai/shared/src/prompts.wrapper";
-import PouchDB from "pouchdb";
 import { PromptElement } from "src/components/prompt.element";
 
 export class ClientPromptManager {
-    protected readonly _prompts: PromptsWrapper;
-
+    
     // -- Main form --
     protected readonly _positiveInput: HTMLInputElement;
     protected readonly _negativeInput: HTMLInputElement;
@@ -15,10 +13,8 @@ export class ClientPromptManager {
     protected readonly _promptsDiv: HTMLDivElement;
     protected _promptsCache: { [_id: string]: PromptElement } = {};
 
-    constructor() {
-        this._prompts = new PromptsWrapper(PouchDB);
+    constructor(protected readonly _prompts: PromptsWrapper) {
         this._prompts.addChangeListener(this._refresh.bind(this));
-        this._prompts.setSync(document.location.href + "db/prompts/");
 
         // -- Get components --
         this._positiveInput = document.getElementById("positiveInput") as HTMLInputElement;

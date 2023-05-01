@@ -9,6 +9,7 @@
   },
   "main": "index.js",
   "dependencies": {
+    "jszip": "^3.10.1",
     "pouchdb": "^8.0.1"
   },
   "devDependencies": {
