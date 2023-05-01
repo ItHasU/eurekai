@@ -8,6 +8,7 @@ export class ClientPictureManager {
 
     // -- Components --
     protected _cleanButton: HTMLButtonElement;
+    protected _zipButton: HTMLButtonElement;
     protected _picturesFilterSelect: HTMLSelectElement;
 
     // -- Images divs --
@@ -23,11 +24,13 @@ export class ClientPictureManager {
 
         // -- Get components --
         this._cleanButton = document.getElementById("cleanButton") as HTMLButtonElement;
+        this._zipButton = document.getElementById("zipButton") as HTMLButtonElement;
         this._imagesDiv = document.getElementById("imagesDiv") as HTMLDivElement;
         this._picturesFilterSelect = document.getElementById("picturesFilterSelect") as HTMLSelectElement;
 
         // -- Bind callbacks --
         this._cleanButton.addEventListener("click", this._onCleanClick.bind(this));
+        this._zipButton.addEventListener("click", this._onZipClick.bind(this));
         this._picturesFilterSelect.addEventListener("change", this._refresh.bind(this));
 
         this._refresh();
@@ -140,6 +143,16 @@ export class ClientPictureManager {
 
     protected async _onCleanClick(): Promise<void> {
         try {
+            const filter = this._getFilter();
+            await this._pictures.clean(filter);
+            this._refresh();
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    protected async _onZipClick(): Promise<void> {
+        try {
             const zip = await zipPictures({
                 prompts: this._prompts,
                 pictures: this._pictures,
@@ -155,13 +168,5 @@ export class ClientPictureManager {
         } catch (e) {
             console.error(e);
         }
-        // try {
-        //     const filter = this._getFilter();
-        //     await this._pictures.clean(filter);
-        //     this._refresh();
-        // } catch (e) {
-        //     console.error(e);
-        // }
     }
-
 }
