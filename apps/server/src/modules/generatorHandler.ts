@@ -40,8 +40,6 @@ export class GeneratorHandler {
                 // Don't count other images
             }
         }
-        console.debug(countsPending);
-        console.debug(countsAccepted);
 
         // -- Get the prompt with the less pictures --
         prompts.sort((p1, p2) => {
