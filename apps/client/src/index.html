@@ -62,6 +62,21 @@
                                 <textarea id="negativeInput" class="form-control" rows="3"></textarea>
                             </div>
                         </div>
+                        <div class="row mt-2">
+                            <div class="col-md-6">
+                                <label for="bufferSizeInput" class="form-label">Buffer of images to evaluate</label>
+                                <input id="bufferSizeInput" class="form-control" type="number" min="0" value="50" placeholder="0 = no limit"></input>
+                                <div class="form-text">
+                                    The program will stop generating new images until this limit of images to evaluate is reach (0 = no limit).
+                                    Once an image is evaluated, it will be replaced by a new one.
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="targetAcceptedInput" class="form-label">Target count of accepted images</label>
+                                <input id="targetAcceptedInput" class="form-control" type="number" min="0" value="20" placeholder="0 = no limit"></input>
+                                <div class="form-text">The program will stop generating new images once the number of accepted images is reached (0 = no limit).</div>
+                            </div>
+                        </div>
                         <div class="row mt-3">
                             <div class="col-md-8">
                                 <button id="queueButton" type="button" class="btn btn-primary form-control">
@@ -83,9 +98,9 @@
                                 </select>
                             </div>
                         </div> -->
-                        <div id="promptsDiv" class="row mt-3">
-                        </div>
                     </div>
+                </div>
+                <div id="promptsDiv" class="row mt-3">
                 </div>
             </div>
             <!-- <div class="tab-pane fade" id="seeds-tab-pane" role="tabpanel" aria-labelledby="profile-tab" tabindex="0">

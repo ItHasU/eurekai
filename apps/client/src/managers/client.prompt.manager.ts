@@ -6,6 +6,8 @@ export class ClientPromptManager {
     // -- Main form --
     protected readonly _positiveInput: HTMLInputElement;
     protected readonly _negativeInput: HTMLInputElement;
+    protected readonly _bufferSizeInput: HTMLInputElement;
+    protected readonly _targetAcceptedInput: HTMLInputElement;
     protected readonly _queueButton: HTMLButtonElement;
     protected readonly _cleanButton: HTMLButtonElement;
 
@@ -19,6 +21,8 @@ export class ClientPromptManager {
         // -- Get components --
         this._positiveInput = document.getElementById("positiveInput") as HTMLInputElement;
         this._negativeInput = document.getElementById("negativeInput") as HTMLInputElement;
+        this._bufferSizeInput = document.getElementById("bufferSizeInput") as HTMLInputElement;
+        this._targetAcceptedInput = document.getElementById("targetAcceptedInput") as HTMLInputElement;
         this._promptsDiv = document.getElementById("promptsDiv") as HTMLDivElement;
         this._queueButton = document.getElementById("queueButton") as HTMLButtonElement;
         this._cleanButton = document.getElementById("cleanPromptsButton") as HTMLButtonElement;
@@ -65,6 +69,8 @@ export class ClientPromptManager {
                         clone: () => {
                             this._positiveInput.value = prompt.prompt;
                             this._negativeInput.value = prompt.negative_prompt ?? "";
+                            this._bufferSizeInput.value = "" + prompt.bufferSize;
+                            this._targetAcceptedInput.value = "" + prompt.acceptedTarget;
                         }
                     });
                     this._promptsDiv.append(element);
@@ -85,7 +91,9 @@ export class ClientPromptManager {
     protected async _onQueueClick(): Promise<void> {
         const positivePrompt = this._positiveInput.value;
         const negativePrompt = this._negativeInput.value;
-        await this._prompts.push(positivePrompt, negativePrompt ? negativePrompt : undefined);
+        const bufferSize = +this._bufferSizeInput.value;
+        const targetAccepted = +this._targetAcceptedInput.value;
+        await this._prompts.push(positivePrompt, negativePrompt ? negativePrompt : undefined, bufferSize, targetAccepted);
     }
 
     protected _onCleanClick(): Promise<void> {

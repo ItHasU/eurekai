@@ -22,7 +22,7 @@ export class PromptsWrapper extends AbstractDatabaseWrapper<PromptDTO> {
     }
 
     /** Add a prompt to the list */
-    public async push(prompt: string, negative_prompt?: string): Promise<void> {
+    public async push(prompt: string, negative_prompt?: string, bufferSize?: number, acceptedTarget?: number): Promise<void> {
         // -- Get next id --
         const prompts = await this.getAll();
         let lastIndex = 0;
@@ -38,7 +38,9 @@ export class PromptsWrapper extends AbstractDatabaseWrapper<PromptDTO> {
             index: lastIndex,
             active: true,
             prompt,
-            negative_prompt
+            negative_prompt,
+            bufferSize: bufferSize ?? 0,
+            acceptedTarget: acceptedTarget ?? 0
         };
 
         // -- Save --

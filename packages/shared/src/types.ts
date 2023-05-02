@@ -68,6 +68,10 @@ export interface PromptDTO extends PouchDB.Core.IdMeta, PouchDB.Core.RevisionIdM
     prompt: string;
     /** Negative prompt for the image */
     negative_prompt?: string;
+    /** Maximum count of images to evaluate (0 = no limit) */
+    bufferSize: number;
+    /** Target count of accepted images for this prompt */
+    acceptedTarget: number;
 }
 
 //#endregion
