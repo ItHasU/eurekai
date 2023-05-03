@@ -3,6 +3,7 @@ import { PromptsWrapper } from "@eurekai/shared/src/prompts.wrapper";
 import { ComputationStatus, PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { PictureElement } from "src/components/picture.element";
 import { zipPictures } from "@eurekai/shared/src/utils";
+import VirtualScroller from 'virtual-scroller/dom'
 
 export class ClientPictureManager {
 
@@ -10,6 +11,7 @@ export class ClientPictureManager {
     protected _cleanButton: HTMLButtonElement;
     protected _zipButton: HTMLButtonElement;
     protected _picturesFilterSelect: HTMLSelectElement;
+    protected _virtualScroller: VirtualScroller<PictureDTO>;
 
     // -- Images divs --
     protected _imagesDiv: HTMLDivElement;
@@ -27,7 +29,39 @@ export class ClientPictureManager {
         this._zipButton = document.getElementById("zipButton") as HTMLButtonElement;
         this._imagesDiv = document.getElementById("imagesDiv") as HTMLDivElement;
         this._picturesFilterSelect = document.getElementById("picturesFilterSelect") as HTMLSelectElement;
-
+        this._virtualScroller = new VirtualScroller<PictureDTO>(
+            this._imagesDiv,
+            [],
+            (image: PictureDTO): HTMLElement => {
+                const pPrompt = this._prompts.getById(image.promptId);
+                const element = new PictureElement(image, undefined, {
+                    accept: async () => {
+                        await this._pictures.setStatus(image._id, ComputationStatus.ACCEPTED);
+                        this._refresh();
+                    },
+                    reject: async () => {
+                        await this._pictures.setStatus(image._id, ComputationStatus.REJECTED);
+                        this._refresh();
+                    },
+                    start: async () => {
+                        const prompt = await pPrompt;
+                        if (prompt) {
+                            await this._prompts.toggle(prompt, true);
+                            this._refresh();
+                        }
+                    },
+                    stop: async () => {
+                        const prompt = await pPrompt;
+                        if (prompt) {
+                            await this._prompts.toggle(prompt, false);
+                            this._refresh();
+                        }
+                    }
+                });
+                element.refresh();
+                return element;
+            }
+        );
         // -- Bind callbacks --
         this._cleanButton.addEventListener("click", this._onCleanClick.bind(this));
         this._zipButton.addEventListener("click", this._onZipClick.bind(this));
@@ -80,6 +114,7 @@ export class ClientPictureManager {
             // -- Clear --
             this._imagesDiv.innerHTML = "";
             // -- Render --
+            const toRender: PictureDTO[] = [];
             for (const image of images) {
                 const existing: PictureElement | undefined = this._imagesCache[image._id];
 
@@ -87,36 +122,19 @@ export class ClientPictureManager {
                     continue;
                 }
 
-                if (existing == null) {
-                    // Not existing yet
-                    const prompt = promptsMap[image.promptId];
-                    const element = new PictureElement(image, prompt, {
-                        accept: async () => {
-                            await this._pictures.setStatus(image._id, ComputationStatus.ACCEPTED);
-                            this._refresh();
-                        },
-                        reject: async () => {
-                            await this._pictures.setStatus(image._id, ComputationStatus.REJECTED);
-                            this._refresh();
-                        },
-                        start: async () => {
-                            await this._prompts.toggle(prompt, true);
-                            this._refresh();
-                        },
-                        stop: async () => {
-                            await this._prompts.toggle(prompt, false);
-                            this._refresh();
-                        }
-                    });
-                    this._imagesDiv.append(element);
-                    element.refresh();
-                } else {
-                    // Existing
-                    existing.setData(image); // Maybe image has been updated
-                    this._imagesDiv.append(existing);
-                    existing.refresh();
-                }
+                toRender.push(image);
             }
+            this._virtualScroller.setItems(toRender);
+
+            //     if (existing == null) {
+            //         // Not existing yet
+            //     } else {
+            //         // Existing
+            //         existing.setData(image); // Maybe image has been updated
+            //         this._imagesDiv.append(existing);
+            //         existing.refresh();
+            //     }
+            // }
         } catch (e) {
             console.error(e);
         }
