@@ -19,7 +19,8 @@
                 "${workspaceFolder}/**/*.js",
                 "!**/node_modules/**"
             ],
-            "program": "${workspaceFolder}/apps/server/dist/main.js"
+            "program": "${workspaceFolder}/apps/server/dist/main.js",
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }

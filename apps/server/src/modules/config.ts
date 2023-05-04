@@ -14,5 +14,15 @@ export function getEnvString(key: ENV_VARIABLES_STR): string {
 }
 
 export function getEnvNumber(key: ENV_VARIABLES_NUMBER): number {
-
+    const valueStr = env[key];
+    if (valueStr == null) {
+        throw `Missing environment property: ${key}`;
+    } else {
+        const value = +valueStr;
+        if (isNaN(value)) {
+            throw `Invalid value ${key}=${valueStr} (expecting a number)`;
+        } else {
+            return value;
+        }
+    }
 }
