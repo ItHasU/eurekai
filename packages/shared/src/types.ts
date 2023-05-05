@@ -31,6 +31,23 @@ export interface Txt2ImgOptions {
 
 //#region Database ------------------------------------------------------------
 
+export type Tables = {
+    "projects": ProjectDTO;
+    "prompts": PromptDTO;
+    "pictures": PictureDTO;
+    "attachments": AttachmentDTO;
+};
+
+export type TableName = keyof Tables;
+export function t(tableName: TableName): string {
+    return tableName;
+}
+
+export interface ProjectDTO {
+    id: number;
+    name: string;
+}
+
 export enum ComputationStatus {
     PENDING = 1,
     COMPUTING,
@@ -41,25 +58,28 @@ export enum ComputationStatus {
     REJECTED
 }
 
-export interface PictureDTO extends PouchDB.Core.IdMeta, PouchDB.Core.RevisionIdMeta {
-    /** _id field of a prompt */
-    promptId: string;
+export interface PictureDTO {
+    /** id of the picture */
+    id: number;
+    /** id field of a project */
+    projectId: number;
+    /** id field of a prompt */
+    promptId: number;
     /** Options that were used to generate the picture */
     options: Txt2ImgOptions;
     /** Creation timestamp */
     createdAt: number;
     /** Is picture computed */
     computed: ComputationStatus;
-    /** Attachments as Base64 */
-    _attachments: {
-        [filename: string]: {
-            "content_type": "image/png",
-            "data": string
-        }
-    }
+    /** id field of the attachment (filled once computed) */
+    attachmentId?: number;
 }
 
-export interface PromptDTO extends PouchDB.Core.IdMeta, PouchDB.Core.RevisionIdMeta {
+export interface PromptDTO {
+    /** id of the prompt */
+    id: number;
+    /** id field of a project */
+    projectId: number;
     /** Virtual index */
     index: number;
     /** Is the prompt active for generation */
@@ -72,6 +92,13 @@ export interface PromptDTO extends PouchDB.Core.IdMeta, PouchDB.Core.RevisionIdM
     bufferSize: number;
     /** Target count of accepted images for this prompt */
     acceptedTarget: number;
+}
+
+export interface AttachmentDTO {
+    /** id of the attachement */
+    id: number;
+    /** data in base64 format */
+    data: string;
 }
 
 //#endregion
