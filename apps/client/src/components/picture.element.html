@@ -1,5 +1,6 @@
 <div class="card mb-3">
-  <img class="card-img-top" src="data:image/png;base64, {{data}}" alt="" title="">
+  <!-- Force image aspect ratio -->
+  <img class="card-img-top w-100" style="aspect-ratio: {{data.options.width}}/{{data.options.height}}">
   <div class="card-body">
     <div class="card-text pb-2">
       <div class="d-flex justify-content-between">
