@@ -1,8 +1,28 @@
-import { AttachmentDTO } from "@eurekai/shared/src/types";
+import { AttachmentDTO, Txt2ImgOptions } from "@eurekai/shared/src/types";
 import { ProjectDTO, Tables, TableName, t, PromptDTO, PictureDTO, ComputationStatus } from "@eurekai/shared/src/types";
 import sqlite3 from "sqlite3";
 
-//#region Wrapper -------------------------------------------------------------
+export interface PendingPrompt extends PromptDTO {
+    pendingPictureCount: number;
+    acceptedPictureCount: number;
+}
+
+const DEFAULT_PARAMETERS: Txt2ImgOptions = {
+    prompt: "",
+    negative_prompt: "",
+    seed: -1,
+
+    width: 512,
+    height: 512,
+    steps: 20,
+    sampler_name: "DPM++ 2M",
+
+    n_iter: 1,
+    batch_size: 1,
+    cfg_scale: 7,
+
+    save_images: true
+};
 
 export class DatabaseWrapper {
     protected _db: sqlite3.Database;
@@ -71,13 +91,25 @@ export class DatabaseWrapper {
         });
     }
 
-    public async addProject(name: string): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            this._db.run(`INSERT INTO ${t("projects")} (name) VALUES (?)`, [name], (err) => {
+    public async getProject(id: number): Promise<ProjectDTO | null> {
+        return new Promise<ProjectDTO | null>((resolve, reject) => {
+            this._db.get(`SELECT * FROM ${t("projects")} WHERE id = ?`, [id], (err, row) => {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve();
+                    resolve(row as ProjectDTO | null);
+                }
+            });
+        });
+    }
+
+    public async addProject(name: string): Promise<number> {
+        return new Promise<number>((resolve, reject) => {
+            this._db.run(`INSERT INTO ${t("projects")} (name) VALUES (?)`, [name], function(err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(this.lastID);
                 }
             });
         });
@@ -99,9 +131,29 @@ export class DatabaseWrapper {
         });
     }
 
+    /** Get a list of active prompts with statistics on related pictures */
+    public async getPendingPrompts(): Promise<PendingPrompt[]> {
+        return new Promise<PendingPrompt[]>((resolve, reject) => {
+            this._db.all(`SELECT p.*, COUNT(DISTINCT pic.id) AS pendingPictureCount, COUNT(DISTINCT pic2.id) AS acceptedPictureCount
+                FROM ${t("prompts")} AS p 
+                LEFT JOIN ${t("pictures")} AS pic ON p.id = pic.promptId AND pic.computed = ${ComputationStatus.PENDING}
+                LEFT JOIN ${t("pictures")} AS pic2 ON pic2.promptId = p.id AND pic2.computed = ${ComputationStatus.ACCEPTED}
+                WHERE p.active = 1
+                GROUP BY p.id
+                HAVING pendingPictureCount < p.bufferSize AND acceptedPictureCount < p.acceptedTarget
+                ORDER BY pendingPictureCount`, (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows as PendingPrompt[]);
+                }
+            });
+        });
+    }
+
     public async addPrompt(entry: Omit<PromptDTO, "id">): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            this._db.run(`INSERT INTO ${t("prompts")} (projectId, index, active, prompt, negative_prompt, bufferSize, acceptedTarget) VALUES (?, ?, ?, ?, ?, ?, ?)`, [entry.projectId, entry.index, entry.active, entry.prompt, entry.negative_prompt, entry.bufferSize, entry.acceptedTarget], (err) => {
+            this._db.run(`INSERT INTO ${t("prompts")} ('projectId', 'index', 'active', 'prompt', 'negative_prompt', 'bufferSize', 'acceptedTarget') VALUES (?, ?, ?, ?, ?, ?, ?)`, [entry.projectId, entry.index, entry.active, entry.prompt, entry.negative_prompt, entry.bufferSize, entry.acceptedTarget], (err) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -140,20 +192,47 @@ export class DatabaseWrapper {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve(rows as PictureDTO[]);
+                    try {
+                        resolve(rows.map((row: any) => {
+                            row.options = JSON.parse(row.options);
+                            return row;
+                        }));
+                    } catch (e) {
+                        reject(e);
+                    }
                 }
             });
         });
     }
 
+    /** Create a picture from  */
+    public async createPictureFromPrompt({ prompt }: { prompt: PromptDTO; }): Promise<PictureDTO> {
+        const picture: Omit<PictureDTO, "id" | "computed"> = {
+            projectId: prompt.projectId,
+            promptId: prompt.id,
+            createdAt: new Date().getTime(),
+            options: {
+                ...DEFAULT_PARAMETERS,
+                prompt: prompt.prompt,
+                negative_prompt: prompt.negative_prompt,
+                seed: Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
+            }
+        };
+        return this.addPicture(picture);
+    }
+
     /** Save a picture in pending state */
-    public async addPicture(entry: Omit<PictureDTO, "id" | "computed">): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            this._db.run(`INSERT INTO ${t("pictures")} (projectId, promptId, options, createdAt, computed, attachmentId) VALUES (?, ?, ?, ?, ?, ?)`, [entry.projectId, entry.promptId, JSON.stringify(entry.options), entry.createdAt, ComputationStatus.PENDING, entry.attachmentId], (err) => {
+    public async addPicture(entry: Omit<PictureDTO, "id" | "computed">): Promise<PictureDTO> {
+        return new Promise<PictureDTO>((resolve, reject) => {
+            this._db.run(`INSERT INTO ${t("pictures")} (projectId, promptId, options, createdAt, computed, attachmentId) VALUES (?, ?, ?, ?, ?, ?)`, [entry.projectId, entry.promptId, JSON.stringify(entry.options), entry.createdAt, ComputationStatus.PENDING, entry.attachmentId], function (err) {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve();
+                    resolve({
+                        ...entry,
+                        id: this.lastID,
+                        computed: ComputationStatus.PENDING
+                    });
                 }
             });
         });
@@ -163,10 +242,10 @@ export class DatabaseWrapper {
     public async setPictureData(id: number, data: string): Promise<void> {
         // Save data as attachment
         const attachmentId = await this.addAttachment(data);
+        
         // Update picture
-
         return new Promise<void>((resolve, reject) => {
-            this._db.run(`UPDATE ${t("pictures")} SET attachmentId = ?, computed = ? WHERE id = ?`, [attachmentId, ComputationStatus.ACCEPTED, id], (err) => {
+            this._db.run(`UPDATE ${t("pictures")} SET attachmentId = ?, computed = ? WHERE id = ?`, [attachmentId, ComputationStatus.DONE, id], (err) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -192,6 +271,19 @@ export class DatabaseWrapper {
     //#endregion
 
     //#region Attachments management ------------------------------------------
+
+    /** Get all attachments */
+    public async getAttachments(): Promise<AttachmentDTO[]> {
+        return new Promise<AttachmentDTO[]>((resolve, reject) => {
+            this._db.all(`SELECT * FROM ${t("attachments")}`, (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows as AttachmentDTO[]);
+                }
+            });
+        });
+    }
 
     /** Create an attachment and return its id */
     public async addAttachment(data: string): Promise<number> {
@@ -236,5 +328,3 @@ export class DatabaseWrapper {
 
     //#endregion
 }
-
-//#endregion
