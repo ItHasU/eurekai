@@ -1,5 +1,6 @@
 import { AttachmentDTO, Txt2ImgOptions } from "@eurekai/shared/src/types";
 import { ProjectDTO, Tables, TableName, t, PromptDTO, PictureDTO, ComputationStatus } from "@eurekai/shared/src/types";
+import { AbstractDataWrapper } from "@eurekai/shared/src/data";
 import sqlite3 from "sqlite3";
 
 export interface PendingPrompt extends PromptDTO {
@@ -24,10 +25,11 @@ const DEFAULT_PARAMETERS: Txt2ImgOptions = {
     save_images: true
 };
 
-export class DatabaseWrapper {
+export class DatabaseWrapper extends AbstractDataWrapper {
     protected _db: sqlite3.Database;
 
     constructor(dbPath: string) {
+        super();
         this._db = new sqlite3.Database(dbPath);
     }
 
@@ -79,7 +81,8 @@ export class DatabaseWrapper {
 
     //#region Projects management ---------------------------------------------
 
-    public async getProjects(): Promise<ProjectDTO[]> {
+    /** @inheritdoc */
+    public override async getProjects(): Promise<ProjectDTO[]> {
         return new Promise<ProjectDTO[]>((resolve, reject) => {
             this._db.all(`SELECT * FROM ${t("projects")}`, (err, rows) => {
                 if (err) {
@@ -90,8 +93,9 @@ export class DatabaseWrapper {
             });
         });
     }
-
-    public async getProject(id: number): Promise<ProjectDTO | null> {
+    
+    /** @inheritdoc */
+    public override async getProject(id: number): Promise<ProjectDTO | null> {
         return new Promise<ProjectDTO | null>((resolve, reject) => {
             this._db.get(`SELECT * FROM ${t("projects")} WHERE id = ?`, [id], (err, row) => {
                 if (err) {
@@ -102,8 +106,9 @@ export class DatabaseWrapper {
             });
         });
     }
-
-    public async addProject(name: string): Promise<number> {
+    
+    /** @inheritdoc */
+    public override async addProject(name: string): Promise<number> {
         return new Promise<number>((resolve, reject) => {
             this._db.run(`INSERT INTO ${t("projects")} (name) VALUES (?)`, [name], function(err) {
                 if (err) {
@@ -119,7 +124,8 @@ export class DatabaseWrapper {
 
     //#region Pompts management -----------------------------------------------
 
-    public async getPrompts(projectId: number): Promise<PromptDTO[]> {
+    /** @inheritdoc */
+    public override async getPrompts(projectId: number): Promise<PromptDTO[]> {
         return new Promise<PromptDTO[]>((resolve, reject) => {
             this._db.all(`SELECT * FROM ${t("prompts")} WHERE projectId = ?`, [projectId], (err, rows) => {
                 if (err) {
@@ -151,7 +157,8 @@ export class DatabaseWrapper {
         });
     }
 
-    public async addPrompt(entry: Omit<PromptDTO, "id">): Promise<void> {
+    /** @inheritdoc */
+    public override async addPrompt(entry: Omit<PromptDTO, "id">): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this._db.run(`INSERT INTO ${t("prompts")} ('projectId', 'index', 'active', 'prompt', 'negative_prompt', 'bufferSize', 'acceptedTarget') VALUES (?, ?, ?, ?, ?, ?, ?)`, [entry.projectId, entry.index, entry.active, entry.prompt, entry.negative_prompt, entry.bufferSize, entry.acceptedTarget], (err) => {
                 if (err) {
@@ -163,7 +170,8 @@ export class DatabaseWrapper {
         });
     }
 
-    public async setPromptActive(id: number, active: boolean): Promise<void> {
+    /** @inheritdoc */
+    public override async setPromptActive(id: number, active: boolean): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this._db.run(`UPDATE ${t("prompts")} SET active = ? WHERE id = ?`, [active, id], (err) => {
                 if (err) {
@@ -179,8 +187,8 @@ export class DatabaseWrapper {
 
     //#region Pictures management ---------------------------------------------
 
-    /** Get all pictures for a project */
-    public async getPictures(projectId: number, promptId?: number): Promise<PictureDTO[]> {
+    /** @inheritdoc */
+    public override async getPictures(projectId: number, promptId?: number): Promise<PictureDTO[]> {
         return new Promise<PictureDTO[]>((resolve, reject) => {
             let query = `SELECT * FROM ${t("pictures")} WHERE projectId = ?`;
             const params = [projectId];
@@ -255,7 +263,7 @@ export class DatabaseWrapper {
         });
     }
 
-    /** Mark picture as accepted or rejected */
+    /** @inheritdoc */
     public async setPictureStatus(id: number, status: ComputationStatus.ACCEPTED | ComputationStatus.REJECTED): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this._db.run(`UPDATE ${t("pictures")} SET computed = ? WHERE id = ?`, [status, id], (err) => {
