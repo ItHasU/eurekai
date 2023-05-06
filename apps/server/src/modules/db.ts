@@ -155,7 +155,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         return new Promise<PendingPrompt[]>((resolve, reject) => {
             this._db.all(`SELECT p.*, COUNT(DISTINCT pic.id) AS pendingPictureCount, COUNT(DISTINCT pic2.id) AS acceptedPictureCount
                 FROM ${t("prompts")} AS p 
-                LEFT JOIN ${t("pictures")} AS pic ON p.id = pic.promptId AND pic.computed = ${ComputationStatus.PENDING}
+                LEFT JOIN ${t("pictures")} AS pic ON p.id = pic.promptId AND pic.computed <= ${ComputationStatus.DONE}
                 LEFT JOIN ${t("pictures")} AS pic2 ON pic2.promptId = p.id AND pic2.computed = ${ComputationStatus.ACCEPTED}
                 WHERE p.active = 1
                 GROUP BY p.id

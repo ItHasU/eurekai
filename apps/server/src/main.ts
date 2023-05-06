@@ -1,4 +1,5 @@
 import { ComputationStatus, PictureDTO } from "@eurekai/shared/src/types";
+import { zipPictures } from "@eurekai/shared/src/utils";
 import { getEnvNumber, getEnvString } from "./modules/config";
 import { DatabaseWrapper } from "./modules/db";
 import { Generator } from "./modules/generator";
@@ -10,7 +11,7 @@ import { fstat, writeFileSync } from "fs";
 
 
 async function main(): Promise<void> {
-    const db = new DatabaseWrapper(":memory:");
+    const db = new DatabaseWrapper("test.db");
     await db.initIfNeeded();
 
     const projectId = await db.addProject("test");
@@ -43,9 +44,16 @@ async function main(): Promise<void> {
             writeFileSync(`./${picture.projectId}_${picture.id}.png`, data, { encoding: "base64" });
         }
     }
+    // Write a zip to disk
+    const zip = await zipPictures({ data: db, projectId });
+    const zipData = await zip.generateAsync({ type: "nodebuffer" });
+    writeFileSync(`./${projectId}.zip`, zipData);
 
-    //await db.close();
     generator.stop();
+    setTimeout(() => {
+        // Wait for the generator to stopn then exit
+        db.close();
+    }, 2000);
 }
 
 main().catch(e => console.error(e));
