@@ -93,7 +93,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             });
         });
     }
-    
+
     /** @inheritdoc */
     public override async getProject(id: number): Promise<ProjectDTO | null> {
         return new Promise<ProjectDTO | null>((resolve, reject) => {
@@ -106,11 +106,11 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             });
         });
     }
-    
+
     /** @inheritdoc */
     public override async addProject(name: string): Promise<number> {
         return new Promise<number>((resolve, reject) => {
-            this._db.run(`INSERT INTO ${t("projects")} (name) VALUES (?)`, [name], function(err) {
+            this._db.run(`INSERT INTO ${t("projects")} (name) VALUES (?)`, [name], function (err) {
                 if (err) {
                     reject(err);
                 } else {
@@ -132,6 +132,19 @@ export class DatabaseWrapper extends AbstractDataWrapper {
                     reject(err);
                 } else {
                     resolve(rows as PromptDTO[]);
+                }
+            });
+        });
+    }
+
+    /** @inheritdoc */
+    public override async getPrompt(id: number): Promise<PromptDTO> {
+        return new Promise<PromptDTO>((resolve, reject) => {
+            this._db.get(`SELECT * FROM ${t("prompts")} WHERE id = ?`, [id], (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows as PromptDTO);
                 }
             });
         });
@@ -250,7 +263,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     public async setPictureData(id: number, data: string): Promise<void> {
         // Save data as attachment
         const attachmentId = await this.addAttachment(data);
-        
+
         // Update picture
         return new Promise<void>((resolve, reject) => {
             this._db.run(`UPDATE ${t("pictures")} SET attachmentId = ?, computed = ? WHERE id = ?`, [attachmentId, ComputationStatus.DONE, id], (err) => {

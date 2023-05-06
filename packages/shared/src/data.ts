@@ -20,6 +20,9 @@ export abstract class AbstractDataWrapper {
     /** Get the list of prompts */
     public abstract getPrompts(projectId: number): Promise<PromptDTO[]>;
 
+    /** Get a specific prompt */
+    public abstract getPrompt(id: number): Promise<PromptDTO>;
+
     /** Add a prompt to the project */
     public abstract addPrompt(entry: Omit<PromptDTO, "id">): Promise<void>;
 
@@ -37,4 +40,10 @@ export abstract class AbstractDataWrapper {
     public abstract setPictureStatus(id: number, status: ComputationStatus.ACCEPTED | ComputationStatus.REJECTED): Promise<void>;
 
     //#endregion
+
+    //#region Attachments
+
+    /** Get the attachment data */
+    public abstract getAttachment(id: number): Promise<string>;
+
 }
