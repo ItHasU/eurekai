@@ -28,13 +28,13 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         const img: HTMLImageElement = this.querySelector(".card-img-top") as HTMLImageElement;
         // Use an observer to detect when the image is displayed on screen
         const observer = new IntersectionObserver((entries) => {
-            if (entries.length > 0 && entries[0].target === img && entries[0].isIntersecting) {
-                const keys = this.data._attachments ? Object.keys(this.data._attachments) : [];
-                if (keys.length > 0) {
-                    const imgData = this.data._attachments[keys[0]].data;
-                    img.src = `data:image/png;base64, ${imgData}`;
-                }
-            }
+            // if (entries.length > 0 && entries[0].target === img && entries[0].isIntersecting) {
+            //     const keys = this.data._attachments ? Object.keys(this.data._attachments) : [];
+            //     if (keys.length > 0) {
+            //         const imgData = this.data._attachments[keys[0]].data;
+            //         img.src = `data:image/png;base64, ${imgData}`;
+            //     }
+            // }
         });
         observer.observe(img);
     }

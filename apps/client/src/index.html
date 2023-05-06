@@ -33,20 +33,24 @@
 
     <ul class="nav nav-tabs" role="tablist">
         <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects-tab-pane"
+                type="button" role="tab" aria-controls="prompts-tab-pane" aria-selected="true">Projects</button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button class="nav-link" id="prompts-tab" data-bs-toggle="tab" data-bs-target="#prompts-tab-pane"
                 type="button" role="tab" aria-controls="prompts-tab-pane" aria-selected="true">Prompts</button>
         </li>
-        <!-- <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="seeds-tab" data-bs-toggle="tab" data-bs-target="#seeds-tab-pane"
-                        type="button" role="tab" aria-controls="seeds-tab-pane" aria-selected="false">Seeds</button>
-                </li> -->
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="images-tab" data-bs-toggle="tab" data-bs-target="#images-tab-pane"
+            <button class="nav-link" id="images-tab" data-bs-toggle="tab" data-bs-target="#images-tab-pane"
                 type="button" role="tab" aria-controls="images-tab-pane" aria-selected="false">Images</button>
         </li>
     </ul>
     <div class="tab-content flex-grow-1 pt-3" style="overflow-y: auto;">
-        <div class="tab-pane fade" id="prompts-tab-pane" role="tabpanel" aria-labelledby="prompts-tab" tabindex="0">
+        <div class="tab-pane fade show active" id="projects-tab-pane" role="tabpanel" aria-labelledby="projects-tab" tabindex="0">
+            <!-- Will contain the project page -->
+        </div>
+
+        <div class="tab-pane fade" id="prompts-tab-pane" role="tabpanel" aria-labelledby="prompts-tab" tabindex="1">
             <div class="container">
                 <!-- Prompts -->
                 <div class="row">
@@ -95,9 +99,7 @@
                 </div>
             </div>
         </div>
-        <!-- <div class="tab-pane fade" id="seeds-tab-pane" role="tabpanel" aria-labelledby="profile-tab" tabindex="0">
-            </div> -->
-        <div class="tab-pane fade h-100 show active" id="images-tab-pane" role="tabpanel" aria-labelledby="contact-tab"
+        <div class="tab-pane fade h-100" id="images-tab-pane" role="tabpanel" aria-labelledby="contact-tab"
             tabindex="0">
             <div class="container-fluid h-100 d-flex flex-column">
                 <!-- Images -->

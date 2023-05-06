@@ -9,7 +9,7 @@ export async function txt2img(apiUrl: string, options: Txt2ImgOptions): Promise<
         body: JSON.stringify(options),
         headers: {
             'Content-Type': 'application/json',
-        },
+        }
     });
     if (result.status !== 200) {
         throw new Error(result.statusText);

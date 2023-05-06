@@ -12,6 +12,7 @@ export class AppServer {
     }) {
         // -- Create app --
         this.app = express();
+        this.app.use(express.json());
 
         // -- Register routes --
         // Static files
