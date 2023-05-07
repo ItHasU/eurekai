@@ -10,5 +10,4 @@ node_modules
 dist
 
 # Database
-config.json
-log.txt
+*.db
