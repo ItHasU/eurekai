@@ -37,8 +37,14 @@ export class PromptsPage extends AbstractPageElement {
         for (const prompt of this._prompts) {
             // Create the components for each prompt
             const item = new PromptElement(prompt, {
-                accept: () => this._data.setPromptActive(prompt.id, true),
-                reject: () => this._data.setPromptActive(prompt.id, false),
+                accept: async () => {
+                    await this._data.setPromptActive(prompt.id, true);
+                    await this.refresh();
+                },
+                reject: async () => {
+                    await this._data.setPromptActive(prompt.id, false);
+                    await this.refresh();
+                },
                 clone: () => {
                     // TODO 
                 }
@@ -71,6 +77,7 @@ export class PromptsPage extends AbstractPageElement {
             bufferSize,
             acceptedTarget
         });
+        await this.refresh();
     }
 
 }
