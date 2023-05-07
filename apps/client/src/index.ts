@@ -9,6 +9,7 @@ import "./pages/projects.page";
 import { API } from "./api";
 import { ProjectsPage } from "./pages/projects.page";
 import { PromptsPage } from "./pages/prompts.page";
+import { PicturesPage } from "./pages/pictures.page";
 
 class App {
 
@@ -16,20 +17,12 @@ class App {
 
     protected readonly _projectsTab: ProjectsPage = new ProjectsPage(this._api);
     protected readonly _promptsTab: PromptsPage = new PromptsPage(this._api);
-
-    // protected readonly _promptsTab: ClientPromptManager;
-    // protected readonly _picturesTab: ClientPictureManager;
+    protected readonly _picturesTab: PicturesPage = new PicturesPage(this._api);
 
     constructor() {
-        // this._prompts = new PromptsWrapper(PouchDB);
-        // this._prompts.setSync(document.location.href + "db/prompts/");
-        // this._pictures = new PicturesWrapper(PouchDB);
-        // this._pictures.setSync(document.location.href + "db/pictures/");
-
-        // this._promptsTab = new ClientPromptManager(this._prompts);
-        // this._picturesTab = new ClientPictureManager(this._prompts, this._pictures);
         document.getElementById("projects-tab-pane")?.appendChild(this._projectsTab);
         document.getElementById("prompts-tab-pane")?.appendChild(this._promptsTab);
+        document.getElementById("pictures-tab-pane")?.appendChild(this._picturesTab);
 
         // -- Bind callbacks --
         this._projectsTab.addEventListener("project-change", this._onProjectSelected.bind(this));
@@ -38,6 +31,7 @@ class App {
     protected _onProjectSelected(event: Event): void {
         const projectId = (event as CustomEvent<number>).detail;
         this._promptsTab.setProjectId(projectId).catch(console.error.bind(console));
+        this._picturesTab.setProjectId(projectId).catch(console.error.bind(console));
     }
 }
 

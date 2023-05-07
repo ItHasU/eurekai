@@ -7,7 +7,8 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         accept: () => void,
         reject: () => void,
         start: () => void,
-        stop: () => void
+        stop: () => void,
+        fetch: (attachmentId: number) => Promise<string>
     }) {
         super(data, require("./picture.element.html").default);
         this.classList.add("col-md-4", "col-lg-3");
@@ -27,14 +28,14 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         // Get element with class "image"
         const img: HTMLImageElement = this.querySelector(".card-img-top") as HTMLImageElement;
         // Use an observer to detect when the image is displayed on screen
-        const observer = new IntersectionObserver((entries) => {
-            // if (entries.length > 0 && entries[0].target === img && entries[0].isIntersecting) {
-            //     const keys = this.data._attachments ? Object.keys(this.data._attachments) : [];
-            //     if (keys.length > 0) {
-            //         const imgData = this.data._attachments[keys[0]].data;
-            //         img.src = `data:image/png;base64, ${imgData}`;
-            //     }
-            // }
+        const observer = new IntersectionObserver(async(entries) => {
+            if (entries.length > 0 && entries[0].target === img && entries[0].isIntersecting) {
+                if (this.data.attachmentId != null) {
+                    this._options.fetch(this.data.attachmentId).then(function (imgData) {
+                        img.src = `data:image/png;base64, ${imgData}`;
+                    }).catch(console.error.bind(console));
+                }
+            }
         });
         observer.observe(img);
     }

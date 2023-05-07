@@ -218,7 +218,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         return new Promise<PictureDTO[]>((resolve, reject) => {
             let query = `SELECT * FROM ${t("pictures")} WHERE projectId = ?`;
             const params = [projectId];
-            if (promptId !== undefined) {
+            if (promptId != null) {
                 query += " AND promptId = ?";
                 params.push(promptId);
             }

@@ -41,43 +41,22 @@
                 type="button" role="tab" aria-controls="prompts-tab-pane" aria-selected="true">Prompts</button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="images-tab" data-bs-toggle="tab" data-bs-target="#images-tab-pane"
-                type="button" role="tab" aria-controls="images-tab-pane" aria-selected="false">Images</button>
+            <button class="nav-link" id="pictures-tab" data-bs-toggle="tab" data-bs-target="#pictures-tab-pane"
+                type="button" role="tab" aria-controls="pictures-tab-pane" aria-selected="false">Images</button>
         </li>
     </ul>
     <div class="tab-content flex-grow-1 pt-3" style="overflow-y: auto;">
-        <div class="tab-pane fade show active" id="projects-tab-pane" role="tabpanel" aria-labelledby="projects-tab" tabindex="0">
+        <div class="tab-pane fade show active" id="projects-tab-pane" role="tabpanel" aria-labelledby="projects-tab"
+            tabindex="0">
             <!-- Will contain the project page -->
         </div>
         <div class="tab-pane fade" id="prompts-tab-pane" role="tabpanel" aria-labelledby="prompts-tab" tabindex="1">
             <!-- Will contain the prompt page -->
         </div>
-        
-        <div class="tab-pane fade h-100" id="images-tab-pane" role="tabpanel" aria-labelledby="contact-tab"
-            tabindex="0">
-            <div class="container-fluid h-100 d-flex flex-column">
-                <!-- Images -->
-                <div class="row">
-                    <div class="col">
-                        <div class="input-group">
-                            <select id="picturesFilterSelect" class="form-control">
-                                <option value="done" selected>Pictures to evaluate</option>
-                                <option value="accept">Pictures accepted</option>
-                                <option value="reject">Pictures rejected</option>
-                            </select>
-                            <button id="cleanButton" type="button" class="btn btn-danger">
-                                <i class="bi bi-trash"></i> <span class="d-none d-lg-inline">Delete all
-                                    images</span>
-                            </button>
-                            <button id="zipButton" type="button" class="btn btn-primary">
-                                <i class="bi bi-file-zip"></i> <span class="d-none d-lg-inline">Download zip</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div id="imagesDiv" class="row flex-grow-1 mt-3" style="overflow-y: auto;">
-                </div>
-            </div>
+
+        <div class="tab-pane fade h-100" id="pictures-tab-pane" role="tabpanel" aria-labelledby="pictures-tab"
+            tabindex="2">
+            <!-- Will contain the picture page -->
         </div>
     </div>
 </body>

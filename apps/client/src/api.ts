@@ -50,11 +50,11 @@ export class API extends AbstractDataWrapper {
     //#region Pictures
 
     public override getPictures(projectId: number, promptId?: number | undefined): Promise<PictureDTO[]> {
-        throw new Error("Method not implemented.");
+        return this._apiCall<PictureDTO[]>("getPictures", projectId, promptId);
     }
 
     public override setPictureStatus(id: number, status: ComputationStatus.ACCEPTED | ComputationStatus.REJECTED): Promise<void> {
-        throw new Error("Method not implemented.");
+        return this._apiCall<void>("setPictureStatus", id, status);
     }
 
     //#endregion
@@ -62,7 +62,7 @@ export class API extends AbstractDataWrapper {
     //#region Attachments
 
     public override getAttachment(id: number): Promise<string> {
-        throw new Error("Method not implemented.");
+        return this._apiCall<string>("getAttachment", id);
     }
 
     //#endregion
