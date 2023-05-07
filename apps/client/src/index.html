@@ -49,56 +49,10 @@
         <div class="tab-pane fade show active" id="projects-tab-pane" role="tabpanel" aria-labelledby="projects-tab" tabindex="0">
             <!-- Will contain the project page -->
         </div>
-
         <div class="tab-pane fade" id="prompts-tab-pane" role="tabpanel" aria-labelledby="prompts-tab" tabindex="1">
-            <div class="container">
-                <!-- Prompts -->
-                <div class="row">
-                    <div class="col-md-6">
-                        <label for="positiveInput" class="form-label">Prompt</label>
-                        <textarea id="positiveInput" class="form-control" rows="3"></textarea>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="negativeInput" class="form-label">Negative prompt</label>
-                        <textarea id="negativeInput" class="form-control" rows="3"></textarea>
-                    </div>
-                </div>
-                <div class="row mt-2">
-                    <div class="col-md-6">
-                        <label for="bufferSizeInput" class="form-label">Buffer of images to evaluate</label>
-                        <input id="bufferSizeInput" class="form-control" type="number" min="0" value="50"
-                            placeholder="0 = no limit"></input>
-                        <div class="form-text">
-                            The program will stop generating new images until this limit of images to
-                            evaluate is reach (0 = no limit).
-                            Once an image is evaluated, it will be replaced by a new one.
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="targetAcceptedInput" class="form-label">Target count of accepted
-                            images</label>
-                        <input id="targetAcceptedInput" class="form-control" type="number" min="0" value="20"
-                            placeholder="0 = no limit"></input>
-                        <div class="form-text">The program will stop generating new images once the number
-                            of accepted images is reached (0 = no limit).</div>
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-md-8">
-                        <button id="queueButton" type="button" class="btn btn-primary form-control">
-                            <i class="bi bi-stack"></i>&nbsp;Add prompt
-                        </button>
-                    </div>
-                    <div class="col-md-4">
-                        <button id="cleanPromptsButton" type="button" class="btn btn-danger form-control">
-                            <i class="bi bi-trash"></i>&nbsp;Delete all prompts
-                        </button>
-                    </div>
-                </div>
-                <div id="promptsDiv" class="row mt-3">
-                </div>
-            </div>
+            <!-- Will contain the prompt page -->
         </div>
+        
         <div class="tab-pane fade h-100" id="images-tab-pane" role="tabpanel" aria-labelledby="contact-tab"
             tabindex="0">
             <div class="container-fluid h-100 d-flex flex-column">

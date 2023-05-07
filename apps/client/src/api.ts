@@ -26,20 +26,23 @@ export class API extends AbstractDataWrapper {
 
     //#region Prompts
 
+    /** @inheritdoc */
     public override getPrompts(projectId: number): Promise<PromptDTO[]> {
-        throw new Error("Method not implemented.");
+        return this._apiCall<PromptDTO[]>("getPrompts", projectId);
     }
 
     public override getPrompt(id: number): Promise<PromptDTO> {
         throw new Error("Method not implemented.");
     }
 
+    /** @inheritdoc */
     public override addPrompt(entry: Omit<PromptDTO, "id">): Promise<void> {
-        throw new Error("Method not implemented.");
+        return this._apiCall<void>("addPrompt", entry);
     }
 
+    /** @inheritdoc */
     public override setPromptActive(id: number, active: boolean): Promise<void> {
-        throw new Error("Method not implemented.");
+        return this._apiCall<void>("setPromptActive", id, active);
     }
 
     //#endregion

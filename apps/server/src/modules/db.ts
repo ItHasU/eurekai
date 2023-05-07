@@ -127,7 +127,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     /** @inheritdoc */
     public override async getPrompts(projectId: number): Promise<PromptDTO[]> {
         return new Promise<PromptDTO[]>((resolve, reject) => {
-            this._db.all(`SELECT * FROM ${t("prompts")} WHERE projectId = ?`, [projectId], (err, rows) => {
+            this._db.all(`SELECT * FROM ${t("prompts")} WHERE projectId = ? ORDER BY 'index' DESC`, [projectId], (err, rows) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -171,13 +171,26 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     }
 
     /** @inheritdoc */
-    public override async addPrompt(entry: Omit<PromptDTO, "id">): Promise<void> {
+    public override async addPrompt(entry: Omit<PromptDTO, "id" | "index">): Promise<void> {
+        const nextIndex = await this._getPromptNextIndex(entry.projectId);
         return new Promise<void>((resolve, reject) => {
-            this._db.run(`INSERT INTO ${t("prompts")} ('projectId', 'index', 'active', 'prompt', 'negative_prompt', 'bufferSize', 'acceptedTarget') VALUES (?, ?, ?, ?, ?, ?, ?)`, [entry.projectId, entry.index, entry.active, entry.prompt, entry.negative_prompt, entry.bufferSize, entry.acceptedTarget], (err) => {
+            this._db.run(`INSERT INTO ${t("prompts")} ('projectId', 'index', 'active', 'prompt', 'negative_prompt', 'bufferSize', 'acceptedTarget') VALUES (?, ?, ?, ?, ?, ?, ?)`, [entry.projectId, nextIndex, entry.active, entry.prompt, entry.negative_prompt, entry.bufferSize, entry.acceptedTarget], (err) => {
                 if (err) {
                     reject(err);
                 } else {
                     resolve();
+                }
+            });
+        });
+    }
+
+    protected async _getPromptNextIndex(projectId: number): Promise<number> {
+        return new Promise<number>((resolve, reject) => {
+            this._db.get(`SELECT MAX('index') AS maxIndex FROM ${t("prompts")} WHERE projectId = ?`, [projectId], (err, row) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve((row as { maxIndex: number }).maxIndex + 1);
                 }
             });
         });

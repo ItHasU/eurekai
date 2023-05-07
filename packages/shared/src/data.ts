@@ -24,7 +24,7 @@ export abstract class AbstractDataWrapper {
     public abstract getPrompt(id: number): Promise<PromptDTO>;
 
     /** Add a prompt to the project */
-    public abstract addPrompt(entry: Omit<PromptDTO, "id">): Promise<void>;
+    public abstract addPrompt(entry: Omit<PromptDTO, "id" | "index">): Promise<void>;
 
     /** Toggle prompt active state */
     public abstract setPromptActive(id: number, active: boolean): Promise<void>;
