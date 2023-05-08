@@ -187,7 +187,6 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     protected async _getPromptNextOrderIndex(projectId: number): Promise<number> {
         return new Promise<number>((resolve, reject) => {
             this._db.get(`SELECT MAX(orderIndex) AS maxIndex FROM ${t("prompts")} WHERE projectId = ? GROUP BY projectId`, [projectId], (err, row) => {
-                debugger;
                 if (err) {
                     reject(err);
                 } else {
