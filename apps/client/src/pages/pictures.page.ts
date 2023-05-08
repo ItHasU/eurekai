@@ -80,16 +80,16 @@ export class PicturesPage extends AbstractPageElement {
             let res = 0;
 
             if (res === 0) {
-                res = p1.createdAt - p2.createdAt;
-            }
-
-            if (res === 0) {
                 const prompt1 = promptsMap[p1.promptId];
                 const prompt2 = promptsMap[p2.promptId];
                 if (prompt1 && prompt2) {
-                    res = prompt1.index - prompt2.index;
+                    res = prompt1.orderIndex - prompt2.orderIndex;
                 }
             }
+
+            if (res === 0) {
+                res = p1.createdAt - p2.createdAt;
+            }    
 
             if (res === 0) {
                 res = p1.computed - p2.computed;
@@ -110,10 +110,22 @@ export class PicturesPage extends AbstractPageElement {
 
         // -- Fill the pictures --
         const picturesDiv = this.querySelector("#picturesDiv") as HTMLDivElement;
+        let previousPromptId: number | null = null;
         for (const picture of pictures) {
             if (!filter(picture)) {
                 continue;
             }
+            
+            // -- Handle line breaks after each prompt --
+            if (previousPromptId !== picture.promptId) {
+                // Add a line break
+                const div = document.createElement("div");
+                div.classList.add("w-100");
+                this._picturesDiv.appendChild(div);
+            }
+            previousPromptId = picture.promptId;
+
+            // -- Add the picture --
             const prompt = this._prompts.find(p => p.id === picture.promptId);
             const item = new PictureElement(picture, prompt, {
                 accept: async () => {
@@ -140,6 +152,7 @@ export class PicturesPage extends AbstractPageElement {
                 },
                 fetch: this._data.getAttachment.bind(this._data)
             });
+            item.classList.add("col-xs-12", "col-sm-6", "col-md-4", "col-lg-3", "col-xxl-2");
             item.refresh();
             picturesDiv.appendChild(item);
         }

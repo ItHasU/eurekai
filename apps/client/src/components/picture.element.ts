@@ -11,7 +11,6 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         fetch: (attachmentId: number) => Promise<string>
     }) {
         super(data, require("./picture.element.html").default);
-        this.classList.add("col-md-4", "col-lg-3");
     }
 
     public get isWaitingEvaluation(): boolean {
@@ -46,7 +45,7 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
                 }
             } else {
                 // Unload the image
-                img.src = "";
+                img.removeAttribute("src");
             }
         });
         observer.observe(img);

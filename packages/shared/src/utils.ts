@@ -36,7 +36,7 @@ export async function zipPictures(params: {
             continue;
         }
 
-        const baseFilename = `${prompt?.index ?? "xx"}-${picture.options.seed}-${attachmentIndex}`;
+        const baseFilename = `${prompt?.orderIndex ?? "xx"}-${picture.options.seed}-${attachmentIndex}`;
         attachmentIndex++;
 
         // Add prompt as txt to zip

@@ -1,17 +1,17 @@
 <div class="card mb-3 border-2 {{#if isAccepted}}border-success{{/if}} {{#if isRejected}}border-danger{{/if}}">
   <!-- Force image aspect ratio -->
-  <img class="card-img-top w-100" style="aspect-ratio: {{data.options.width}}/{{data.options.height}}">
+  <img class="card-img-top w-100" style="aspect-ratio: {{data.options.width}}/{{data.options.height}}" alt="Loading...">
   <div class="card-body">
     <div class="card-text pb-2">
       <div class="d-flex justify-content-between">
         <div>
           {{#if prompt}}
-          <span title="{{prompt.prompt}} // {{prompt.negative_prompt}}">#{{prompt.index}}</span>
-          {{#if prompt.active}}
-          <i class="bi bi-play text-success"></i>
-          {{else}}
-          <i class="bi bi-stop text-danger"></i>
-          {{/if}}
+          <span title="{{prompt.prompt}} // {{prompt.negative_prompt}}">#{{prompt.orderIindex}}</span>
+            {{#if prompt.active}}
+            <i class="bi bi-play text-success"></i>
+            {{else}}
+            <i class="bi bi-stop text-danger"></i>
+            {{/if}}
           {{else}}
           <span title="{{data.options.prompt}} // {{data.options.negative_prompt}}">#?</span>
           {{/if}}

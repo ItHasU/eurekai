@@ -43,7 +43,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         await this._createTableIfNeeded("prompts", {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
             "projectId": "INTEGER",
-            "index": "INTEGER",
+            "orderIndex": "INTEGER",
             "active": "BOOLEAN",
             "prompt": "TEXT",
             "negative_prompt": "TEXT NULL",
@@ -127,7 +127,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     /** @inheritdoc */
     public override async getPrompts(projectId: number): Promise<PromptDTO[]> {
         return new Promise<PromptDTO[]>((resolve, reject) => {
-            this._db.all(`SELECT * FROM ${t("prompts")} WHERE projectId = ? ORDER BY 'index' DESC`, [projectId], (err, rows) => {
+            this._db.all(`SELECT * FROM ${t("prompts")} WHERE projectId = ? ORDER BY orderIndex DESC`, [projectId], (err, rows) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -171,10 +171,10 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     }
 
     /** @inheritdoc */
-    public override async addPrompt(entry: Omit<PromptDTO, "id" | "index">): Promise<void> {
-        const nextIndex = await this._getPromptNextIndex(entry.projectId);
+    public override async addPrompt(entry: Omit<PromptDTO, "id" | "orderIndex">): Promise<void> {
+        const nextIndex = await this._getPromptNextOrderIndex(entry.projectId);
         return new Promise<void>((resolve, reject) => {
-            this._db.run(`INSERT INTO ${t("prompts")} ('projectId', 'index', 'active', 'prompt', 'negative_prompt', 'bufferSize', 'acceptedTarget') VALUES (?, ?, ?, ?, ?, ?, ?)`, [entry.projectId, nextIndex, entry.active, entry.prompt, entry.negative_prompt, entry.bufferSize, entry.acceptedTarget], (err) => {
+            this._db.run(`INSERT INTO ${t("prompts")} (projectId, orderIndex, active, prompt, negative_prompt, bufferSize, acceptedTarget) VALUES (?, ?, ?, ?, ?, ?, ?)`, [entry.projectId, nextIndex, entry.active, entry.prompt, entry.negative_prompt, entry.bufferSize, entry.acceptedTarget], (err) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -184,13 +184,14 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         });
     }
 
-    protected async _getPromptNextIndex(projectId: number): Promise<number> {
+    protected async _getPromptNextOrderIndex(projectId: number): Promise<number> {
         return new Promise<number>((resolve, reject) => {
-            this._db.get(`SELECT MAX('index') AS maxIndex FROM ${t("prompts")} WHERE projectId = ?`, [projectId], (err, row) => {
+            this._db.get(`SELECT MAX(orderIndex) AS maxIndex FROM ${t("prompts")} WHERE projectId = ? GROUP BY projectId`, [projectId], (err, row) => {
+                debugger;
                 if (err) {
                     reject(err);
                 } else {
-                    resolve((row as { maxIndex: number }).maxIndex + 1);
+                    resolve(((row as { maxIndex: number })?.maxIndex ?? 0) + 1);
                 }
             });
         });

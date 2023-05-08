@@ -80,8 +80,8 @@ export interface PromptDTO {
     id: number;
     /** id field of a project */
     projectId: number;
-    /** Virtual index */
-    index: number;
+    /** Virtual index to order the prompts */
+    orderIndex: number;
     /** Is the prompt active for generation */
     active: boolean;
     /** Positive prompt for the image */

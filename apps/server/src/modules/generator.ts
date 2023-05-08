@@ -30,7 +30,7 @@ export class Generator {
             return false;
         } else {
 
-            console.log(`Selected #${firstPrompt.index}, ${firstPrompt.pendingPictureCount}/${firstPrompt.bufferSize} pending, ${firstPrompt.acceptedPictureCount}/${firstPrompt.acceptedTarget} accepted`);
+            console.log(`Selected #${firstPrompt.orderIndex}, ${firstPrompt.pendingPictureCount}/${firstPrompt.bufferSize} pending, ${firstPrompt.acceptedPictureCount}/${firstPrompt.acceptedTarget} accepted`);
 
             const picture = await this._data.createPictureFromPrompt({ prompt: firstPrompt });
             const apiUrl = this._apiUrl;
