@@ -4,10 +4,20 @@ export abstract class AbstractPageElement extends HTMLElement {
 
     protected readonly _template: Handlebars.TemplateDelegate;
 
-    constructor(template: string) {
+    /** 
+     * Pass the HTML template to render in the WebComponent.
+     * If @param _isDynamicTemplate is true, the template will be re-rendered on each refresh else, it will be rendered only once.
+     */
+    constructor(template: string, protected _isDynamicTemplate = false) {
         super();
         // Load template
         this._template = Handlebars.compile(template);
+        if (!this._isDynamicTemplate) {
+            let content: string = this._template(this, {
+                allowProtoPropertiesByDefault: true
+            });
+            this.innerHTML = content;
+        }
     }
 
     public connectedCallback(): void {
@@ -17,10 +27,12 @@ export abstract class AbstractPageElement extends HTMLElement {
     /** Refresh the content of the element from the template */
     public async refresh(): Promise<void> {
         await this._loadData();
-        let content: string = this._template(this, {
-            allowProtoPropertiesByDefault: true
-        });
-        this.innerHTML = content;
+        if (this._isDynamicTemplate) {
+            let content: string = this._template(this, {
+                allowProtoPropertiesByDefault: true
+            });
+            this.innerHTML = content;
+        }
         await this._postRender();
     }
 

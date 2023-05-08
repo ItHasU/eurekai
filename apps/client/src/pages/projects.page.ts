@@ -8,7 +8,7 @@ export class ProjectsPage extends AbstractPageElement {
     protected _projects: ProjectDTO[] = [];
 
     constructor(protected _data: AbstractDataWrapper) {
-        super(require("./projects.page.html").default);
+        super(require("./projects.page.html").default, true);
     }
 
     /** For the template */

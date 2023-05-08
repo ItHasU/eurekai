@@ -18,6 +18,14 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         return this.data.computed >= ComputationStatus.DONE;
     }
 
+    public get isAccepted(): boolean {
+        return this.data.computed == ComputationStatus.ACCEPTED;
+    }
+
+    public get isRejected(): boolean {
+        return this.data.computed >= ComputationStatus.REJECTED;
+    }
+
     public override refresh(): void {
         super.refresh();
         this._bindClick("accept", this._options.accept);

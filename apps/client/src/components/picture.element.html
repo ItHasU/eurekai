@@ -1,4 +1,4 @@
-<div class="card mb-3">
+<div class="card mb-3 border-2 {{#if isAccepted}}border-success{{/if}} {{#if isRejected}}border-danger{{/if}}">
   <!-- Force image aspect ratio -->
   <img class="card-img-top w-100" style="aspect-ratio: {{data.options.width}}/{{data.options.height}}">
   <div class="card-body">
