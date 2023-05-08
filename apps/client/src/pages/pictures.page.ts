@@ -4,6 +4,21 @@ import { AbstractDataWrapper } from "@eurekai/shared/src/data";
 import { PictureElement } from "src/components/picture.element";
 import { zipPictures } from "@eurekai/shared/src/utils";
 
+function scrollToNextSibling(node: HTMLElement): void {
+    const parent = node.parentElement;
+    if (!parent) {
+        return;
+    }
+
+    const next = node.nextElementSibling;
+    if (next) {
+        next.scrollIntoView();
+    } else {
+        // Get back to first item
+        parent.scrollTo(0, 0);
+    }
+}
+
 /** Display projects and fire an event on project change */
 export class PicturesPage extends AbstractPageElement {
 
@@ -18,7 +33,7 @@ export class PicturesPage extends AbstractPageElement {
 
     constructor(protected _data: AbstractDataWrapper) {
         super(require("./pictures.page.html").default);
-        
+
         // -- Get components --
         this._picturesDiv = this.querySelector("#picturesDiv") as HTMLDivElement;
         this._picturesFilterSelect = this.querySelector("#picturesFilterSelect") as HTMLSelectElement;
@@ -105,11 +120,13 @@ export class PicturesPage extends AbstractPageElement {
                     await this._data.setPictureStatus(picture.id, ComputationStatus.ACCEPTED);
                     picture.computed = ComputationStatus.ACCEPTED;
                     item.refresh();
+                    scrollToNextSibling(item);
                 },
                 reject: async () => {
                     await this._data.setPictureStatus(picture.id, ComputationStatus.REJECTED);
                     picture.computed = ComputationStatus.REJECTED;
                     item.refresh();
+                    scrollToNextSibling(item);
                 },
                 start: async () => {
                     await this._data.setPromptActive(picture.promptId, true);
