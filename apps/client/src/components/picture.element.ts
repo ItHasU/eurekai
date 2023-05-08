@@ -30,11 +30,15 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         // Use an observer to detect when the image is displayed on screen
         const observer = new IntersectionObserver(async(entries) => {
             if (entries.length > 0 && entries[0].target === img && entries[0].isIntersecting) {
+                // Load the image
                 if (this.data.attachmentId != null) {
                     this._options.fetch(this.data.attachmentId).then(function (imgData) {
                         img.src = `data:image/png;base64, ${imgData}`;
                     }).catch(console.error.bind(console));
                 }
+            } else {
+                // Unload the image
+                img.src = "";
             }
         });
         observer.observe(img);
