@@ -9,8 +9,21 @@ export class PromptsPage extends AbstractPageElement {
     protected _projectId: number | null = null;
     protected _prompts: PromptDTO[] = [];
 
+    protected readonly _promptsDiv: HTMLDivElement;
+    protected readonly _positiveInput: HTMLInputElement;
+    protected readonly _negativeInput: HTMLInputElement;
+    protected readonly _bufferSizeInput: HTMLInputElement;
+    protected readonly _targetAcceptedInput: HTMLInputElement;
+
     constructor(protected _data: AbstractDataWrapper) {
         super(require("./prompts.page.html").default);
+
+        this._promptsDiv = this.querySelector("#promptsDiv") as HTMLDivElement;
+        this._positiveInput = this.querySelector("#positiveInput") as HTMLInputElement;
+        this._negativeInput = this.querySelector("#negativeInput") as HTMLInputElement;
+        this._bufferSizeInput = this.querySelector("#bufferSizeInput") as HTMLInputElement;
+        this._targetAcceptedInput = this.querySelector("#targetAcceptedInput") as HTMLInputElement;
+
     }
 
     /** For the template */
@@ -32,8 +45,7 @@ export class PromptsPage extends AbstractPageElement {
     /** @inheritdoc */
     protected override _postRender(): Promise<void> {
         // -- Fill prompts --
-        const promptsDiv = this.querySelector("#promptsDiv") as HTMLDivElement;
-        // No need to clean, it has just been rendered
+        this._promptsDiv.innerHTML = "";
         for (const prompt of this._prompts) {
             // Create the components for each prompt
             const item = new PromptElement(prompt, {
@@ -46,11 +58,14 @@ export class PromptsPage extends AbstractPageElement {
                     await this.refresh();
                 },
                 clone: () => {
-                    // TODO 
+                    this._positiveInput.value = prompt.prompt;
+                    this._negativeInput.value = prompt.negative_prompt ?? "";
+                    this._bufferSizeInput.value = "" + prompt.bufferSize;
+                    this._targetAcceptedInput.value = "" + prompt.acceptedTarget;
                 }
             });
             item.refresh();
-            promptsDiv.appendChild(item);
+            this._promptsDiv.appendChild(item);
         }
 
         // -- Bind callbacks for buttons --
@@ -60,15 +75,10 @@ export class PromptsPage extends AbstractPageElement {
 
     /** Add queue button callback */
     protected async _onQueueClick(): Promise<void> {
-        const positiveInput = this.querySelector("#positiveInput") as HTMLInputElement;
-        const negativeInput = this.querySelector("#negativeInput") as HTMLInputElement;
-        const bufferSizeInput = this.querySelector("#bufferSizeInput") as HTMLInputElement;
-        const targetAcceptedInput = this.querySelector("#targetAcceptedInput") as HTMLInputElement;
-
-        const positivePrompt = positiveInput.value;
-        const negativePrompt = negativeInput.value;
-        const bufferSize = +bufferSizeInput.value;
-        const acceptedTarget = +targetAcceptedInput.value;
+        const positivePrompt = this._positiveInput.value;
+        const negativePrompt = this._negativeInput.value;
+        const bufferSize = +this._bufferSizeInput.value;
+        const acceptedTarget = +this._targetAcceptedInput.value;
         await this._data.addPrompt({
             projectId: this._projectId!,
             prompt: positivePrompt,
@@ -79,6 +89,8 @@ export class PromptsPage extends AbstractPageElement {
         });
         await this.refresh();
     }
+
+
 
 }
 
