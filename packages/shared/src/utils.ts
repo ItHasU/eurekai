@@ -1,5 +1,5 @@
 import JSZip from "jszip";
-import { PictureDTO } from "./types";
+import { PictureDTO, PromptDTO } from "./types";
 import { AbstractDataWrapper } from "./data";
 
 export async function zipPictures(params: {
@@ -10,6 +10,12 @@ export async function zipPictures(params: {
     const zip = new JSZip();
 
     const pictures = await params.data.getPictures(params.projectId);
+    const prompts = await params.data.getPrompts(params.projectId);
+    const promptsMap: { [id: number]: PromptDTO } = {};
+    for (const prompt of prompts) {
+        promptsMap[prompt.id] = prompt;
+    }
+
     for (const picture of pictures) {
         if (!picture.attachmentId) {
             // No attachment, skip
@@ -21,7 +27,7 @@ export async function zipPictures(params: {
         }
 
         // Gst the picture's prompt
-        const prompt = await params.data.getPrompt(picture.promptId);
+        const prompt = promptsMap[picture.promptId];
         let attachmentIndex = 0;
 
         // Get the attachment (picture data)
@@ -34,7 +40,9 @@ export async function zipPictures(params: {
         attachmentIndex++;
 
         // Add prompt as txt to zip
-        zip.file(`${baseFilename}.txt`, prompt.prompt, { binary: false /* text, not binary data */ });
+        if (prompt) {
+            zip.file(`${baseFilename}.txt`, prompt.prompt, { binary: false /* text, not binary data */ });
+        }
         // Add picture as png to zip
         zip.file(`${baseFilename}.png`, attachment, { base64: true });
     }

@@ -1,8 +1,8 @@
 import { ComputationStatus, PictureDTO, ProjectDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { AbstractPageElement } from "./abstract.page.element";
 import { AbstractDataWrapper } from "@eurekai/shared/src/data";
-import { PromptElement } from "src/components/prompt.element";
 import { PictureElement } from "src/components/picture.element";
+import { zipPictures } from "@eurekai/shared/src/utils";
 
 /** Display projects and fire an event on project change */
 export class PicturesPage extends AbstractPageElement {
@@ -13,6 +13,8 @@ export class PicturesPage extends AbstractPageElement {
 
     protected readonly _picturesDiv: HTMLDivElement;
     protected readonly _picturesFilterSelect: HTMLSelectElement;
+    protected readonly _refreshButton: HTMLButtonElement;
+    protected readonly _zipButton: HTMLButtonElement;
 
     constructor(protected _data: AbstractDataWrapper) {
         super(require("./pictures.page.html").default);
@@ -20,9 +22,13 @@ export class PicturesPage extends AbstractPageElement {
         // -- Get components --
         this._picturesDiv = this.querySelector("#picturesDiv") as HTMLDivElement;
         this._picturesFilterSelect = this.querySelector("#picturesFilterSelect") as HTMLSelectElement;
+        this._refreshButton = this.querySelector("#refreshButton") as HTMLButtonElement;
+        this._zipButton = this.querySelector("#zipButton") as HTMLButtonElement;
 
         // -- Bind callbacks --
         this._picturesFilterSelect.addEventListener("change", this.refresh.bind(this));
+        this._refreshButton.addEventListener("click", this.refresh.bind(this));
+        this._zipButton.addEventListener("click", this._onZipClick.bind(this));
     }
 
     /** For the template */
@@ -125,7 +131,6 @@ export class PicturesPage extends AbstractPageElement {
         return Promise.resolve();
     }
 
-
     protected _getFilter(): (picture: PictureDTO) => boolean {
         let filter: (picture: PictureDTO) => boolean = function () { return true };
         const filterIndex = this._picturesFilterSelect.value;
@@ -143,6 +148,28 @@ export class PicturesPage extends AbstractPageElement {
                 console.error(`Invalid value : ${filterIndex}`)
         }
         return filter;
+    }
+
+    protected async _onZipClick(): Promise<void> {
+        if (!this._projectId) {
+            return;
+        }
+        try {
+            const zip = await zipPictures({
+                data: this._data,
+                projectId: this._projectId,
+                filter: this._getFilter()
+            });
+            const blob = await zip.generateAsync({ type: "blob" });
+            const a: HTMLAnchorElement = document.createElement("a");
+            const url = window.URL.createObjectURL(blob);
+            a.href = url;
+            a.download = "pictures.zip";
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } catch (e) {
+            console.error(e);
+        }
     }
 
 }
