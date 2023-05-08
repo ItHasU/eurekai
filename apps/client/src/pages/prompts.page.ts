@@ -24,6 +24,8 @@ export class PromptsPage extends AbstractPageElement {
         this._bufferSizeInput = this.querySelector("#bufferSizeInput") as HTMLInputElement;
         this._targetAcceptedInput = this.querySelector("#targetAcceptedInput") as HTMLInputElement;
 
+        // -- Bind callbacks for buttons --
+        this._bindClick("queueButton", this._onQueueClick.bind(this));
     }
 
     /** For the template */
@@ -51,11 +53,13 @@ export class PromptsPage extends AbstractPageElement {
             const item = new PromptElement(prompt, {
                 accept: async () => {
                     await this._data.setPromptActive(prompt.id, true);
-                    await this.refresh();
+                    prompt.active = true;
+                    item.refresh();
                 },
                 reject: async () => {
                     await this._data.setPromptActive(prompt.id, false);
-                    await this.refresh();
+                    prompt.active = false;
+                    item.refresh();
                 },
                 clone: () => {
                     this._positiveInput.value = prompt.prompt;
@@ -68,8 +72,6 @@ export class PromptsPage extends AbstractPageElement {
             this._promptsDiv.appendChild(item);
         }
 
-        // -- Bind callbacks for buttons --
-        this._bindClick("queueButton", this._onQueueClick.bind(this));
         return Promise.resolve();
     }
 
