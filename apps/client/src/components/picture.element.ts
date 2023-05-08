@@ -39,9 +39,7 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
             if (entries.length > 0 && entries[0].target === img && entries[0].isIntersecting) {
                 // Load the image
                 if (this.data.attachmentId != null) {
-                    this._options.fetch(this.data.attachmentId).then(function (imgData) {
-                        img.src = `data:image/png;base64, ${imgData}`;
-                    }).catch(console.error.bind(console));
+                    img.src = `/api/attachment/${this.data.attachmentId}`;
                 }
             } else {
                 // Unload the image
