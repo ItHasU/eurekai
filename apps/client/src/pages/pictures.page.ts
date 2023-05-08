@@ -139,8 +139,7 @@ export class PicturesPage extends AbstractPageElement {
                             prompt.active = false;
                             promptItem.refresh();
                             // Won't refresh pictures, but we don't care
-                        },
-                        clone: () => { }
+                        }
                     });
                     promptItem.classList.add("col-12");
                     promptItem.refresh();

@@ -11,6 +11,10 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> {
         super(data, require("./prompt.element.html").default);
     }
 
+    public get hasCloneMethod(): boolean {
+        return this._options.clone != null;
+    }
+
     public override refresh(): void {
         super.refresh();
         this._bindClick("accept", this._options.start);
