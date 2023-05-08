@@ -3,6 +3,7 @@ import { AbstractPageElement } from "./abstract.page.element";
 import { AbstractDataWrapper } from "@eurekai/shared/src/data";
 import { PictureElement } from "src/components/picture.element";
 import { zipPictures } from "@eurekai/shared/src/utils";
+import { PromptElement } from "src/components/prompt.element";
 
 function scrollToNextSibling(node: HTMLElement): void {
     const parent = node.parentElement;
@@ -89,7 +90,7 @@ export class PicturesPage extends AbstractPageElement {
 
             if (res === 0) {
                 res = p1.createdAt - p2.createdAt;
-            }    
+            }
 
             if (res === 0) {
                 res = p1.computed - p2.computed;
@@ -115,18 +116,40 @@ export class PicturesPage extends AbstractPageElement {
             if (!filter(picture)) {
                 continue;
             }
-            
+            const prompt = promptsMap[picture.promptId];
+
             // -- Handle line breaks after each prompt --
             if (previousPromptId !== picture.promptId) {
                 // Add a line break
                 const div = document.createElement("div");
                 div.classList.add("w-100");
                 this._picturesDiv.appendChild(div);
+
+                // Add the prompt
+                if (prompt) {
+                    const promptItem = new PromptElement(prompt, {
+                        start: async () => {
+                            await this._data.setPromptActive(picture.promptId, true);
+                            prompt.active = true;
+                            promptItem.refresh();
+                            // Won't refresh pictures, but we don't care
+                        },
+                        stop: async () => {
+                            await this._data.setPromptActive(picture.promptId, false);
+                            prompt.active = false;
+                            promptItem.refresh();
+                            // Won't refresh pictures, but we don't care
+                        },
+                        clone: () => { }
+                    });
+                    promptItem.classList.add("col-12");
+                    promptItem.refresh();
+                    this._picturesDiv.appendChild(promptItem);
+                }
             }
             previousPromptId = picture.promptId;
 
             // -- Add the picture --
-            const prompt = this._prompts.find(p => p.id === picture.promptId);
             const item = new PictureElement(picture, prompt, {
                 accept: async () => {
                     await this._data.setPictureStatus(picture.id, ComputationStatus.ACCEPTED);

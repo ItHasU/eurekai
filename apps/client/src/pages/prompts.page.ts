@@ -51,12 +51,12 @@ export class PromptsPage extends AbstractPageElement {
         for (const prompt of this._prompts) {
             // Create the components for each prompt
             const item = new PromptElement(prompt, {
-                accept: async () => {
+                start: async () => {
                     await this._data.setPromptActive(prompt.id, true);
                     prompt.active = true;
                     item.refresh();
                 },
-                reject: async () => {
+                stop: async () => {
                     await this._data.setPromptActive(prompt.id, false);
                     prompt.active = false;
                     item.refresh();
@@ -68,6 +68,7 @@ export class PromptsPage extends AbstractPageElement {
                     this._targetAcceptedInput.value = "" + prompt.acceptedTarget;
                 }
             });
+            item.classList.add("col-md-4");
             item.refresh();
             this._promptsDiv.appendChild(item);
         }
