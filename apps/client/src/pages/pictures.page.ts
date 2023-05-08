@@ -15,8 +15,7 @@ function scrollToNextSibling(node: HTMLElement): void {
     if (next) {
         next.scrollIntoView();
     } else {
-        // Get back to first item
-        parent.scrollTo(0, 0);
+        // We are done
     }
 }
 
