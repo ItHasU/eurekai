@@ -1,4 +1,5 @@
 #!/bin/sh
-npm install
-cd packages/shared;npm install;cd -
-cd apps/server;npm install sqlite3 --build-from-source;npm install;cd -
+npm install --build-from-source
+cd packages/shared;npm install --build-from-source;cd -
+cd apps/server;npm install --build-from-source;cd -
+cd apps/client;npm install --build-from-source;cd -
