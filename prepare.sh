@@ -1,5 +1,4 @@
 #!/bin/sh
-cd packages/shared;npm install;cd -
-cd apps/server;npm install;cd -
-cd apps/client;npm install;cd -
-npm install
+npm i --workspaces
+npm i
+npm run build --workspaces --if-present
