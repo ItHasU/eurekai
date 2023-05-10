@@ -25,6 +25,6 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          platforms: linux/arm/v7
+          platforms: linux/arm64,linux/amd64
           push: true
           tags: ithasu/eurekai:latest
