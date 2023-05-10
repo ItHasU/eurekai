@@ -9,13 +9,11 @@
     "w": "webpack --watch"
   },
   "devDependencies": {
-    "@eurekai/shared": "*",
-    "@types/pouchdb": "^6.4.0"
+    "@eurekai/shared": "*"
   },
   "dependencies": {
     "bootstrap": "=5.3.0-alpha3",
     "bootstrap-icons": "^1.10.4",
-    "handlebars": "^4.7.7",
-    "pouchdb": "^8.0.1"
+    "handlebars": "^4.7.7"
   }
 }
