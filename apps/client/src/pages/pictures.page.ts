@@ -42,7 +42,7 @@ export class PicturesPage extends AbstractPageElement {
 
         // -- Bind callbacks --
         this._picturesFilterSelect.addEventListener("change", this.refresh.bind(this));
-        this._refreshButton.addEventListener("click", this.refresh.bind(this));
+        this._refreshButton.addEventListener("click", this._onRefreshClick.bind(this));
         this._zipButton.addEventListener("click", this._onZipClick.bind(this));
     }
 
@@ -199,6 +199,12 @@ export class PicturesPage extends AbstractPageElement {
                 console.error(`Invalid value : ${filterIndex}`)
         }
         return filter;
+    }
+
+    protected _onRefreshClick(): void {
+        this.refresh();
+        // Scroll to the top of the div
+        this._picturesDiv.scrollTo(0, 0);
     }
 
     protected async _onZipClick(): Promise<void> {
