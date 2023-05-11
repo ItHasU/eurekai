@@ -16,7 +16,7 @@ const DEFAULT_PARAMETERS: Txt2ImgOptions = {
     width: 512,
     height: 512,
     steps: 20,
-    sampler_name: "DPM++ 2M",
+    sampler_name: "DDIM",
 
     n_iter: 1,
     batch_size: 1,
