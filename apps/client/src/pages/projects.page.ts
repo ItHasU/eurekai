@@ -32,10 +32,12 @@ export class ProjectsPage extends AbstractPageElement {
         // Bind click on add project
         this._bindClick("projectNewButton", async () => {
             const name = (this.querySelector("#projectNameInput") as HTMLInputElement).value;
-            if (name) {
+            const width = +(this.querySelector("#widthInput") as HTMLInputElement).value;
+            const height = +(this.querySelector("#heightInput") as HTMLInputElement).value;
+            if (name && width && height) {
                 try {
-                    const newProjectId = await this._data.addProject(name);
-                    console.debug(`Project ${newProjectId} created`);
+                    const newProjectId = await this._data.addProject(name, width, height);
+                    console.debug(`Project ${newProjectId} created ${width}x${height}px`);
                     await this.refresh();
                 } catch (err) {
                     console.error(err);

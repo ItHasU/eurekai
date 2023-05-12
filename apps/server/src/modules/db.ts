@@ -36,11 +36,13 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     //#region General management ----------------------------------------------
 
     public async initIfNeeded(): Promise<void> {
-        await this._createTableIfNeeded("projects", {
+        await this._initTable("projects", {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
-            "name": "TEXT"
+            "name": "TEXT",
+            "width": "INTEGER DEFAULT 512",
+            "height": "INTEGER DEFAULT 512"
         });
-        await this._createTableIfNeeded("prompts", {
+        await this._initTable("prompts", {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
             "projectId": "INTEGER",
             "orderIndex": "INTEGER",
@@ -50,7 +52,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             "bufferSize": "INTEGER",
             "acceptedTarget": "INTEGER"
         });
-        await this._createTableIfNeeded("pictures", {
+        await this._initTable("pictures", {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
             "projectId": "INTEGER",
             "promptId": "INTEGER",
@@ -59,7 +61,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             "computed": "INTEGER",
             "attachmentId": "INTEGER NULL"
         });
-        await this._createTableIfNeeded("attachments", {
+        await this._initTable("attachments", {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
             "data": "TEXT"
         });
@@ -108,9 +110,9 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     }
 
     /** @inheritdoc */
-    public override async addProject(name: string): Promise<number> {
+    public override async addProject(name: string, width: number, height: number): Promise<number> {
         return new Promise<number>((resolve, reject) => {
-            this._db.run(`INSERT INTO ${t("projects")} (name) VALUES (?)`, [name], function (err) {
+            this._db.run(`INSERT INTO ${t("projects")} (name, width, height) VALUES (?, ?, ?)`, [name, width ?? 512, height ?? 512], function (err) {
                 if (err) {
                     reject(err);
                 } else {
@@ -241,12 +243,19 @@ export class DatabaseWrapper extends AbstractDataWrapper {
 
     /** Create a picture from  */
     public async createPictureFromPrompt({ prompt }: { prompt: PromptDTO; }): Promise<PictureDTO> {
+        const project = await this.getProject(prompt.projectId);
+        if (!project) {
+            throw new Error(`Project ${prompt.projectId} not found`);
+        }
+
         const picture: Omit<PictureDTO, "id" | "computed"> = {
             projectId: prompt.projectId,
             promptId: prompt.id,
             createdAt: new Date().getTime(),
             options: {
                 ...DEFAULT_PARAMETERS,
+                width: project.width,
+                height: project.height,
                 prompt: prompt.prompt,
                 negative_prompt: prompt.negative_prompt,
                 seed: Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
@@ -290,7 +299,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     }
 
     /** @inheritdoc */
-    public async setPictureStatus(id: number, status: ComputationStatus.ACCEPTED | ComputationStatus.REJECTED): Promise<void> {
+    public async setPictureStatus(id: number, status: ComputationStatus.ACCEPTED | ComputationStatus.REJECTED | ComputationStatus.ERROR): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this._db.run(`UPDATE ${t("pictures")} SET computed = ? WHERE id = ?`, [status, id], (err) => {
                 if (err) {
@@ -348,6 +357,13 @@ export class DatabaseWrapper extends AbstractDataWrapper {
 
     //#region Tools -----------------------------------------------------------
 
+    protected async _initTable<TN extends TableName, T extends Tables[TN] = Tables[TN]>(tableName: TN, fieldTypes: { [fields in keyof Required<T>]: string }): Promise<void> {
+        await this._createTableIfNeeded(tableName, fieldTypes);
+        for (const fieldName in fieldTypes) {
+            this._createFieldIfNeeded(tableName, fieldName as keyof Required<T>, fieldTypes[fieldName]);
+        }
+    }
+
     protected _createTableIfNeeded<TN extends TableName, T extends Tables[TN] = Tables[TN]>(tableName: TN, fieldTypes: { [fields in keyof Required<T>]: string }): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this._db.run(`CREATE TABLE IF NOT EXISTS ${tableName} (${Object.entries(fieldTypes).map(([fieldName, fieldType]) => `'${fieldName}' ${fieldType}`).join(", ")})`, function (err) {
@@ -355,6 +371,21 @@ export class DatabaseWrapper extends AbstractDataWrapper {
                     reject(err);
                 } else {
                     resolve();
+                }
+            });
+        });
+    }
+
+    /** @returns true if column was created */
+    protected _createFieldIfNeeded<TN extends TableName, T extends Tables[TN] = Tables[TN]>(tableName: TN, fieldName: keyof Required<T>, fieldType: string): Promise<boolean> {
+        return new Promise<boolean>((resolve, reject) => {
+            this._db.run(`ALTER TABLE ${tableName} ADD COLUMN ${fieldName as string} ${fieldType}`, function (err) {
+                if (err) {
+                    // Here, this is becase the column already exists, we can ignore this error
+                    resolve(false);
+                } else {
+                    console.info(`Column created ${tableName}.${fieldName as string}`);
+                    resolve(true);
                 }
             });
         });

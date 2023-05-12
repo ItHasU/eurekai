@@ -11,7 +11,7 @@ export abstract class AbstractDataWrapper {
     public abstract getProject(id: number): Promise<ProjectDTO | null>;
 
     /** Add a new project */
-    public abstract addProject(name: string): Promise<number>;
+    public abstract addProject(name: string, width: number, height: number): Promise<number>;
 
     //#endregion
 

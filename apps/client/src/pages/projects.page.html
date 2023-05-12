@@ -1,20 +1,42 @@
 <div class="container">
     <div class="row">
-        <div class="col">
+        <div class="col-md-6">
             <!-- Project creation form -->
-            <div class="input-group">
-                <input id="projectNameInput" class="form-control" placeholder="New project"></input>
-                <button ref="projectNewButton" type="button" class="btn btn-primary">
-                    <i class="bi bi-plus"></i> <span class="d-none d-lg-inline">New</span>
-                </button>
+            <label for="projectNameInput" class="form-label">Name</label>
+            <input id="projectNameInput" class="form-control"></input>
+        </div>
+        <div class="col-md-6">
+            <div class="row">
+                <div class="col">
+                    <label for="widthInput" class="form-label">Width</label>
+                    <div class="input-group">
+                        <input id="widthInput" type="number" class="form-control" min="0" value="512"></input>
+                        <span class="input-group-text">px</span>
+                    </div>
+                </div>
+                <div class="col">
+                    <label for="heightInput" class="form-label">Height</label>
+                    <div class="input-group">
+                        <input id="heightInput" type="number" class="form-control" min="0" value="512"></input>
+                        <span class="input-group-text">px</span>
+                    </div>
+                </div>
             </div>
+        </div>
+    </div>
+    <div class="row mt-3">
+        <div class="col">
+            <button ref="projectNewButton" type="button" class="btn btn-primary form-control">
+                <i class="bi bi-plus"></i> New project
+            </button>
         </div>
     </div>
     <div class="row pt-3">
         <div class="col">
             <div class="list-group">
                 {{#each projects}}
-                <a href="javascript: void(0);" class="list-group-item list-group-item-action" data-project-id="{{id}}">{{name}}</li>
+                <a href="javascript: void(0);" class="list-group-item list-group-item-action"
+                    data-project-id="{{id}}">{{name}} <small class="text-secondary float-end">{{width}}x{{height}}px</small></a>
                 {{/each}}
             </div>
         </div>

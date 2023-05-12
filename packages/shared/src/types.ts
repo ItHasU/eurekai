@@ -46,6 +46,8 @@ export function t(tableName: TableName): string {
 export interface ProjectDTO {
     id: number;
     name: string;
+    width: number;
+    height: number;
 }
 
 export enum ComputationStatus {

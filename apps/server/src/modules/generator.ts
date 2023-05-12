@@ -1,3 +1,4 @@
+import { ComputationStatus } from "@eurekai/shared/src/types";
 import { txt2img } from "./api";
 import { DatabaseWrapper } from "./db";
 
@@ -35,12 +36,16 @@ export class Generator {
             const picture = await this._data.createPictureFromPrompt({ prompt: firstPrompt });
             const apiUrl = this._apiUrl;
             console.debug(`Requesting a new image on ${apiUrl}...`);
-            const images = await txt2img(apiUrl, picture.options);
-            console.debug(`${images.length} image(s) received`);
-            if (images.length > 0) {
-                this._data.setPictureData(picture.id, images[0]);
+            try {
+                const images = await txt2img(apiUrl, picture.options);
+                console.debug(`${images.length} image(s) received`);
+                if (images.length > 0) {
+                    await this._data.setPictureData(picture.id, images[0]);
+                }
+            } catch (err) {
+                console.error(err);
+                await this._data.setPictureStatus(picture.id, ComputationStatus.ERROR);
             }
-
             return true;
         }
     }

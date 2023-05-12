@@ -18,8 +18,8 @@ export class API extends AbstractDataWrapper {
         throw new Error("Method not implemented.");
     }
 
-    public override addProject(name: string): Promise<number> {
-        return this._apiCall<number>("addProject", name);
+    public override addProject(name: string, width: number, height: number): Promise<number> {
+        return this._apiCall<number>("addProject", name, width, height);
     }
 
     //#endregion
