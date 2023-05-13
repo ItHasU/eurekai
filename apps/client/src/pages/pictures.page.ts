@@ -127,6 +127,7 @@ export class PicturesPage extends AbstractPageElement {
                 // Add the prompt
                 if (prompt) {
                     const promptItem = new PromptElement(prompt, {
+                        pictures: this._pictures.filter(p => p.promptId === prompt.id),
                         start: async () => {
                             await this._data.setPromptActive(picture.promptId, true);
                             prompt.active = true;

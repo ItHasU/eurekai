@@ -1,4 +1,4 @@
-import { ProjectDTO, PromptDTO } from "@eurekai/shared/src/types";
+import { PictureDTO, ProjectDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { AbstractPageElement } from "./abstract.page.element";
 import { AbstractDataWrapper } from "@eurekai/shared/src/data";
 import { PromptElement } from "src/components/prompt.element";
@@ -8,6 +8,7 @@ export class PromptsPage extends AbstractPageElement {
 
     protected _projectId: number | null = null;
     protected _prompts: PromptDTO[] = [];
+    protected _picturesPerPromptId: { [promptId: number]: PictureDTO[] } = {};
 
     protected readonly _promptsDiv: HTMLDivElement;
     protected readonly _positiveInput: HTMLInputElement;
@@ -26,6 +27,7 @@ export class PromptsPage extends AbstractPageElement {
 
         // -- Bind callbacks for buttons --
         this._bindClick("queueButton", this._onQueueClick.bind(this));
+        this._bindClick("refreshButton", this.refresh.bind(this));
     }
 
     /** For the template */
@@ -42,6 +44,14 @@ export class PromptsPage extends AbstractPageElement {
     /** @inheritdoc */
     protected override async _loadData(): Promise<void> {
         this._prompts = this._projectId == null ? [] : await this._data.getPrompts(this._projectId);
+        const pictures = this._projectId == null ? [] : await this._data.getPictures(this._projectId);
+        this._picturesPerPromptId = {};
+        for (const picture of pictures) {
+            if (this._picturesPerPromptId[picture.promptId] == null) {
+                this._picturesPerPromptId[picture.promptId] = [];
+            }
+            this._picturesPerPromptId[picture.promptId].push(picture);
+        }
     }
 
     /** @inheritdoc */
@@ -51,6 +61,7 @@ export class PromptsPage extends AbstractPageElement {
         for (const prompt of this._prompts) {
             // Create the components for each prompt
             const item = new PromptElement(prompt, {
+                pictures: this._picturesPerPromptId[prompt.id] ?? [],
                 start: async () => {
                     await this._data.setPromptActive(prompt.id, true);
                     prompt.active = true;

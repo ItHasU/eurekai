@@ -27,5 +27,19 @@
       </div>
       {{/if}}
     </div>
+    <div class="row mt-2">
+      <div class="col">
+        <div class="progress-stacked">
+          <div class="progress rejected" role="progressbar" style="width: {{rejectedPercent}}%">
+            <div class="progress-bar bg-danger">{{rejectedCount}}</div>
+          </div>
+          <div class="progress pending" role="progressbar" style="width: {{pendingPercent}}%">
+            <div class="progress-bar bg-secondary">{{pendingCount}}</div>
+          </div>
+          <div class="progress accepted" role="progressbar" style="width: {{acceptedPercent}}%">
+            <div class="progress-bar bg-success">{{acceptedCount}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-</div>

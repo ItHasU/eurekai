@@ -1,14 +1,29 @@
-import { PromptDTO } from "@eurekai/shared/src/types";
+import { ComputationStatus, PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { AbstractDTOElement } from "./abstract.dto.element";
 
 export class PromptElement extends AbstractDTOElement<PromptDTO> {
 
+    public readonly rejectedCount: number;
+    public readonly pendingCount: number;
+    public readonly acceptedCount: number;
+    public readonly rejectedPercent: number;
+    public readonly pendingPercent: number;
+    public readonly acceptedPercent: number;
+
     constructor(data: PromptDTO, protected _options: {
+        pictures: PictureDTO[],
         start: () => void,
         stop: () => void,
         clone?: () => void
     }) {
         super(data, require("./prompt.element.html").default);
+        this.rejectedCount = _options.pictures.filter(p => p.computed === ComputationStatus.REJECTED && p.promptId === this.data.id).length;
+        this.pendingCount = _options.pictures.filter(p => p.computed === ComputationStatus.DONE && p.promptId === this.data.id).length;
+        this.acceptedCount = _options.pictures.filter(p => p.computed === ComputationStatus.ACCEPTED && p.promptId === this.data.id).length;
+        const total = this.rejectedCount + this.pendingCount + this.acceptedCount;
+        this.rejectedPercent = this.rejectedCount / total * 100;
+        this.pendingPercent = this.pendingCount / total * 100;
+        this.acceptedPercent = this.acceptedCount / total * 100;
     }
 
     public get hasCloneMethod(): boolean {
