@@ -1,9 +1,9 @@
 import { ComputationStatus, PictureDTO, ProjectDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { AbstractPageElement } from "./abstract.page.element";
-import { AbstractDataWrapper } from "@eurekai/shared/src/data";
 import { PictureElement } from "src/components/picture.element";
 import { zipPictures } from "@eurekai/shared/src/utils";
 import { PromptElement } from "src/components/prompt.element";
+import { DataCache } from "@eurekai/shared/src/cache";
 
 function scrollToNextSibling(node: HTMLElement): void {
     const parent = node.parentElement;
@@ -22,57 +22,34 @@ function scrollToNextSibling(node: HTMLElement): void {
 /** Display projects and fire an event on project change */
 export class PicturesPage extends AbstractPageElement {
 
-    protected _projectId: number | null = null;
-    protected _prompts: PromptDTO[] = [];
-    protected _pictures: PictureDTO[] = [];
-
     protected readonly _picturesDiv: HTMLDivElement;
     protected readonly _picturesFilterSelect: HTMLSelectElement;
-    protected readonly _refreshButton: HTMLButtonElement;
     protected readonly _zipButton: HTMLButtonElement;
 
-    constructor(protected _data: AbstractDataWrapper) {
-        super(require("./pictures.page.html").default);
+    constructor(cache: DataCache) {
+        super(require("./pictures.page.html").default, cache);
 
         // -- Get components --
         this._picturesDiv = this.querySelector("#picturesDiv") as HTMLDivElement;
         this._picturesFilterSelect = this.querySelector("#picturesFilterSelect") as HTMLSelectElement;
-        this._refreshButton = this.querySelector("#refreshButton") as HTMLButtonElement;
         this._zipButton = this.querySelector("#zipButton") as HTMLButtonElement;
 
         // -- Bind callbacks --
-        this._picturesFilterSelect.addEventListener("change", this.refresh.bind(this));
-        this._refreshButton.addEventListener("click", this._onRefreshClick.bind(this));
+        this._picturesFilterSelect.addEventListener("change", this.refresh.bind(this, false));
         this._zipButton.addEventListener("click", this._onZipClick.bind(this));
     }
 
-    /** For the template */
-    public get prompts(): PromptDTO[] {
-        return this._prompts;
-    }
-
-    /** For the template */
-    public get pictures(): PictureDTO[] {
-        return this._pictures;
-    }
-
-    /** Set the project and refresh the page */
-    public async setProjectId(id: number): Promise<void> {
-        this._projectId = id;
-        await this.refresh();
-    }
-
     /** @inheritdoc */
-    public override async refresh(): Promise<void> {
-        this._prompts = this._projectId == null ? [] : await this._data.getPrompts(this._projectId);
-        this._pictures = this._projectId == null ? [] : await this._data.getPictures(this._projectId);
+    protected override async _refresh(): Promise<void> {
+        const prompts = await this._cache.getPrompts();
+        const picturesRaw = await this._cache.getPictures();
 
         const promptsMap: { [id: number]: PromptDTO } = {};
-        for (const prompt of this._prompts) {
+        for (const prompt of prompts) {
             promptsMap[prompt.id] = prompt;
         }
 
-        const pictures = [...this._pictures];
+        const pictures = [...picturesRaw];
         pictures.sort((p1, p2) => {
             let res = 0;
 
@@ -124,16 +101,20 @@ export class PicturesPage extends AbstractPageElement {
                 // Add the prompt
                 if (prompt) {
                     const promptItem = new PromptElement(prompt, {
-                        pictures: this._pictures.filter(p => p.promptId === prompt.id),
+                        pictures: pictures.filter(p => p.promptId === prompt.id),
                         start: async () => {
-                            await this._data.setPromptActive(picture.promptId, true);
-                            prompt.active = true;
+                            await this._cache.withData(async (data) => {
+                                await data.setPromptActive(picture.promptId, true);
+                                prompt.active = true;
+                            });
                             promptItem.refresh();
                             // Won't refresh pictures, but we don't care
                         },
                         stop: async () => {
-                            await this._data.setPromptActive(picture.promptId, false);
-                            prompt.active = false;
+                            await this._cache.withData(async (data) => {
+                                await data.setPromptActive(picture.promptId, false);
+                                prompt.active = false;
+                            });
                             promptItem.refresh();
                             // Won't refresh pictures, but we don't care
                         }
@@ -148,32 +129,40 @@ export class PicturesPage extends AbstractPageElement {
             // -- Add the picture --
             const item = new PictureElement(picture, prompt, {
                 accept: async () => {
-                    await this._data.setPictureStatus(picture.id, ComputationStatus.ACCEPTED);
-                    picture.computed = ComputationStatus.ACCEPTED;
+                    await this._cache.withData(async (data) => {
+                        await data.setPictureStatus(picture.id, ComputationStatus.ACCEPTED);
+                        picture.computed = ComputationStatus.ACCEPTED;
+                    });
                     item.refresh();
                     scrollToNextSibling(item);
                 },
                 reject: async () => {
-                    await this._data.setPictureStatus(picture.id, ComputationStatus.REJECTED);
-                    picture.computed = ComputationStatus.REJECTED;
+                    await this._cache.withData(async (data) => {
+                        await data.setPictureStatus(picture.id, ComputationStatus.REJECTED);
+                        picture.computed = ComputationStatus.REJECTED;
+                    });
                     item.refresh();
                     scrollToNextSibling(item);
                 },
                 start: async () => {
-                    await this._data.setPromptActive(picture.promptId, true);
-                    if (prompt) { prompt.active = true; }
+                    await this._cache.withData(async (data) => {
+                        await data.setPromptActive(picture.promptId, true);
+                        if (prompt) { prompt.active = true; }
+                    });
                     item.refresh();
                 },
                 stop: async () => {
-                    await this._data.setPromptActive(picture.promptId, false);
-                    if (prompt) { prompt.active = false; }
+                    await this._cache.withData(async (data) => {
+                        await data.setPromptActive(picture.promptId, false);
+                        if (prompt) { prompt.active = false; }
+                    });
                     item.refresh();
                 },
-                fetch: this._data.getAttachment.bind(this._data)
+                fetch: this._cache.data.getAttachment.bind(this._cache.data)
             });
             item.classList.add("col-sm-12", "col-md-6", "col-lg-4");
-            item.refresh();
             picturesDiv.appendChild(item);
+            item.refresh();
         }
     }
 
@@ -203,13 +192,14 @@ export class PicturesPage extends AbstractPageElement {
     }
 
     protected async _onZipClick(): Promise<void> {
-        if (!this._projectId) {
+        const projectId = this._cache.getSelectedProjectId();
+        if (!projectId) {
             return;
         }
         try {
             const zip = await zipPictures({
-                data: this._data,
-                projectId: this._projectId,
+                data: this._cache.data,
+                projectId,
                 filter: this._getFilter()
             });
             const blob = await zip.generateAsync({ type: "blob" });

@@ -22,7 +22,6 @@ export class PromptsPage extends AbstractPageElement {
 
         // -- Bind callbacks for buttons --
         this._bindClickForRef("queueButton", this._onQueueClick.bind(this));
-        this._bindClickForRef("refreshButton", this.refresh.bind(this));
     }
 
     /** @inheritdoc */

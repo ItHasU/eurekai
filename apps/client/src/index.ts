@@ -39,6 +39,7 @@ class App {
         this._pageDiv = document.getElementById("pageDiv") as HTMLDivElement;
         this._bindPage("projectsButton", ProjectsPage);
         this._bindPage("promptsButton", PromptsPage);
+        this._bindPage("picturesButton", PicturesPage);
 
         this._setPage(ProjectsPage);
     }

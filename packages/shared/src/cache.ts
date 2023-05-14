@@ -23,6 +23,10 @@ export class DataCache {
     constructor(protected readonly _data: AbstractDataWrapper) {
     }
 
+    public get data(): AbstractDataWrapper {
+        return this._data;
+    }
+
     //#region Global methods --------------------------------------------------
 
     /** Empty the cache */
