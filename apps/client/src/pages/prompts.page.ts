@@ -1,6 +1,7 @@
 import { AbstractPageElement } from "./abstract.page.element";
 import { PromptElement } from "src/components/prompt.element";
 import { DataCache } from "@eurekai/shared/src/cache";
+import { PictureDTO } from "@eurekai/shared/src/types";
 
 /** Display projects and fire an event on project change */
 export class PromptsPage extends AbstractPageElement {
@@ -27,10 +28,21 @@ export class PromptsPage extends AbstractPageElement {
     /** @inheritdoc */
     protected override async _refresh(): Promise<void> {
         const prompts = await this._cache.getPrompts();
+        const pictures = await this._cache.getPictures();
+        const picturesByPrompt: {[promptId: number]: PictureDTO[]} = {};
+        for (const picture of pictures) {
+            if (picture.promptId != null) {
+                if (picturesByPrompt[picture.promptId] == null) {
+                    picturesByPrompt[picture.promptId] = [];
+                }
+                picturesByPrompt[picture.promptId].push(picture);
+            }
+        }
+
         // -- Fill prompts --
         this._promptsDiv.innerHTML = "";
         for (const prompt of prompts) {
-            const pictures = await this._cache.getPicturesByPrompt(prompt.id);
+            const pictures = picturesByPrompt[prompt.id] ?? [];
             // Create the components for each prompt
             const item = new PromptElement(prompt, {
                 pictures: pictures,
