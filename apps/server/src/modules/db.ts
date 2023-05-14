@@ -112,21 +112,17 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     /** @inheritdoc */
     public override getProjectsWithStats(): Promise<ProjectWithStats[]> {
         return new Promise<ProjectWithStats[]>((resolve, reject) => {
-            this._db.all(`
+            const query = `
                 SELECT
-                    ${t("projects")}.id,
-                    ${t("projects")}.name,
-                    ${t("projects")}.width,
-                    ${t("projects")}.height,
-                    COUNT(DISTINCT ${t("prompts")}.id) AS prompts,
-                    SUM(CASE WHEN ${t("pictures")}.computed = ${ComputationStatus.DONE} THEN 1 ELSE 0 END) AS doneCount, 
-                    SUM(CASE WHEN ${t("pictures")}.computed = ${ComputationStatus.ACCEPTED} THEN 1 ELSE 0 END) AS acceptedCount, 
-                    SUM(CASE WHEN ${t("pictures")}.computed = ${ComputationStatus.REJECTED} THEN 1 ELSE 0 END) AS rejectedCount
+                    ${t("projects")}.*,
+                    (SELECT COUNT(id) FROM prompts WHERE projectId = projects.id) prompts,
+                    (SELECT COUNT(id) FROM pictures WHERE computed=${ComputationStatus.DONE} AND projectId = projects.id) doneCount,
+                    (SELECT COUNT(id) FROM pictures WHERE computed=${ComputationStatus.ACCEPTED} AND projectId = projects.id) acceptedCount,
+                    (SELECT COUNT(id) FROM pictures WHERE computed=${ComputationStatus.REJECTED} AND projectId = projects.id) rejectedCount
                 FROM ${t("projects")}
-                LEFT JOIN ${t("prompts")} ON ${t("prompts")}.projectId = ${t("projects")}.id
-                LEFT JOIN ${t("pictures")} ON ${t("pictures")}.projectId = ${t("projects")}.id
-                GROUP BY ${t("projects")}.id
-            `, (err, rows) => {
+            `;
+            console.log(query);
+            this._db.all(query, (err, rows) => {
                 if (err) {
                     reject(err);
                 } else {
