@@ -1,4 +1,4 @@
-import { AttachmentDTO, Txt2ImgOptions } from "@eurekai/shared/src/types";
+import { AttachmentDTO, ProjectWithStats, Txt2ImgOptions } from "@eurekai/shared/src/types";
 import { ProjectDTO, Tables, TableName, t, PromptDTO, PictureDTO, ComputationStatus } from "@eurekai/shared/src/types";
 import { AbstractDataWrapper } from "@eurekai/shared/src/data";
 import sqlite3 from "sqlite3";
@@ -104,6 +104,33 @@ export class DatabaseWrapper extends AbstractDataWrapper {
                     reject(err);
                 } else {
                     resolve(row as ProjectDTO | null);
+                }
+            });
+        });
+    }
+
+    /** @inheritdoc */
+    public override getProjectsWithStats(): Promise<ProjectWithStats[]> {
+        return new Promise<ProjectWithStats[]>((resolve, reject) => {
+            this._db.all(`
+                SELECT
+                    ${t("projects")}.id,
+                    ${t("projects")}.name,
+                    ${t("projects")}.width,
+                    ${t("projects")}.height,
+                    COUNT(DISTINCT ${t("prompts")}.id) AS prompts,
+                    SUM(CASE WHEN ${t("pictures")}.computed = ${ComputationStatus.DONE} THEN 1 ELSE 0 END) AS doneCount, 
+                    SUM(CASE WHEN ${t("pictures")}.computed = ${ComputationStatus.ACCEPTED} THEN 1 ELSE 0 END) AS acceptedCount, 
+                    SUM(CASE WHEN ${t("pictures")}.computed = ${ComputationStatus.REJECTED} THEN 1 ELSE 0 END) AS rejectedCount
+                FROM ${t("projects")}
+                LEFT JOIN ${t("prompts")} ON ${t("prompts")}.projectId = ${t("projects")}.id
+                LEFT JOIN ${t("pictures")} ON ${t("pictures")}.projectId = ${t("projects")}.id
+                GROUP BY ${t("projects")}.id
+            `, (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows as ProjectWithStats[]);
                 }
             });
         });

@@ -1,14 +1,9 @@
-import { PictureDTO, ProjectDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { AbstractPageElement } from "./abstract.page.element";
-import { AbstractDataWrapper } from "@eurekai/shared/src/data";
 import { PromptElement } from "src/components/prompt.element";
+import { DataCache } from "@eurekai/shared/src/cache";
 
 /** Display projects and fire an event on project change */
 export class PromptsPage extends AbstractPageElement {
-
-    protected _projectId: number | null = null;
-    protected _prompts: PromptDTO[] = [];
-    protected _picturesPerPromptId: { [promptId: number]: PictureDTO[] } = {};
 
     protected readonly _promptsDiv: HTMLDivElement;
     protected readonly _positiveInput: HTMLInputElement;
@@ -16,8 +11,8 @@ export class PromptsPage extends AbstractPageElement {
     protected readonly _bufferSizeInput: HTMLInputElement;
     protected readonly _targetAcceptedInput: HTMLInputElement;
 
-    constructor(protected _data: AbstractDataWrapper) {
-        super(require("./prompts.page.html").default);
+    constructor(cache: DataCache) {
+        super(require("./prompts.page.html").default, cache);
 
         this._promptsDiv = this.querySelector("#promptsDiv") as HTMLDivElement;
         this._positiveInput = this.querySelector("#positiveInput") as HTMLInputElement;
@@ -26,50 +21,31 @@ export class PromptsPage extends AbstractPageElement {
         this._targetAcceptedInput = this.querySelector("#targetAcceptedInput") as HTMLInputElement;
 
         // -- Bind callbacks for buttons --
-        this._bindClick("queueButton", this._onQueueClick.bind(this));
-        this._bindClick("refreshButton", this.refresh.bind(this));
-    }
-
-    /** For the template */
-    public get prompts(): PromptDTO[] {
-        return this._prompts;
-    }
-
-    /** Set the project and refresh the page */
-    public async setProjectId(id: number): Promise<void> {
-        this._projectId = id;
-        await this.refresh();
+        this._bindClickForRef("queueButton", this._onQueueClick.bind(this));
     }
 
     /** @inheritdoc */
-    protected override async _loadData(): Promise<void> {
-        this._prompts = this._projectId == null ? [] : await this._data.getPrompts(this._projectId);
-        const pictures = this._projectId == null ? [] : await this._data.getPictures(this._projectId);
-        this._picturesPerPromptId = {};
-        for (const picture of pictures) {
-            if (this._picturesPerPromptId[picture.promptId] == null) {
-                this._picturesPerPromptId[picture.promptId] = [];
-            }
-            this._picturesPerPromptId[picture.promptId].push(picture);
-        }
-    }
-
-    /** @inheritdoc */
-    protected override _postRender(): Promise<void> {
+    protected override async _refresh(): Promise<void> {
+        const prompts = await this._cache.getPrompts();
         // -- Fill prompts --
         this._promptsDiv.innerHTML = "";
-        for (const prompt of this._prompts) {
+        for (const prompt of prompts) {
+            const pictures = await this._cache.getPicturesByPrompt(prompt.id);
             // Create the components for each prompt
             const item = new PromptElement(prompt, {
-                pictures: this._picturesPerPromptId[prompt.id] ?? [],
+                pictures: pictures,
                 start: async () => {
-                    await this._data.setPromptActive(prompt.id, true);
-                    prompt.active = true;
+                    await this._cache.withData(async (data) => {
+                        await data.setPromptActive(prompt.id, true);
+                        prompt.active = true;
+                    });
                     item.refresh();
                 },
                 stop: async () => {
-                    await this._data.setPromptActive(prompt.id, false);
-                    prompt.active = false;
+                    await this._cache.withData(async (data) => {
+                        await data.setPromptActive(prompt.id, false);
+                        prompt.active = false;
+                    });
                     item.refresh();
                 },
                 clone: () => {
@@ -93,15 +69,20 @@ export class PromptsPage extends AbstractPageElement {
         const negativePrompt = this._negativeInput.value;
         const bufferSize = +this._bufferSizeInput.value;
         const acceptedTarget = +this._targetAcceptedInput.value;
-        await this._data.addPrompt({
-            projectId: this._projectId!,
-            prompt: positivePrompt,
-            negative_prompt: negativePrompt,
-            active: true,
-            bufferSize,
-            acceptedTarget
-        });
-        await this.refresh();
+        const projectId = this._cache.getSelectedProjectId();
+        if (projectId != null) {
+            await this._cache.withData(async (data) => {
+                await data.addPrompt({
+                    projectId: projectId,
+                    prompt: positivePrompt,
+                    negative_prompt: negativePrompt,
+                    active: true,
+                    bufferSize,
+                    acceptedTarget
+                });
+            });
+            await this.refresh();
+        }
     }
 
 

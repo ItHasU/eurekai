@@ -4,34 +4,62 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 
 import "./pages/projects.page";
 
-// import { ClientPromptManager } from "./managers/client.prompt.manager";
-// import { ClientPictureManager } from "./managers/client.picture.manager";
 import { API } from "./api";
 import { ProjectsPage } from "./pages/projects.page";
 import { PromptsPage } from "./pages/prompts.page";
 import { PicturesPage } from "./pages/pictures.page";
+import { DataCache } from "@eurekai/shared/src/cache";
+import { AbstractPageElement } from "./pages/abstract.page.element";
+
+interface PageConstructor {
+    new(cache: DataCache): AbstractPageElement;
+}
 
 class App {
 
     protected readonly _api: API = new API();
+    protected readonly _cache: DataCache = new DataCache(this._api);
 
-    protected readonly _projectsTab: ProjectsPage = new ProjectsPage(this._api);
-    protected readonly _promptsTab: PromptsPage = new PromptsPage(this._api);
-    protected readonly _picturesTab: PicturesPage = new PicturesPage(this._api);
+    protected readonly _pageDiv: HTMLDivElement;
+    protected _currentPage: AbstractPageElement | null = null;
 
     constructor() {
-        document.getElementById("projects-tab-pane")?.appendChild(this._projectsTab);
-        document.getElementById("prompts-tab-pane")?.appendChild(this._promptsTab);
-        document.getElementById("pictures-tab-pane")?.appendChild(this._picturesTab);
+        // -- Bind refresh button --
+        const refreshButton = document.getElementById("refreshButton");
+        if (refreshButton) {
+            refreshButton.addEventListener("click", async () => {
+                console.debug("Refresh button clicked");
+                this._cache.markDirty();
+                if (this._currentPage) {
+                    await this._currentPage.refresh();
+                }
+            });
+        }
+        // -- Bind pages --
+        this._pageDiv = document.getElementById("pageDiv") as HTMLDivElement;
+        this._bindPage("projectsButton", ProjectsPage);
+        this._bindPage("promptsButton", PromptsPage);
+        this._bindPage("picturesButton", PicturesPage);
 
-        // -- Bind callbacks --
-        this._projectsTab.addEventListener("project-change", this._onProjectSelected.bind(this));
+        this._setPage(ProjectsPage);
     }
 
-    protected _onProjectSelected(event: Event): void {
-        const projectId = (event as CustomEvent<number>).detail;
-        this._promptsTab.setProjectId(projectId).catch(console.error.bind(console));
-        this._picturesTab.setProjectId(projectId).catch(console.error.bind(console));
+    protected _bindPage(buttonId: string, pageConstructor: PageConstructor): void {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.addEventListener("click", this._setPage.bind(this, pageConstructor));
+        } else {
+            console.error(`Button ${buttonId} not found, cannot bind page`);
+        }
+    }
+
+    protected _setPage(pageConstructor: PageConstructor): void {
+        // -- Empty page --
+        this._pageDiv.innerHTML = "";
+        // -- Create page --
+        this._currentPage = new pageConstructor(this._cache);
+        this._pageDiv.appendChild(this._currentPage);
+        this._currentPage.refresh(); // Catched by the page
     }
 }
 

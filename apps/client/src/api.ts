@@ -1,5 +1,5 @@
 import { AbstractDataWrapper } from "@eurekai/shared/src/data";
-import { ProjectDTO, PromptDTO, PictureDTO, ComputationStatus } from "@eurekai/shared/src/types";
+import { ProjectDTO, PromptDTO, PictureDTO, ComputationStatus, ProjectWithStats } from "@eurekai/shared/src/types";
 
 export class API extends AbstractDataWrapper {
 
@@ -12,6 +12,11 @@ export class API extends AbstractDataWrapper {
     /** @inheritdoc */
     public override getProjects(): Promise<ProjectDTO[]> {
         return this._apiCall<ProjectDTO[]>("getProjects");
+    }
+
+    /** @inheritdoc */
+    public override getProjectsWithStats(): Promise<ProjectWithStats[]> {
+        return this._apiCall<ProjectWithStats[]>("getProjectsWithStats");
     }
 
     public override getProject(id: number): Promise<ProjectDTO | null> {

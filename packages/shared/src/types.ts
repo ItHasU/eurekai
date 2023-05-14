@@ -50,6 +50,17 @@ export interface ProjectDTO {
     height: number;
 }
 
+export interface ProjectWithStats extends ProjectDTO{
+    /** Count of prompts */
+    prompts: number;
+    /** Count of pictures waiting for evaluaton */
+    doneCount: number;
+    /** Count of accepted pictures */
+    acceptedCount: number;
+    /** Count of rejected pictures */
+    rejectedCount: number;
+}
+
 export enum ComputationStatus {
     PENDING = 1,
     COMPUTING,

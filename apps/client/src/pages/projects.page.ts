@@ -1,50 +1,62 @@
-import { ProjectDTO } from "@eurekai/shared/src/types";
 import { AbstractPageElement } from "./abstract.page.element";
-import { AbstractDataWrapper } from "@eurekai/shared/src/data";
+import { DataCache } from "@eurekai/shared/src/cache";
+import { ProjectElement } from "../components/project.element";
 
 /** Display projects and fire an event on project change */
 export class ProjectsPage extends AbstractPageElement {
 
-    protected _projects: ProjectDTO[] = [];
+    protected readonly _nameInput: HTMLInputElement;
+    protected readonly _widthInput: HTMLInputElement;
+    protected readonly _heightInput: HTMLInputElement;
+    protected readonly _projectsDiv: HTMLDivElement;
 
-    constructor(protected _data: AbstractDataWrapper) {
-        super(require("./projects.page.html").default, true);
-    }
+    constructor(cache: DataCache) {
+        super(require("./projects.page.html").default, cache);
 
-    /** For the template */
-    public get projects(): ProjectDTO[] {
-        return this._projects;
-    }
+        // -- Get components --
+        this._nameInput = this.querySelector("#projectNameInput") as HTMLInputElement;
+        this._widthInput = this.querySelector("#widthInput") as HTMLInputElement;
+        this._heightInput = this.querySelector("#heightInput") as HTMLInputElement;
+        this._projectsDiv = this.querySelector("#projectsDiv") as HTMLDivElement;
 
-    protected override async _loadData(): Promise<void> {
-        this._projects = await this._data.getProjects();
-    }
-
-    protected override _postRender(): Promise<void> {
-        // Bind click on projects
-        this.querySelectorAll(".list-group-item-action").forEach(element => {
-            element.addEventListener("click", () => {
-                const id = parseInt(element.getAttribute("data-project-id") ?? "-1");
-                console.debug(`Project ${id} selected`);
-                this.dispatchEvent(new CustomEvent("project-change", { detail: id }));
-            });
-        });
         // Bind click on add project
-        this._bindClick("projectNewButton", async () => {
-            const name = (this.querySelector("#projectNameInput") as HTMLInputElement).value;
-            const width = +(this.querySelector("#widthInput") as HTMLInputElement).value;
-            const height = +(this.querySelector("#heightInput") as HTMLInputElement).value;
+        this._bindClickForRef("projectNewButton", async () => {
+            const name = this._nameInput.value;
+            const width = +this._widthInput.value;
+            const height = +this._heightInput.value;
             if (name && width && height) {
                 try {
-                    const newProjectId = await this._data.addProject(name, width, height);
-                    console.debug(`Project ${newProjectId} created ${width}x${height}px`);
-                    await this.refresh();
+                    await this._cache.withData(async (data) => {
+                        const newProjectId = await data.addProject(name, width, height);
+                        console.debug(`Project ${newProjectId} created ${width} x ${height} px`);
+                    });
                 } catch (err) {
                     console.error(err);
+                } finally {
+                    await this.refresh();
                 }
             }
         });
-        return Promise.resolve();
+    }
+
+    /** @inheritdoc */
+    public override async _refresh(): Promise<void> {
+        // -- Fech projects --
+        const projects = await this._cache.getProjects();
+
+        // -- Render projects --
+        // Clear projects
+        this._projectsDiv.innerHTML = "";
+        // Render projects
+        for (const project of projects) {
+            const element = new ProjectElement(this._cache, project);
+            element.addEventListener("click", () => {
+                console.debug(`Project ${project.id} selected`);
+                this._cache.setSelectedProjectId(project.id);
+            });
+            this._projectsDiv.appendChild(element);
+            element.refresh();
+        }
     }
 }
 
