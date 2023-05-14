@@ -38,6 +38,7 @@ class App {
         // -- Bind pages --
         this._pageDiv = document.getElementById("pageDiv") as HTMLDivElement;
         this._bindPage("projectsButton", ProjectsPage);
+        this._bindPage("promptsButton", PromptsPage);
 
         this._setPage(ProjectsPage);
     }

@@ -121,6 +121,12 @@ export class DataCache {
         return this._picturesCache;
     }
 
+    /** Get pictures by prompt */
+    public async getPicturesByPrompt(promptId: number): Promise<PictureDTO[]> {
+        const pictures = await this.getPictures();
+        return pictures.filter(x => x.promptId === promptId);
+    }
+
     //#endregion
 
 }
