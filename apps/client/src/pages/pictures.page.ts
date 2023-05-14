@@ -164,6 +164,7 @@ export class PicturesPage extends AbstractPageElement {
             picturesDiv.appendChild(item);
             item.refresh();
         }
+        picturesDiv.scrollTo(0, 0);
     }
 
     protected _getFilter(): (picture: PictureDTO) => boolean {
