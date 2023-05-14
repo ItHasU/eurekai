@@ -16,6 +16,13 @@ export abstract class AbstractDataWrapper {
     /** Add a new project */
     public abstract addProject(name: string, width: number, height: number): Promise<number>;
 
+    /** 
+     * Clean a project
+     * - Delete all rejected pictures.
+     * - Stop all prompts.
+     */
+    public abstract cleanProject(id: number): Promise<void>;
+
     //#endregion
 
     //#region Prompts

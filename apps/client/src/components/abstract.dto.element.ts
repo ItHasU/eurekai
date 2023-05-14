@@ -23,7 +23,7 @@ export abstract class AbstractDTOElement<DTO> extends HTMLElement {
         this.innerHTML = content;
     }
 
-    protected _bindClick(ref: string, cb: () => void): void {
+    protected _bindClick(ref: string, cb: (evt: MouseEvent) => void): void {
         (this.querySelector(`*[ref="${ref}"]`) as HTMLButtonElement | undefined)?.addEventListener("click", cb);
     }
 

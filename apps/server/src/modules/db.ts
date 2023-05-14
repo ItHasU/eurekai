@@ -137,13 +137,37 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     }
 
     /** @inheritdoc */
-    public override async addProject(name: string, width: number, height: number): Promise<number> {
+    public override addProject(name: string, width: number, height: number): Promise<number> {
         return new Promise<number>((resolve, reject) => {
             this._db.run(`INSERT INTO ${t("projects")} (name, width, height) VALUES (?, ?, ?)`, [name, width ?? 512, height ?? 512], function (err) {
                 if (err) {
                     reject(err);
                 } else {
                     resolve(this.lastID);
+                }
+            });
+        });
+    }
+
+    /** @inheritdoc */
+    public override async cleanProject(id: number): Promise<void> {
+        // Stop all prompts
+        await new Promise<void>((resolve, reject) => {
+            this._db.run(`UPDATE ${t("prompts")} SET active=false WHERE projectId=?;`, [id], function (err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+        // Remove all rejected pictures
+        await new Promise<void>((resolve, reject) => {
+            this._db.run(`DELETE FROM ${t("pictures")} WHERE projectId=? AND computed=${ComputationStatus.REJECTED};`, [id], function (err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
                 }
             });
         });

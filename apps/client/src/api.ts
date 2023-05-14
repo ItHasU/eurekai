@@ -19,12 +19,19 @@ export class API extends AbstractDataWrapper {
         return this._apiCall<ProjectWithStats[]>("getProjectsWithStats");
     }
 
+    /** @inheritdoc */
     public override getProject(id: number): Promise<ProjectDTO | null> {
         throw new Error("Method not implemented.");
     }
 
+    /** @inheritdoc */
     public override addProject(name: string, width: number, height: number): Promise<number> {
         return this._apiCall<number>("addProject", name, width, height);
+    }
+
+    /** @inheritdoc */
+    public override cleanProject(id: number): Promise<void> {
+        return this._apiCall<void>("cleanProject", id);
     }
 
     //#endregion

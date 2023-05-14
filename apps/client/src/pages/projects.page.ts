@@ -49,7 +49,16 @@ export class ProjectsPage extends AbstractPageElement {
         this._projectsDiv.innerHTML = "";
         // Render projects
         for (const project of projects) {
-            const element = new ProjectElement(this._cache, project);
+            const projectId = project.id;
+            const element = new ProjectElement(this._cache, project, {
+                clean: () => {
+                    this._cache.withData(async (data) => {
+                        await data.cleanProject(projectId);
+                    }).finally(() => {
+                        this._cache.markDirty();
+                    });
+                }
+            });
             element.addEventListener("click", () => {
                 console.debug(`Project ${project.id} selected`);
                 this._cache.setSelectedProjectId(project.id);
