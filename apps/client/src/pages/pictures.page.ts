@@ -63,13 +63,10 @@ export class PicturesPage extends AbstractPageElement {
     }
 
     /** @inheritdoc */
-    protected override async _loadData(): Promise<void> {
+    public override async refresh(): Promise<void> {
         this._prompts = this._projectId == null ? [] : await this._data.getPrompts(this._projectId);
         this._pictures = this._projectId == null ? [] : await this._data.getPictures(this._projectId);
-    }
 
-    /** @inheritdoc */
-    protected override _postRender(): Promise<void> {
         const promptsMap: { [id: number]: PromptDTO } = {};
         for (const prompt of this._prompts) {
             promptsMap[prompt.id] = prompt;
@@ -178,9 +175,6 @@ export class PicturesPage extends AbstractPageElement {
             item.refresh();
             picturesDiv.appendChild(item);
         }
-
-        // -- Bind callbacks for buttons --
-        return Promise.resolve();
     }
 
     protected _getFilter(): (picture: PictureDTO) => boolean {

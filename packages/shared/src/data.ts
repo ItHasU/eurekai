@@ -1,4 +1,4 @@
-import { ComputationStatus, PictureDTO, ProjectDTO, PromptDTO } from "./types";
+import { ComputationStatus, PictureDTO, ProjectDTO, ProjectWithStats, PromptDTO } from "./types";
 
 export abstract class AbstractDataWrapper {
 
@@ -6,6 +6,9 @@ export abstract class AbstractDataWrapper {
 
     /** Get the list of projects */
     public abstract getProjects(): Promise<ProjectDTO[]>;
+
+    /** Get the list of projects with extended statistics */
+    public abstract getProjectsWithStats(): Promise<ProjectWithStats[]>;
 
     /** Get a project by its id */
     public abstract getProject(id: number): Promise<ProjectDTO | null>;
