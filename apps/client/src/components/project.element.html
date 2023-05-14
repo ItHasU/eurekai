@@ -2,7 +2,8 @@
     <strong>{{data.name}}</strong>
     <small class="text-secondary float-end">{{data.width}}&nbsp;x&nbsp;{{data.height}}&nbsp;px</small>
     <br>
-    <small class="text-danger">{{data.rejectedCount}} rejected</small>,
-    <small class="text-secondary">{{data.doneCount}} pending</small>,
-    <small class="text-success">{{data.acceptedCount}} accepted</small>
+    <small class="text-primary"><i class="bi bi-terminal"></i>&nbsp;{{data.prompts}}</small>
+    <small class="text-danger"><i class="bi bi-x-square"></i>&nbsp;{{data.rejectedCount}}</small>
+    <small class="text-secondary"><i class="bi bi-question-square"></i>&nbsp;{{data.doneCount}}</small>
+    <small class="text-success"><i class="bi bi-check-square"></i>&nbsp;{{data.acceptedCount}}</small>
 </a>
