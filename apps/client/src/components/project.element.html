@@ -1,12 +1,10 @@
-<a href="javascript: void(0);" class="list-group-item list-group-item-action">
-    <strong>{{data.name}}</strong>
-    <small class="text-secondary float-end text-end">
-        {{data.width}}&nbsp;x&nbsp;{{data.height}}&nbsp;px<br>
-        <button ref="clean" class="btn btn-link p-0" title="Clean project"><i class="bi bi-archive"></i></button>
-    </small>
-    <br>
-    <small class="text-primary"><i class="bi bi-terminal"></i>&nbsp;{{data.prompts}}</small>
-    <small class="text-danger"><i class="bi bi-x-square"></i>&nbsp;{{data.rejectedCount}}</small>
-    <small class="text-secondary"><i class="bi bi-question-square"></i>&nbsp;{{data.doneCount}}</small>
-    <small class="text-success"><i class="bi bi-check-square"></i>&nbsp;{{data.acceptedCount}}</small>
-</a>
+<strong>{{data.name}}</strong>
+<small class="text-secondary float-end text-end">
+    {{data.width}}&nbsp;x&nbsp;{{data.height}}&nbsp;px<br>
+    <button ref="clean" class="btn btn-link p-0" title="Clean project"><i class="bi bi-archive"></i></button>
+</small>
+<br>
+<small class="text-primary"><i class="bi bi-terminal"></i>&nbsp;{{data.prompts}}</small>
+<small class="text-danger"><i class="bi bi-x-square"></i>&nbsp;{{data.rejectedCount}}</small>
+<small class="text-secondary"><i class="bi bi-question-square"></i>&nbsp;{{data.doneCount}}</small>
+<small class="text-success"><i class="bi bi-check-square"></i>&nbsp;{{data.acceptedCount}}</small>

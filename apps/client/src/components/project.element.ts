@@ -8,6 +8,7 @@ export class ProjectElement extends AbstractDTOElement<ProjectWithStats> {
         clean: () => void;
     }) {
         super(project, require("./project.element.html").default);
+        this.classList.add("list-group-item", "list-group-item-action");
 
         this.addEventListener("click", () => {
             this._cache.setSelectedProjectId(project.id);
