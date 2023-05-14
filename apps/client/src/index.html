@@ -8,38 +8,31 @@
 </head>
 
 <body class="h-100 d-flex flex-column">
-    <nav class="navbar sticky-top navbar-expand-sm bg-body-tertiary">
+    <nav class="navbar navbar-expand-sm bg-body-tertiary">
         <div class="container-fluid">
             <a id="projectsButton" class="navbar-brand" href="javascript: void(0);"><i
                     class="bi bi-house"></i>&nbsp;eurekAI</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
-                aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                <ul class="navbar-nav">
+                <ul class="navbar-nav flex-row"><!-- Always expanded -->
                     <li class="nav-item">
-                        <a id="promptsButton" class="nav-link" aria-current="page" href="javascript: void(0);">
+                        <a id="promptsButton" class="nav-link px-1" aria-current="page" href="javascript: void(0);">
                             <i class="bi bi-terminal"></i>&nbsp;Prompts
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a id="picturesButton" class="nav-link" aria-current="page" href="javascript: void(0);">
+                        <a id="picturesButton" class="nav-link px-1" aria-current="page" href="javascript: void(0);">
                             <i class="bi bi-images"></i>&nbsp;Pictures
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a id="refreshButton" class="nav-link" aria-current="page" href="javascript: void(0);">
+                        <a id="refreshButton" class="nav-link px-1" aria-current="page" href="javascript: void(0);">
                             <i class="bi bi-arrow-repeat"></i>&nbsp;Refresh
                         </a>
                     </li>
                 </ul>
-            </div>
         </div>
     </nav>
 
-    <div id="pageDiv" class="flex-grow-1 pt-3">
+    <div id="pageDiv" class="flex-grow-1 pt-3" style="overflow-y: auto;">
     </div>
 </body>
 
