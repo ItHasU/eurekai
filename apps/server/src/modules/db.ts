@@ -167,6 +167,18 @@ export class DatabaseWrapper extends AbstractDataWrapper {
                 }
             });
         });
+        // Purge attachments not linked to pictures anymore
+        await new Promise<void>((resolve, reject) => {
+            this._db.run(`DELETE FROM ${t("attachments")} WHERE id IN (
+                    SELECT attachments.id FROM attachments LEFT JOIN pictures ON attachments.id=pictures.attachmentId WHERE pictures.id IS NULL
+                );`, function (err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
     }
 
     //#endregion
