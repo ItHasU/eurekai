@@ -10,6 +10,7 @@ import { PromptsPage } from "./pages/prompts.page";
 import { PicturesPage } from "./pages/pictures.page";
 import { DataCache } from "@eurekai/shared/src/cache";
 import { AbstractPageElement } from "./pages/abstract.page.element";
+import { EditPage } from "./pages/edit.page";
 
 interface PageConstructor {
     new(cache: DataCache): AbstractPageElement;
@@ -37,6 +38,7 @@ class App {
         }
         // -- Bind pages --
         this._pageDiv = document.getElementById("pageDiv") as HTMLDivElement;
+        this._bindPage("editButton", EditPage);
         this._bindPage("projectsButton", ProjectsPage);
         this._bindPage("promptsButton", PromptsPage);
         this._bindPage("picturesButton", PicturesPage);

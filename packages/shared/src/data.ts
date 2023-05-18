@@ -16,6 +16,12 @@ export abstract class AbstractDataWrapper {
     /** Add a new project */
     public abstract addProject(name: string, width: number, height: number): Promise<number>;
 
+    /** Update the project properties */
+    public abstract updateProject(projectId: number, name: string, width: number, height: number): Promise<void>;
+
+    /** Delete the project and data referencing it */
+    public abstract deleteProject(projectId: number): Promise<void>;
+
     /** 
      * Clean a project
      * - Delete all rejected pictures.

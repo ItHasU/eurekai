@@ -30,6 +30,16 @@ export class API extends AbstractDataWrapper {
     }
 
     /** @inheritdoc */
+    public override updateProject(projectId: number, name: string, width: number, height: number): Promise<void> {
+        return this._apiCall<void>("updateProject", projectId, name, width, height);
+    }
+
+    /** @inheritdoc */
+    public override deleteProject(projectId: number): Promise<void> {
+        return this._apiCall<void>("deleteProject", projectId);
+    }
+
+    /** @inheritdoc */
     public override cleanProject(id: number): Promise<void> {
         return this._apiCall<void>("cleanProject", id);
     }

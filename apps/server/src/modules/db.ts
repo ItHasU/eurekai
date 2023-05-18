@@ -146,6 +146,54 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     }
 
     /** @inheritdoc */
+    public override updateProject(projectId: number, name: string, width: number, height: number): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            this._db.run(`UPDATE ${t("projects")} SET name = ?, width = ?, height = ? WHERE id = ?`, [name, width, height, projectId], (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    }
+
+    /** @inheritdoc */
+    public override async deleteProject(projectId: number): Promise<void> {
+        // -- Delete project's pictures --
+        await new Promise<void>((resolve, reject) => {
+            this._db.run(`DELETE FROM ${t("pictures")} WHERE projectId = ?`, [projectId], (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+        // -- Delete project's prompts --
+        await new Promise<void>((resolve, reject) => {
+            this._db.run(`DELETE FROM ${t("prompts")} WHERE projectId = ?`, [projectId], (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+        // -- Delete the project --
+        await new Promise<void>((resolve, reject) => {
+            this._db.run(`DELETE FROM ${t("projects")} WHERE id = ?`, [projectId], (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+        await this._purgeAttachments();
+    }
+
+    /** @inheritdoc */
     public override async cleanProject(id: number): Promise<void> {
         // Stop all prompts
         await new Promise<void>((resolve, reject) => {
@@ -167,6 +215,11 @@ export class DatabaseWrapper extends AbstractDataWrapper {
                 }
             });
         });
+        await this._purgeAttachments();
+    }
+
+    /** Clean attachments that are not referenced anymore */
+    protected async _purgeAttachments(): Promise<void> {
         // Purge attachments not linked to pictures anymore
         await new Promise<void>((resolve, reject) => {
             this._db.run(`DELETE FROM ${t("attachments")} WHERE id IN (
