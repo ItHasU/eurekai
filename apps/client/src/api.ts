@@ -105,6 +105,15 @@ export class API extends AbstractDataWrapper {
 
     //#endregion
 
+    //#region System
+
+    /** @inheritdoc */
+    public override vacuum(): Promise<void> {
+        return this._apiCall<void>("vacuum");
+    }
+
+    //#endregion
+
     //#region Tools
 
     protected async _apiCall<T>(method: string, ...args: any[]): Promise<T> {

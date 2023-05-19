@@ -84,4 +84,12 @@ export abstract class AbstractDataWrapper {
     /** Get the attachment data */
     public abstract getAttachment(id: number): Promise<string>;
 
+    //#endregion
+
+    //#region System
+
+    /** Call vacuum on the database */
+    public abstract vacuum(): Promise<void>;
+
+    //#endregion
 }

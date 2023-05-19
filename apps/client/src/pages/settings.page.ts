@@ -15,6 +15,10 @@ export class SettingsPage extends AbstractPageElement {
             await this._cache.withData(data => data.setModel(model));
             this.refresh();
         });
+
+        this._bindClickForRef("vacuumButton", async () => {
+            await this._cache.data.vacuum();
+        });
     }
 
     /** @inheritdoc */

@@ -80,6 +80,19 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         });
     }
 
+    /** @inheritdoc */
+    public override vacuum(): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            this._db.run("VACUUM", (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    }
+
     //#endregion
 
     //#region SD Models management --------------------------------------------
