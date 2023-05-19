@@ -1,4 +1,4 @@
-import { AbstractDataWrapper } from "@eurekai/shared/src/data";
+import { AbstractDataWrapper, SDModels } from "@eurekai/shared/src/data";
 import { ProjectDTO, PromptDTO, PictureDTO, ComputationStatus, ProjectWithStats } from "@eurekai/shared/src/types";
 
 export class API extends AbstractDataWrapper {
@@ -6,6 +6,22 @@ export class API extends AbstractDataWrapper {
     constructor() {
         super();
     }
+
+    //#region SD Models
+
+    public override getModels(): Promise<SDModels[]> {
+        return this._apiCall<SDModels[]>("getModels");
+    }
+
+    public override getModel(): Promise<string | null> {
+        return this._apiCall<string | null>("getModel");
+    }
+
+    public override setModel(model: string): Promise<void> {
+        return this._apiCall<void>("setModel", model);
+    }
+
+    //#endregion
 
     //#region Projects
 

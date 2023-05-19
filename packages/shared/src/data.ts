@@ -1,6 +1,28 @@
 import { ComputationStatus, PictureDTO, ProjectDTO, ProjectWithStats, PromptDTO } from "./types";
 
+/** Stable Diffusion model information */
+export interface SDModels {
+    title: string,
+    model_name: string,
+    hash: string,
+    sha256: string,
+    filename: string,
+    config: string
+}
+
 export abstract class AbstractDataWrapper {
+
+    //#region SD Models
+
+    /** Get a list of models */
+    public abstract getModels(): Promise<SDModels[]>;
+
+    /** Get selected model (by title) */
+    public abstract getModel(): Promise<string | null>;
+    /** Set selected model (by title) */
+    public abstract setModel(model: string): Promise<void>;
+
+    //#endregion
 
     //#region Projects
 

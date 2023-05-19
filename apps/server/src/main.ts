@@ -4,7 +4,9 @@ import { Generator } from "./modules/generator";
 import { AppServer } from "./modules/server";
 
 async function main(): Promise<void> {
-    const db = new DatabaseWrapper("eurekai.db");
+    const apiURL = getEnvString("API_URL");
+
+    const db = new DatabaseWrapper(apiURL, "eurekai.db");
     await db.initIfNeeded();
 
     new AppServer({
@@ -13,7 +15,7 @@ async function main(): Promise<void> {
     });
 
     // Start the generator
-    new Generator(db, getEnvString("API_URL"));
+    new Generator(db, apiURL);
 }
 
 main().catch(e => console.error(e));

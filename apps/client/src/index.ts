@@ -11,6 +11,7 @@ import { PicturesPage } from "./pages/pictures.page";
 import { DataCache } from "@eurekai/shared/src/cache";
 import { AbstractPageElement } from "./pages/abstract.page.element";
 import { EditPage } from "./pages/edit.page";
+import { SettingsPage } from "./pages/settings.page";
 
 interface PageConstructor {
     new(cache: DataCache): AbstractPageElement;
@@ -42,6 +43,7 @@ class App {
         this._bindPage("projectsButton", ProjectsPage);
         this._bindPage("promptsButton", PromptsPage);
         this._bindPage("picturesButton", PicturesPage);
+        this._bindPage("settingsButton", SettingsPage);
 
         this._setPage(ProjectsPage);
     }
