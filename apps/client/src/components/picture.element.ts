@@ -3,11 +3,12 @@ import { AbstractDTOElement } from "./abstract.dto.element";
 
 export class PictureElement extends AbstractDTOElement<PictureDTO> {
 
-    constructor(data: PictureDTO, public prompt: PromptDTO | undefined, protected _options: {
+    constructor(data: PictureDTO, public prompt: PromptDTO | undefined, public isPreferredSeed: boolean, protected _options: {
         accept: () => void,
         reject: () => void,
         start: () => void,
         stop: () => void,
+        toggleSeed: () => void,
         fetch: (attachmentId: number) => Promise<string>
     }) {
         super(data, require("./picture.element.html").default);
@@ -31,6 +32,7 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         this._bindClick("reject", this._options.reject);
         this._bindClick("start", this._options.start);
         this._bindClick("stop", this._options.stop);
+        this._bindClick("seed", this._options.toggleSeed);
 
         // Get element with class "image"
         const img: HTMLImageElement = this.querySelector(".card-img-top") as HTMLImageElement;

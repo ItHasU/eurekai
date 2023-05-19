@@ -53,6 +53,10 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             "bufferSize": "INTEGER",
             "acceptedTarget": "INTEGER"
         });
+        await this._initTable("seeds", {
+            "projectId": "INTEGER",
+            "seed": "INTEGER"
+        });
         await this._initTable("pictures", {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
             "projectId": "INTEGER",
@@ -351,6 +355,49 @@ export class DatabaseWrapper extends AbstractDataWrapper {
                 }
             });
         });
+    }
+
+    //#endregion
+
+    //#region Seeds management ------------------------------------------------
+
+    /** @inheritdoc */
+    public override getSeeds(projectId: number): Promise<number[]> {
+        return new Promise<number[]>((resolve, reject) => {
+            this._db.all(`SELECT seed FROM ${t("seeds")} WHERE projectId = ?`, [projectId], (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows.map((row: any) => row.seed));
+                }
+            });
+        });
+    }
+
+    /** @inheritdoc */
+    public override async setSeedPreferred(projectId: number, seed: number, preferred: boolean): Promise<void> {
+        // Clean preferred seeds
+        await new Promise<void>((resolve, reject) => {
+            this._db.all('DELETE FROM seeds WHERE projectId = ? AND seed = ?', [projectId, seed], (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+        // Add preferred seed if needed
+        if (preferred) {
+            await new Promise<void>((resolve, reject) => {
+                this._db.all('INSERT INTO seeds (projectId, seed) VALUES (?, ?)', [projectId, seed], (err) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve();
+                    }
+                });
+            });
+        }
     }
 
     //#endregion

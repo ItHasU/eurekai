@@ -43,6 +43,7 @@ export class PicturesPage extends AbstractPageElement {
     protected override async _refresh(): Promise<void> {
         const prompts = await this._cache.getPrompts();
         const picturesRaw = await this._cache.getPictures();
+        const preferredSeeds = await this._cache.getSeeds();
 
         const promptsMap: { [id: number]: PromptDTO } = {};
         for (const prompt of prompts) {
@@ -127,7 +128,7 @@ export class PicturesPage extends AbstractPageElement {
             previousPromptId = picture.promptId;
 
             // -- Add the picture --
-            const item = new PictureElement(picture, prompt, {
+            const item = new PictureElement(picture, prompt, preferredSeeds.has(picture.options.seed), {
                 accept: async () => {
                     await this._cache.withData(async (data) => {
                         await data.setPictureStatus(picture.id, ComputationStatus.ACCEPTED);
@@ -155,6 +156,13 @@ export class PicturesPage extends AbstractPageElement {
                     await this._cache.withData(async (data) => {
                         await data.setPromptActive(picture.promptId, false);
                         if (prompt) { prompt.active = false; }
+                    });
+                    item.refresh();
+                },
+                toggleSeed: async () => {
+                    await this._cache.withData(async (data) => {
+                        await data.setSeedPreferred(picture.projectId, picture.options.seed, !item.isPreferredSeed);
+                        item.isPreferredSeed = !item.isPreferredSeed;
                     });
                     item.refresh();
                 },

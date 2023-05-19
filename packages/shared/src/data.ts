@@ -69,6 +69,16 @@ export abstract class AbstractDataWrapper {
 
     //#endregion
 
+    //#region Seeds
+
+    /** Get the list of seeds */
+    public abstract getSeeds(projectId: number): Promise<number[]>;
+
+    /** Toggle preferred seed */
+    public abstract setSeedPreferred(projectId: number, seed: number, preferred: boolean): Promise<void>;
+
+    //#endregion
+
     //#region Pictures
 
     /** Get all pictures for a project */

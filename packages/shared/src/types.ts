@@ -34,6 +34,7 @@ export interface Txt2ImgOptions {
 export type Tables = {
     "projects": ProjectDTO;
     "prompts": PromptDTO;
+    "seeds": SeedDTO;
     "pictures": PictureDTO;
     "attachments": AttachmentDTO;
 };
@@ -50,7 +51,7 @@ export interface ProjectDTO {
     height: number;
 }
 
-export interface ProjectWithStats extends ProjectDTO{
+export interface ProjectWithStats extends ProjectDTO {
     /** Count of prompts */
     prompts: number;
     /** Count of pictures waiting for evaluaton */
@@ -105,6 +106,13 @@ export interface PromptDTO {
     bufferSize: number;
     /** Target count of accepted images for this prompt */
     acceptedTarget: number;
+}
+
+export interface SeedDTO {
+    /** id of the project */
+    projectId: number;
+    /** the seed */
+    seed: number;
 }
 
 export interface AttachmentDTO {

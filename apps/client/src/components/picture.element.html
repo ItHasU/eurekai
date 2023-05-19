@@ -17,9 +17,9 @@
           {{/if}}
         </div>
         <div>
-          <a href="javascript: void(0);">
+          <a ref="seed" href="javascript: void(0);">
             <span class="seed">{{data.options.seed}}</span>
-            <i class="bi bi-heart"></i>
+            <i class="bi bi-heart{{#if isPreferredSeed}}-fill text-danger{{/if}}"></i>
           </a>
         </div>
       </div>

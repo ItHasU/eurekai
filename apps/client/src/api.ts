@@ -85,6 +85,18 @@ export class API extends AbstractDataWrapper {
 
     //#endregion
 
+    //#region Seeds
+
+    public override getSeeds(projectId: number): Promise<number[]> {
+        return this._apiCall<number[]>("getSeeds", projectId);
+    }
+
+    public override setSeedPreferred(projectId: number, seed: number, preferred: boolean): Promise<void> {
+        return this._apiCall<void>("setSeedPreferred", projectId, seed, preferred);
+    }
+
+    //#endregion
+
     //#region Pictures
 
     public override getPictures(projectId: number, promptId?: number | undefined): Promise<PictureDTO[]> {

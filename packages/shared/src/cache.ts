@@ -15,6 +15,8 @@ export class DataCache {
     protected _projectsCache: Promise<ProjectWithStats[]> | null = null;
     /** List of prompts for the selected project */
     protected _promptsCache: Promise<PromptDTO[]> | null = null;
+    /** List of seeds for the selected project */
+    protected _seedsCache: Promise<Set<number>> | null = null;
     /** List of pictures for the selected project */
     protected _picturesCache: Promise<PictureDTO[]> | null = null;
 
@@ -33,6 +35,7 @@ export class DataCache {
     public markDirty(): void {
         this._projectsCache = null;
         this._promptsCache = null;
+        this._seedsCache = null;
         this._picturesCache = null;
     }
 
@@ -108,6 +111,20 @@ export class DataCache {
     public async getPrompt(id: number): Promise<PromptDTO | null> {
         const prompts = await this.getPrompts();
         return prompts.find(x => x.id === id) ?? null;
+    }
+
+    //#endregion
+
+    //#region Seeds -----------------------------------------------------------
+
+    public async getSeeds(): Promise<Set<number>> {
+        if (this._selectedProjectId == null) {
+            return Promise.resolve(new Set());
+        }
+        if (this._seedsCache == null) {
+            this._seedsCache = this._data.getSeeds(this._selectedProjectId).then(seeds => new Set(seeds));
+        }
+        return this._seedsCache;
     }
 
     //#endregion
