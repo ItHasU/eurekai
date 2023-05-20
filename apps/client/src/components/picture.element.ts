@@ -51,6 +51,20 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         });
         observer.observe(img);
 
+        // Prevent scrolling when touching at the center of the image
+        img.addEventListener("touchstart", (ev) => {
+            // Get the position of the touch point
+            const touch = ev.touches[0];
+            const x = touch.clientX;
+            // Do a ratio with the image width
+            const ratio = x / img.clientWidth;
+            // If the touch is in the center of the image
+            if (ratio > 0.33 && ratio < 0.66) {
+                // Prevent scrolling
+                ev.preventDefault();
+            }
+        });
+
         // -- Bind swipe on image events --
         // create a simple instance
         // by default, it only adds horizontal recognizers
