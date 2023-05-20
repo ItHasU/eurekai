@@ -16,7 +16,6 @@ export async function txt2img(apiUrl: string, options: Txt2ImgOptions): Promise<
         throw new Error(result.statusText);
     } else {
         const data = await result.json() as { images: string[] };
-        console.log(data);
         if (!data.images) {
             throw new Error('api returned an invalid response');
         }

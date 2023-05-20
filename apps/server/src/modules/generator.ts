@@ -33,7 +33,10 @@ export class Generator {
 
             console.log(`Selected #${firstPrompt.orderIndex}, ${firstPrompt.pendingPictureCount}/${firstPrompt.bufferSize} pending, ${firstPrompt.acceptedPictureCount}/${firstPrompt.acceptedTarget} accepted`);
 
-            const picture = await this._data.createPictureFromPrompt({ prompt: firstPrompt });
+            // -- Check if there is a preferred seed pending --
+            const preferredSeed = await this._data.getSeedPending(firstPrompt.id);
+
+            const picture = await this._data.createPictureFromPrompt(firstPrompt, preferredSeed ?? undefined);
             const apiUrl = this._apiUrl;
             console.debug(`Requesting a new image on ${apiUrl}...`);
             try {

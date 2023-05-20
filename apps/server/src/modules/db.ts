@@ -307,7 +307,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
                 LEFT JOIN ${t("pictures")} AS pic2 ON pic2.promptId = p.id AND pic2.computed = ${ComputationStatus.ACCEPTED}
                 WHERE p.active = 1
                 GROUP BY p.id
-                HAVING pendingPictureCount < p.bufferSize AND acceptedPictureCount < p.acceptedTarget
+                HAVING (p.bufferSize = 0 OR pendingPictureCount < p.bufferSize) AND (p.acceptedTarget = 0 OR acceptedPictureCount < p.acceptedTarget)
                 ORDER BY pendingPictureCount`, (err, rows) => {
                 if (err) {
                     reject(err);
@@ -400,6 +400,28 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         }
     }
 
+    /** Get one preferred seed that is not generated yet for the given prompt */
+    public async getSeedPending(promptId: number): Promise<number | null> {
+        return new Promise<number | null>((resolve, reject) => {
+            this._db.get(`
+                SELECT seeds.seed FROM prompts 
+                JOIN seeds ON seeds.projectId = prompts.projectId 
+                WHERE 
+                    prompts.id = ? AND 
+                    seeds.seed NOT IN (
+                        SELECT pictures.options->>"$.seed" AS seed FROM pictures 
+                        WHERE pictures.promptId = ?
+                    );
+            `, [promptId, promptId], (err, row) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve((row as { seed: number })?.seed ?? null);
+                }
+            });
+        });
+    }
+
     //#endregion
 
     //#region Pictures management ---------------------------------------------
@@ -431,7 +453,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     }
 
     /** Create a picture from  */
-    public async createPictureFromPrompt({ prompt }: { prompt: PromptDTO; }): Promise<PictureDTO> {
+    public async createPictureFromPrompt(prompt: PromptDTO, seed?: number): Promise<PictureDTO> {
         const project = await this.getProject(prompt.projectId);
         if (!project) {
             throw new Error(`Project ${prompt.projectId} not found`);
@@ -447,7 +469,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
                 height: project.height,
                 prompt: prompt.prompt,
                 negative_prompt: prompt.negative_prompt,
-                seed: Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
+                seed: seed ?? (Math.floor(Math.random() * Number.MAX_SAFE_INTEGER))
             }
         };
         return this.addPicture(picture);
