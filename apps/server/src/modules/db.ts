@@ -155,7 +155,6 @@ export class DatabaseWrapper extends AbstractDataWrapper {
                     (SELECT COUNT(id) FROM pictures WHERE computed=${ComputationStatus.REJECTED} AND projectId = projects.id) rejectedCount
                 FROM ${t("projects")}
             `;
-            console.log(query);
             this._db.all(query, (err, rows) => {
                 if (err) {
                     reject(err);

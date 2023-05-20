@@ -1,5 +1,6 @@
 import { ComputationStatus, PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { AbstractDTOElement } from "./abstract.dto.element";
+import Hammer from "hammerjs";
 
 export class PictureElement extends AbstractDTOElement<PictureDTO> {
 
@@ -37,7 +38,7 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         // Get element with class "image"
         const img: HTMLImageElement = this.querySelector(".card-img-top") as HTMLImageElement;
         // Use an observer to detect when the image is displayed on screen
-        const observer = new IntersectionObserver(async(entries) => {
+        const observer = new IntersectionObserver(async (entries) => {
             if (entries.length > 0 && entries[0].target === img && entries[0].isIntersecting) {
                 // Load the image
                 if (this.data.attachmentId != null) {
@@ -49,6 +50,27 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
             }
         });
         observer.observe(img);
+
+        // -- Bind swipe on image events --
+        // create a simple instance
+        // by default, it only adds horizontal recognizers
+        var mc = new Hammer(img);
+
+        // listen to events...
+        mc.on("swipeleft swiperight", (ev) => {
+            if (!ev.isFinal) {
+                // Ensure a minimal swipe distance
+                return;
+            }
+
+            if (ev.type == "swipeleft") {
+                ev.srcEvent.stopPropagation();
+                this._options.accept();
+            } else if (ev.type == "swiperight") {
+                ev.srcEvent.stopPropagation();
+                this._options.reject();
+            }
+        });
     }
 }
 

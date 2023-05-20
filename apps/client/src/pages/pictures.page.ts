@@ -11,9 +11,11 @@ function scrollToNextSibling(node: HTMLElement): void {
         return;
     }
 
-    const next = node.nextElementSibling;
+    const next = node.nextElementSibling as HTMLElement | null;
     if (next) {
-        next.scrollIntoView();
+        next.scrollIntoView({
+            behavior: "smooth"
+        });
     } else {
         // We are done
     }
