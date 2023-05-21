@@ -1,8 +1,25 @@
 import { ComputationStatus, PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { AbstractDTOElement } from "./abstract.dto.element";
-import Hammer from "hammerjs";
+
+enum SwipeMode {
+    NONE,
+    ACCEPT_STARTED,
+    ACCEPT_DONE,
+    REJECT_STARTED,
+    REJECT_DONE
+}
+
+const colors: Record<SwipeMode, string> = {
+    [SwipeMode.NONE]: "",
+    [SwipeMode.ACCEPT_STARTED]: "rgba(0, 255, 0, 0.1)",
+    [SwipeMode.ACCEPT_DONE]: "rgba(0, 255, 0, 0.5)",
+    [SwipeMode.REJECT_STARTED]: "rgba(255, 0, 0, 0.1)",
+    [SwipeMode.REJECT_DONE]: "rgba(255, 0, 0, 0.5)"
+};
 
 export class PictureElement extends AbstractDTOElement<PictureDTO> {
+
+    protected _swipeMode: SwipeMode = SwipeMode.NONE;
 
     constructor(data: PictureDTO, public prompt: PromptDTO | undefined, public isPreferredSeed: boolean, protected _options: {
         accept: () => void,
@@ -36,10 +53,10 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         this._bindClick("seed", this._options.toggleSeed);
 
         // Get element with class "image"
-        const img: HTMLImageElement = this.querySelector(".card-img-top") as HTMLImageElement;
+        const img: HTMLImageElement = this.querySelector(".card-img-top > img") as HTMLImageElement;
         // Use an observer to detect when the image is displayed on screen
         const observer = new IntersectionObserver(async (entries) => {
-            if (entries.length > 0 && entries[0].target === img && entries[0].isIntersecting) {
+            if (entries.length > 0 && entries[0].target === img.parentElement && entries[0].isIntersecting) {
                 // Load the image
                 if (this.data.attachmentId != null) {
                     img.src = `/api/attachment/${this.data.attachmentId}`;
@@ -49,41 +66,91 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
                 img.removeAttribute("src");
             }
         });
-        observer.observe(img);
+        observer.observe(img.parentElement!); // Here we know that we have a parent element for sure due to the CSS selector
 
-        // Prevent scrolling when touching at the center of the image
+        // -- Handle swipe --
+        // Handle accept / reject swipe moves
+        // Prevent scrolling when touching outside the center of the image
+        const feedbackDiv: HTMLDivElement = this.querySelector(".card-img-top > div") as HTMLDivElement;
         img.addEventListener("touchstart", (ev) => {
+            console.log("touchstart", ev);
+            if (ev.touches.length != 1) {
+                // Don't care about multi-touch
+                this._swipeMode = SwipeMode.NONE;
+                return;
+            }
+
             // Get the position of the touch point
             const touch = ev.touches[0];
             const x = touch.clientX;
             // Do a ratio with the image width
             const ratio = x / img.clientWidth;
             // If the touch is in the center of the image
-            if (ratio > 0.33 && ratio < 0.66) {
-                // Prevent scrolling
+            if (ratio < 0.25) {
+                // Prevent scrolling, show reject icon
+                this._swipeMode = SwipeMode.REJECT_STARTED;
                 ev.preventDefault();
+            } else if (ratio > 0.75) {
+                // Prevent scrolling, show accept icon
+                this._swipeMode = SwipeMode.ACCEPT_STARTED;
+                ev.preventDefault();
+            } else {
+                // At the center, leave the default behavior
+                this._swipeMode = SwipeMode.NONE;
             }
+            feedbackDiv.style.background = colors[this._swipeMode];
         });
-
-        // -- Bind swipe on image events --
-        // create a simple instance
-        // by default, it only adds horizontal recognizers
-        var mc = new Hammer(img);
-
-        // listen to events...
-        mc.on("swipeleft swiperight", (ev) => {
-            if (!ev.isFinal) {
-                // Ensure a minimal swipe distance
+        img.addEventListener("touchmove", (ev) => {
+            console.log("touchmove", ev);
+            if (ev.touches.length < 1) {
+                // Don't care about multi-touch
+                this._swipeMode = SwipeMode.NONE;
+                feedbackDiv.style.background = colors[this._swipeMode];
                 return;
             }
 
-            if (ev.type == "swipeleft") {
-                ev.srcEvent.stopPropagation();
-                this._options.accept();
-            } else if (ev.type == "swiperight") {
-                ev.srcEvent.stopPropagation();
-                this._options.reject();
+            if (this._swipeMode != SwipeMode.NONE) {
+                // Prevent default behavior
+                ev.preventDefault();
             }
+
+            // Get the position of the touch point
+            const touch = ev.touches[0];
+            const x = touch.clientX;
+            // Do a ratio with the image width
+            const ratio = x / img.clientWidth;
+            // If the touch is in the center of the image
+            if (this._swipeMode == SwipeMode.REJECT_STARTED && ratio > 0.25) {
+                // We crossed the accept limit, reject the image
+                this._swipeMode = SwipeMode.REJECT_DONE;
+            } else if (this._swipeMode == SwipeMode.REJECT_DONE && ratio < 0.25) {
+                // Cancel the reject mode
+                this._swipeMode = SwipeMode.REJECT_STARTED;
+            } else if (this._swipeMode == SwipeMode.ACCEPT_STARTED && ratio < 0.75) {
+                // We crossed the reject limit, accept the image
+                this._swipeMode = SwipeMode.ACCEPT_DONE;
+            } else if (this._swipeMode == SwipeMode.ACCEPT_DONE && ratio > 0.75) {
+                // Cancel the accept mode
+                this._swipeMode = SwipeMode.ACCEPT_STARTED;
+            } else {
+                // Nothing to do
+            }
+
+            feedbackDiv.style.background = colors[this._swipeMode];
+        });
+        img.addEventListener("touchend", (ev) => {
+            if (this._swipeMode == SwipeMode.ACCEPT_DONE) {
+                // We crossed the accept limit, accept the image
+                this._options.accept();
+            } else if (this._swipeMode == SwipeMode.REJECT_DONE) {
+                // We crossed the reject limit, reject the image
+                this._options.reject();
+            } else {
+                // Nothing to do
+            }
+            // Reset the swipe mode
+            this._swipeMode = SwipeMode.NONE;
+            feedbackDiv.style.background = colors[this._swipeMode];
         });
     }
 }

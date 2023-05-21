@@ -1,6 +1,10 @@
 <div class="card mb-3 border-2 {{#if isAccepted}}border-success{{/if}} {{#if isRejected}}border-danger{{/if}}">
   <!-- Force image aspect ratio -->
-  <img class="card-img-top w-100" style="aspect-ratio: {{data.options.width}}/{{data.options.height}}" alt="Loading...">
+  <div class="card-img-top w-100" style="position: relative; aspect-ratio: {{data.options.width}}/{{data.options.height}};">
+    <div style="position: absolute; top: 0; left: 0; height: 100%; width: 100%; background-color: rgba(255,0,0, 0); pointer-events: none;">
+    </div>
+    <img class="w-100 h-100" alt="Loading...">
+  </div>
   <div class="card-body">
     <div class="card-text pb-2">
       <div class="d-flex justify-content-between">
