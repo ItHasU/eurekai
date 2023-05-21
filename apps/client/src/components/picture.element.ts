@@ -11,11 +11,13 @@ enum SwipeMode {
 
 const colors: Record<SwipeMode, string> = {
     [SwipeMode.NONE]: "",
-    [SwipeMode.ACCEPT_STARTED]: "rgba(0, 255, 0, 0.1)",
-    [SwipeMode.ACCEPT_DONE]: "rgba(0, 255, 0, 0.5)",
-    [SwipeMode.REJECT_STARTED]: "rgba(255, 0, 0, 0.1)",
-    [SwipeMode.REJECT_DONE]: "rgba(255, 0, 0, 0.5)"
+    [SwipeMode.ACCEPT_STARTED]: "rgba(0, 255, 0, 0.15)",
+    [SwipeMode.ACCEPT_DONE]: "rgba(0, 255, 0, 0.25)",
+    [SwipeMode.REJECT_STARTED]: "rgba(255, 0, 0, 0.15)",
+    [SwipeMode.REJECT_DONE]: "rgba(255, 0, 0, 0.25)"
 };
+
+const ACTION_SWIPE_MARGIN = 0.2;
 
 export class PictureElement extends AbstractDTOElement<PictureDTO> {
 
@@ -73,7 +75,6 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         // Prevent scrolling when touching outside the center of the image
         const feedbackDiv: HTMLDivElement = this.querySelector(".card-img-top > div") as HTMLDivElement;
         img.addEventListener("touchstart", (ev) => {
-            console.log("touchstart", ev);
             if (ev.touches.length != 1) {
                 // Don't care about multi-touch
                 this._swipeMode = SwipeMode.NONE;
@@ -86,11 +87,11 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
             // Do a ratio with the image width
             const ratio = x / img.clientWidth;
             // If the touch is in the center of the image
-            if (ratio < 0.25) {
+            if (ratio < ACTION_SWIPE_MARGIN) {
                 // Prevent scrolling, show reject icon
                 this._swipeMode = SwipeMode.REJECT_STARTED;
                 ev.preventDefault();
-            } else if (ratio > 0.75) {
+            } else if (ratio > (1 - ACTION_SWIPE_MARGIN)) {
                 // Prevent scrolling, show accept icon
                 this._swipeMode = SwipeMode.ACCEPT_STARTED;
                 ev.preventDefault();
@@ -101,7 +102,6 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
             feedbackDiv.style.background = colors[this._swipeMode];
         });
         img.addEventListener("touchmove", (ev) => {
-            console.log("touchmove", ev);
             if (ev.touches.length < 1) {
                 // Don't care about multi-touch
                 this._swipeMode = SwipeMode.NONE;
@@ -120,16 +120,16 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
             // Do a ratio with the image width
             const ratio = x / img.clientWidth;
             // If the touch is in the center of the image
-            if (this._swipeMode == SwipeMode.REJECT_STARTED && ratio > 0.25) {
+            if (this._swipeMode == SwipeMode.REJECT_STARTED && ratio > ACTION_SWIPE_MARGIN) {
                 // We crossed the accept limit, reject the image
                 this._swipeMode = SwipeMode.REJECT_DONE;
-            } else if (this._swipeMode == SwipeMode.REJECT_DONE && ratio < 0.25) {
+            } else if (this._swipeMode == SwipeMode.REJECT_DONE && ratio < ACTION_SWIPE_MARGIN) {
                 // Cancel the reject mode
                 this._swipeMode = SwipeMode.REJECT_STARTED;
-            } else if (this._swipeMode == SwipeMode.ACCEPT_STARTED && ratio < 0.75) {
+            } else if (this._swipeMode == SwipeMode.ACCEPT_STARTED && ratio < (1 - ACTION_SWIPE_MARGIN)) {
                 // We crossed the reject limit, accept the image
                 this._swipeMode = SwipeMode.ACCEPT_DONE;
-            } else if (this._swipeMode == SwipeMode.ACCEPT_DONE && ratio > 0.75) {
+            } else if (this._swipeMode == SwipeMode.ACCEPT_DONE && ratio > (1 - ACTION_SWIPE_MARGIN)) {
                 // Cancel the accept mode
                 this._swipeMode = SwipeMode.ACCEPT_STARTED;
             } else {
