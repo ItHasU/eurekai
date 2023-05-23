@@ -1,4 +1,4 @@
-import { ComputationStatus, PictureDTO, ProjectDTO, PromptDTO } from "@eurekai/shared/src/types";
+import { ComputationStatus, HighresStatus, PictureDTO, ProjectDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { AbstractPageElement } from "./abstract.page.element";
 import { PictureElement } from "src/components/picture.element";
 import { zipPictures } from "@eurekai/shared/src/utils";
@@ -165,6 +165,26 @@ export class PicturesPage extends AbstractPageElement {
                     await this._cache.withData(async (data) => {
                         await data.setSeedPreferred(picture.projectId, picture.options.seed, !item.isPreferredSeed);
                         item.isPreferredSeed = !item.isPreferredSeed;
+                    });
+                    item.refresh();
+                },
+                toggleHighres: async () => {
+                    await this._cache.withData(async (data) => {
+                        // FIXME : To implement
+                        switch (picture.highres) {
+                            case HighresStatus.NONE:
+                                await data.setPictureHighres(picture.id, true);
+                                picture.highres = HighresStatus.PENDING;
+                                break;
+                                case HighresStatus.PENDING:
+                                await data.setPictureHighres(picture.id, false);
+                                picture.highres = HighresStatus.NONE;
+                                break;
+                            case HighresStatus.COMPUTING:
+                            case HighresStatus.DONE:
+                                // No way to cancel
+                                break;
+                        }
                     });
                     item.refresh();
                 },

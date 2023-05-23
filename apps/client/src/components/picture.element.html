@@ -1,4 +1,4 @@
-<div class="card mb-3 border-2 {{#if isAccepted}}border-success{{/if}} {{#if isRejected}}border-danger{{/if}}">
+<div class="card mb-3 border-2 {{#if isAccepted}}border-success{{/if}} {{#if isRejected}}border-danger{{/if}}" data-id="{{data.id}}">
   <!-- Force image aspect ratio -->
   <div class="card-img-top w-100" style="position: relative; aspect-ratio: {{data.options.width}}/{{data.options.height}};">
     <div style="position: absolute; top: 0; left: 0; height: 100%; width: 100%; background-color: rgba(255,0,0, 0); pointer-events: none;">
@@ -45,9 +45,9 @@
       <div class="col">
         <button ref="accept" type="button" class="btn btn-success form-control"><i class="bi bi-check-lg"></i></button>
       </div>
-      <!-- <div class="col">
-        <button type="button" class="btn btn-primary form-control"><i class="bi bi-heart"></i></button>
-      </div> -->
+      <div class="col">
+        <button ref="highres" type="button" class="btn btn-primary form-control"><i class="bi bi-star"></i></button>
+      </div>
     </div>
     {{/if}}
   </div>

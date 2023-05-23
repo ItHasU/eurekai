@@ -1,4 +1,4 @@
-import { ComputationStatus, PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
+import { ComputationStatus, HighresStatus, PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { AbstractDTOElement } from "./abstract.dto.element";
 
 enum SwipeMode {
@@ -29,6 +29,7 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         start: () => void,
         stop: () => void,
         toggleSeed: () => void,
+        toggleHighres: () => void,
         fetch: (attachmentId: number) => Promise<string>
     }) {
         super(data, require("./picture.element.html").default);
@@ -53,6 +54,7 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         this._bindClick("start", this._options.start);
         this._bindClick("stop", this._options.stop);
         this._bindClick("seed", this._options.toggleSeed);
+        this._bindClick("highres", this._options.toggleHighres);
 
         // Get element with class "image"
         const img: HTMLImageElement = this.querySelector(".card-img-top > img") as HTMLImageElement;
@@ -152,6 +154,29 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
             this._swipeMode = SwipeMode.NONE;
             feedbackDiv.style.background = colors[this._swipeMode];
         });
+
+        // -- Handle highres --
+        const highresButton: HTMLButtonElement = this.querySelector("*[ref='highres']") as HTMLButtonElement;
+        const highresIcon: HTMLSpanElement = highresButton.querySelector("i") as HTMLElement;
+        highresIcon.classList.remove("bi-star", "bi-star-fill", "bi-star-half");
+        switch (this.data.highres) {
+            case HighresStatus.NONE:
+                highresIcon.classList.add("bi-star");
+                highresButton.disabled = false;
+                break;
+            case HighresStatus.PENDING:
+                highresIcon.classList.add("bi-star-half");
+                highresButton.disabled = false;
+                break;
+            case HighresStatus.COMPUTING:
+                highresIcon.classList.add("bi-star-half");
+                highresButton.disabled = true;
+                break;
+            case HighresStatus.DONE:
+                highresIcon.classList.add("bi-star-fill");
+                highresButton.disabled = true;
+                break;
+        }
     }
 }
 

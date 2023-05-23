@@ -72,6 +72,13 @@ export enum ComputationStatus {
     REJECTED
 }
 
+export enum HighresStatus {
+    NONE = 0,
+    PENDING,
+    COMPUTING,
+    DONE
+}
+
 export interface PictureDTO {
     /** id of the picture */
     id: number;
@@ -85,8 +92,12 @@ export interface PictureDTO {
     createdAt: number;
     /** Is picture computed */
     computed: ComputationStatus;
+    /** Is highres computed */
+    highres: HighresStatus;
     /** id field of the attachment (filled once computed) */
     attachmentId?: number;
+    /** id field of the highres attachment (filled once computed) */
+    highresAttachmentId?: number;
 }
 
 export interface PromptDTO {

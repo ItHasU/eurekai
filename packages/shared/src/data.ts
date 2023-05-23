@@ -87,6 +87,9 @@ export abstract class AbstractDataWrapper {
     /** Mark picture as accepted or rejected */
     public abstract setPictureStatus(id: number, status: ComputationStatus.ACCEPTED | ComputationStatus.REJECTED): Promise<void>;
 
+    /** Ask for Highres true to get an highres picture, false to cancel */
+    public abstract setPictureHighres(id: number, highres: boolean): Promise<void>;
+
     //#endregion
 
     //#region Attachments

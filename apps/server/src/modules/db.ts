@@ -1,4 +1,4 @@
-import { AttachmentDTO, ProjectWithStats, Txt2ImgOptions } from "@eurekai/shared/src/types";
+import { AttachmentDTO, HighresStatus, ProjectWithStats, Txt2ImgOptions } from "@eurekai/shared/src/types";
 import { ProjectDTO, Tables, TableName, t, PromptDTO, PictureDTO, ComputationStatus } from "@eurekai/shared/src/types";
 import { AbstractDataWrapper, SDModels } from "@eurekai/shared/src/data";
 import sqlite3 from "sqlite3";
@@ -64,7 +64,9 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             "options": "TEXT", // JSON
             "createdAt": "DATE",
             "computed": "INTEGER",
-            "attachmentId": "INTEGER NULL"
+            "highres": "INTEGER DEFAULT 0",
+            "attachmentId": "INTEGER NULL",
+            "highresAttachmentId": "INTEGER NULL"
         });
         await this._initTable("attachments", {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
@@ -462,6 +464,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             projectId: prompt.projectId,
             promptId: prompt.id,
             createdAt: new Date().getTime(),
+            highres: HighresStatus.NONE,
             options: {
                 ...DEFAULT_PARAMETERS,
                 width: project.width,
@@ -512,6 +515,22 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     public async setPictureStatus(id: number, status: ComputationStatus.ACCEPTED | ComputationStatus.REJECTED | ComputationStatus.ERROR): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this._db.run(`UPDATE ${t("pictures")} SET computed = ? WHERE id = ?`, [status, id], (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    }
+
+    public override setPictureHighres(id: number, highres: boolean): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            this._db.run(`UPDATE ${t("pictures")} SET highres = ? WHERE id = ? AND highres = ?`, [
+                highres ? HighresStatus.PENDING : HighresStatus.NONE, // Status to assign
+                id, 
+                highres ? HighresStatus.NONE : HighresStatus.PENDING // Only toggle state if computation is not started yet
+            ], (err) => {
                 if (err) {
                     reject(err);
                 } else {

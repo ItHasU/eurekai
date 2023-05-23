@@ -107,6 +107,10 @@ export class API extends AbstractDataWrapper {
         return this._apiCall<void>("setPictureStatus", id, status);
     }
 
+    public override setPictureHighres(id: number, highres: boolean): Promise<void> {
+        return this._apiCall<void>("setPictureHighres", id, highres);
+    }
+
     //#endregion
 
     //#region Attachments
