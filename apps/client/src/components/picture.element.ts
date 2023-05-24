@@ -176,6 +176,10 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
                 highresIcon.classList.add("bi-star-fill");
                 highresButton.disabled = true;
                 break;
+            case HighresStatus.ERROR:
+                highresIcon.classList.add("bi-star");
+                highresButton.disabled = false;
+                break;
         }
     }
 }

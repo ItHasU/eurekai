@@ -46,8 +46,8 @@ export class API extends AbstractDataWrapper {
     }
 
     /** @inheritdoc */
-    public override updateProject(projectId: number, name: string, width: number, height: number): Promise<void> {
-        return this._apiCall<void>("updateProject", projectId, name, width, height);
+    public override updateProject(projectId: number, name: string, width: number, height: number, scale: number): Promise<void> {
+        return this._apiCall<void>("updateProject", projectId, name, width, height, scale);
     }
 
     /** @inheritdoc */

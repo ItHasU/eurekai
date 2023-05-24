@@ -24,6 +24,9 @@ export interface Txt2ImgOptions {
 
     cfg_scale: number;
 
+    enable_hr?: boolean;
+    hr_scale?: number;
+
     save_images?: boolean;
 }
 
@@ -49,6 +52,8 @@ export interface ProjectDTO {
     name: string;
     width: number;
     height: number;
+    /** Highres scale */
+    scale: number;
 }
 
 export interface ProjectWithStats extends ProjectDTO {
@@ -76,7 +81,8 @@ export enum HighresStatus {
     NONE = 0,
     PENDING,
     COMPUTING,
-    DONE
+    DONE,
+    ERROR
 }
 
 export interface PictureDTO {

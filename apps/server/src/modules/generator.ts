@@ -1,4 +1,4 @@
-import { ComputationStatus } from "@eurekai/shared/src/types";
+import { ComputationStatus, HighresStatus } from "@eurekai/shared/src/types";
 import { txt2img } from "./api";
 import { DatabaseWrapper } from "./db";
 
@@ -15,6 +15,36 @@ export class Generator {
     }
 
     protected async _unqueue(): Promise<boolean> {
+        // -- Get pending highres pictures --
+        const highresPictures = await this._data.getPicturesHighresPending();
+        if (highresPictures.length > 0) {
+            console.debug(`${highresPictures.length} highres picture(s) pending`);
+            const picture = highresPictures[0];
+            const project = await this._data.getProject(picture.projectId);
+            if (project != null) {
+                const apiUrl = this._apiUrl;
+                console.debug(`Requesting a new highres image on ${apiUrl}...`);
+                try {
+                    await this._data.setPictureHighresStatus(picture.id, HighresStatus.COMPUTING);
+                    const images = await txt2img(apiUrl, {
+                        ...picture.options,
+                        enable_hr: true,
+                        hr_scale: project.scale
+                    });
+                    console.debug(`${images.length} image(s) received`);
+                    if (images.length > 0) {
+                        await this._data.setPictureHighresData(picture.id, images[0]);
+                    }
+                    return true;
+                } catch (err) {
+                    await this._data.setPictureHighresStatus(picture.id, HighresStatus.ERROR);
+                    console.error(err);
+                }
+            } else {
+                // Make sure we won't try again
+                await this._data.setPictureHighresStatus(picture.id, HighresStatus.ERROR);
+            }
+        }
         // -- Get active prompts --
         const prompts = await this._data.getPendingPrompts();
         if (prompts.length === 0) {

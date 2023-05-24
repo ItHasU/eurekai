@@ -41,7 +41,8 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
             "name": "TEXT",
             "width": "INTEGER DEFAULT 512",
-            "height": "INTEGER DEFAULT 512"
+            "height": "INTEGER DEFAULT 512",
+            "scale": "INTEGER DEFAULT 2"
         });
         await this._initTable("prompts", {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
@@ -170,7 +171,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     /** @inheritdoc */
     public override addProject(name: string, width: number, height: number): Promise<number> {
         return new Promise<number>((resolve, reject) => {
-            this._db.run(`INSERT INTO ${t("projects")} (name, width, height) VALUES (?, ?, ?)`, [name, width ?? 512, height ?? 512], function (err) {
+            this._db.run(`INSERT INTO ${t("projects")} (name, width, height, scale) VALUES (?, ?, ?, 2)`, [name, width ?? 512, height ?? 512], function (err) {
                 if (err) {
                     reject(err);
                 } else {
@@ -181,9 +182,9 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     }
 
     /** @inheritdoc */
-    public override updateProject(projectId: number, name: string, width: number, height: number): Promise<void> {
+    public override updateProject(projectId: number, name: string, width: number, height: number, scale: number): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            this._db.run(`UPDATE ${t("projects")} SET name = ?, width = ?, height = ? WHERE id = ?`, [name, width, height, projectId], (err) => {
+            this._db.run(`UPDATE ${t("projects")} SET name = ?, width = ?, height = ?, scale = ? WHERE id = ?`, [name, width, height, scale, projectId], (err) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -511,6 +512,23 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         });
     }
 
+    /** Save picture data as an attachment and mark image as done */
+    public async setPictureHighresData(id: number, data: string): Promise<void> {
+        // Save data as attachment
+        const attachmentId = await this.addAttachment(data);
+
+        // Update picture
+        return new Promise<void>((resolve, reject) => {
+            this._db.run(`UPDATE ${t("pictures")} SET highresAttachmentId = ?, highres = ? WHERE id = ?`, [attachmentId, HighresStatus.DONE, id], (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    }
+
     /** @inheritdoc */
     public async setPictureStatus(id: number, status: ComputationStatus.ACCEPTED | ComputationStatus.REJECTED | ComputationStatus.ERROR): Promise<void> {
         return new Promise<void>((resolve, reject) => {
@@ -535,6 +553,33 @@ export class DatabaseWrapper extends AbstractDataWrapper {
                     reject(err);
                 } else {
                     resolve();
+                }
+            });
+        });
+    }
+
+    public setPictureHighresStatus(id: number, status: HighresStatus): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            this._db.run(`UPDATE ${t("pictures")} SET highres = ? WHERE id = ?`, [
+                status, // Status to assign
+                id
+            ], (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    }
+
+    public getPicturesHighresPending(): Promise<PictureDTO[]> {
+        return new Promise<PictureDTO[]>((resolve, reject) => {
+            this._db.all(`SELECT * FROM ${t("pictures")} WHERE highres = ?`, [HighresStatus.PENDING], (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows as PictureDTO[]);
                 }
             });
         });

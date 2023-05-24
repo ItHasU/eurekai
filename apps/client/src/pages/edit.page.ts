@@ -7,6 +7,7 @@ export class EditPage extends AbstractPageElement {
     protected readonly _nameInput: HTMLInputElement;
     protected readonly _widthInput: HTMLInputElement;
     protected readonly _heightInput: HTMLInputElement;
+    protected readonly _scaleInput: HTMLInputElement;
 
     constructor(cache: DataCache) {
         super(require("./edit.page.html").default, cache);
@@ -15,6 +16,7 @@ export class EditPage extends AbstractPageElement {
         this._nameInput = this.querySelector("#projectNameInput") as HTMLInputElement;
         this._widthInput = this.querySelector("#widthInput") as HTMLInputElement;
         this._heightInput = this.querySelector("#heightInput") as HTMLInputElement;
+        this._scaleInput = this.querySelector("#scaleInput") as HTMLInputElement;
 
         // Bind click on add project
         this._bindClickForRef("updateButton", async () => {
@@ -25,10 +27,11 @@ export class EditPage extends AbstractPageElement {
             const name = this._nameInput.value;
             const width = +this._widthInput.value;
             const height = +this._heightInput.value;
+            const scale = +this._scaleInput.value;
             if (name && width && height) {
                 try {
                     await this._cache.withData(async (data) => {
-                        await data.updateProject(projectId, name, width, height);
+                        await data.updateProject(projectId, name, width, height, scale);
                     });
                 } catch (err) {
                     console.error(err);
@@ -61,6 +64,7 @@ export class EditPage extends AbstractPageElement {
         this._nameInput.value = "";
         this._widthInput.value = "";
         this._heightInput.value = "";
+        this._scaleInput.value = "";
 
         // -- Get selected project --
         const projectId = await this._cache.getSelectedProjectId();
@@ -76,6 +80,7 @@ export class EditPage extends AbstractPageElement {
         this._nameInput.value = project.name;
         this._widthInput.value = project.width.toString();
         this._heightInput.value = project.height.toString();
+        this._scaleInput.value = project.scale.toString();
     }
 }
 
