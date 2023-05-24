@@ -15,6 +15,7 @@ export class Generator {
     }
 
     protected async _unqueue(): Promise<boolean> {
+        /**
         // -- Get pending highres pictures --
         const highresPictures = await this._data.getPicturesHighresPending();
         if (highresPictures.length > 0) {
@@ -45,6 +46,8 @@ export class Generator {
                 await this._data.setPictureHighresStatus(picture.id, HighresStatus.ERROR);
             }
         }
+        */
+
         // -- Get active prompts --
         const prompts = await this._data.getPendingPrompts();
         if (prompts.length === 0) {
