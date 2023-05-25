@@ -9,8 +9,14 @@ export class GalleryElement extends AbstractDTOElement<PictureDTO> {
 
     public override refresh(): void {
         super.refresh();
-        const img = this.querySelector("img") as HTMLImageElement;
-        img.src = `/api/attachment/${this.data.highresAttachmentId}`;
+        if (this.data.attachmentId) {
+            const img = this.querySelector("img.original") as HTMLImageElement;
+            img.src = `/api/attachment/${this.data.attachmentId}`;
+        }
+        if (this.data.highresAttachmentId) {
+            const img = this.querySelector("img.highres") as HTMLImageElement;
+            img.src = `/api/attachment/${this.data.highresAttachmentId}`;
+        }
     }
 
 }
