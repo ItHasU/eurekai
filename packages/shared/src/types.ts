@@ -66,6 +66,8 @@ export interface ProjectWithStats extends ProjectDTO {
     acceptedCount: number;
     /** Count of rejected pictures */
     rejectedCount: number;
+    /** Count of highres pictures */
+    highresCount: number;
 }
 
 export enum ComputationStatus {

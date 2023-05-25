@@ -155,7 +155,8 @@ export class DatabaseWrapper extends AbstractDataWrapper {
                     (SELECT COUNT(id) FROM prompts WHERE projectId = projects.id) prompts,
                     (SELECT COUNT(id) FROM pictures WHERE computed=${ComputationStatus.DONE} AND projectId = projects.id) doneCount,
                     (SELECT COUNT(id) FROM pictures WHERE computed=${ComputationStatus.ACCEPTED} AND projectId = projects.id) acceptedCount,
-                    (SELECT COUNT(id) FROM pictures WHERE computed=${ComputationStatus.REJECTED} AND projectId = projects.id) rejectedCount
+                    (SELECT COUNT(id) FROM pictures WHERE computed=${ComputationStatus.REJECTED} AND projectId = projects.id) rejectedCount,
+                    (SELECT COUNT(id) FROM pictures WHERE highres=${HighresStatus.DONE} AND projectId = projects.id) highresCount
                 FROM ${t("projects")}
             `;
             this._db.all(query, (err, rows) => {
