@@ -26,6 +26,7 @@ export interface Txt2ImgOptions {
 
     enable_hr?: boolean;
     hr_scale?: number;
+    denoising_strength?: number;
 
     save_images?: boolean;
 }

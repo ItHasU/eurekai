@@ -579,7 +579,10 @@ export class DatabaseWrapper extends AbstractDataWrapper {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve(rows as PictureDTO[]);
+                    resolve(rows.map((row: any) => {
+                        row.options = JSON.parse(row.options);
+                        return row;
+                    }));
                 }
             });
         });

@@ -31,7 +31,7 @@ export class GalleryPage extends AbstractPageElement {
         for (const picture of pictures) {
             // -- Add the picture --
             const item = new GalleryElement(picture);
-            item.classList.add("col-sm-12", "col-md-6", "col-lg-4");
+            item.classList.add("col-sm-12", "col-md-6");
             picturesDiv.appendChild(item);
             item.refresh();
         }

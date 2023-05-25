@@ -15,7 +15,6 @@ export class Generator {
     }
 
     protected async _unqueue(): Promise<boolean> {
-        /**
         // -- Get pending highres pictures --
         const highresPictures = await this._data.getPicturesHighresPending();
         if (highresPictures.length > 0) {
@@ -27,11 +26,13 @@ export class Generator {
                 console.debug(`Requesting a new highres image on ${apiUrl}...`);
                 try {
                     await this._data.setPictureHighresStatus(picture.id, HighresStatus.COMPUTING);
-                    const images = await txt2img(apiUrl, {
+                    const options = {
                         ...picture.options,
                         enable_hr: true,
-                        hr_scale: project.scale
-                    });
+                        hr_scale: project.scale,
+                        denoising_strength: 0.6
+                    };
+                    const images = await txt2img(apiUrl, options);
                     console.debug(`${images.length} image(s) received`);
                     if (images.length > 0) {
                         await this._data.setPictureHighresData(picture.id, images[0]);
@@ -46,7 +47,6 @@ export class Generator {
                 await this._data.setPictureHighresStatus(picture.id, HighresStatus.ERROR);
             }
         }
-        */
 
         // -- Get active prompts --
         const prompts = await this._data.getPendingPrompts();
