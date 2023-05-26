@@ -42,7 +42,8 @@ export class ProjectsPage extends AbstractPageElement {
     /** @inheritdoc */
     public override async _refresh(): Promise<void> {
         // -- Fech projects --
-        const projects = await this._cache.getProjects();
+        const projects = [...await this._cache.getProjects()];
+        projects.sort((a, b) => -(a.id - b.id));
 
         // -- Render projects --
         // Clear projects
