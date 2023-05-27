@@ -3,12 +3,16 @@ import { AbstractDTOElement } from "./abstract.dto.element";
 
 export class GalleryElement extends AbstractDTOElement<PictureDTO> {
 
-    constructor(data: PictureDTO) {
+    constructor(data: PictureDTO, protected _options: {
+        delete: () => void;
+    }) {
         super(data, require("./gallery.element.html").default);
     }
 
     public override refresh(): void {
         super.refresh();
+        this._bindClick("delete", this._options.delete);
+        
         if (this.data.attachmentId) {
             const img = this.querySelector("img.original") as HTMLImageElement;
             img.src = `/api/attachment/${this.data.attachmentId}`;

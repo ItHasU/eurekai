@@ -90,6 +90,9 @@ export abstract class AbstractDataWrapper {
     /** Ask for Highres true to get an highres picture, false to cancel */
     public abstract setPictureHighres(id: number, highres: boolean): Promise<void>;
 
+    /** Delete a picture highres attachment */
+    public abstract deletePictureHighres(id: number): Promise<void>;
+
     //#endregion
 
     //#region Attachments

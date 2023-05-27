@@ -30,7 +30,14 @@ export class GalleryPage extends AbstractPageElement {
         const picturesDiv = this.querySelector("#picturesDiv") as HTMLDivElement;
         for (const picture of pictures) {
             // -- Add the picture --
-            const item = new GalleryElement(picture);
+            const item = new GalleryElement(picture, {
+                delete: async () => {
+                    await this._cache.withData(async (data) => {
+                        data.deletePictureHighres(picture.id);
+                    });
+                    this.refresh();
+                }
+            });
             item.classList.add("col-sm-12", "col-md-6");
             picturesDiv.appendChild(item);
             item.refresh();

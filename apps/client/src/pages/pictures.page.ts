@@ -172,17 +172,19 @@ export class PicturesPage extends AbstractPageElement {
                     await this._cache.withData(async (data) => {
                         // FIXME : To implement
                         switch (picture.highres) {
+                            case HighresStatus.DELETED:
+                            case HighresStatus.ERROR:
                             case HighresStatus.NONE:
                                 await data.setPictureHighres(picture.id, true);
                                 picture.highres = HighresStatus.PENDING;
                                 break;
-                                case HighresStatus.PENDING:
+                            case HighresStatus.PENDING:
                                 await data.setPictureHighres(picture.id, false);
                                 picture.highres = HighresStatus.NONE;
                                 break;
                             case HighresStatus.COMPUTING:
                             case HighresStatus.DONE:
-                                // No way to cancel
+                                // No way to cancel from there
                                 break;
                         }
                     });

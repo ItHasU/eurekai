@@ -564,7 +564,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
 
     public override setPictureHighres(id: number, highres: boolean): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            this._db.run(`UPDATE ${t("pictures")} SET highres = ? WHERE id = ? AND highres = ?`, [
+            this._db.run(`UPDATE ${t("pictures")} SET highres = ? WHERE id = ? AND (highres = ? OR highres > ${HighresStatus.DONE})`, [
                 highres ? HighresStatus.PENDING : HighresStatus.NONE, // Status to assign
                 id, 
                 highres ? HighresStatus.NONE : HighresStatus.PENDING // Only toggle state if computation is not started yet
@@ -606,6 +606,21 @@ export class DatabaseWrapper extends AbstractDataWrapper {
                 }
             });
         });
+    }
+
+    public override async deletePictureHighres(id: number): Promise<void> {
+        await new Promise<void>((resolve, reject) => {
+            this._db.run(`UPDATE ${t("pictures")} SET highres = ${HighresStatus.DELETED} WHERE id = ? AND highres >= ${HighresStatus.DONE}`, [
+                id
+            ], (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+        await this._purgeAttachments();
     }
 
     //#endregion
