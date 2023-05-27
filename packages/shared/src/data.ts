@@ -101,6 +101,9 @@ export abstract class AbstractDataWrapper {
 
     //#region System
 
+    /** Fix highres status for corrupted images */
+    public abstract fixHighres(): Promise<void>;
+
     /** Call vacuum on the database */
     public abstract vacuum(): Promise<void>;
 

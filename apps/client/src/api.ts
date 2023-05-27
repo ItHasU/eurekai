@@ -128,6 +128,11 @@ export class API extends AbstractDataWrapper {
         return this._apiCall<void>("vacuum");
     }
 
+    /** @inheritdoc */
+    public override fixHighres(): Promise<void> {
+        return this._apiCall<void>("fixHighres");
+    }
+
     //#endregion
 
     //#region Tools

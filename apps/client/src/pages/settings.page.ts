@@ -19,6 +19,9 @@ export class SettingsPage extends AbstractPageElement {
         this._bindClickForRef("vacuumButton", async () => {
             await this._cache.data.vacuum();
         });
+        this._bindClickForRef("fixHighresButton", async () => {
+            await this._cache.data.fixHighres();
+        });
     }
 
     /** @inheritdoc */

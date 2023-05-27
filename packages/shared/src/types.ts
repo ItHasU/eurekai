@@ -85,7 +85,8 @@ export enum HighresStatus {
     PENDING,
     COMPUTING,
     DONE,
-    ERROR
+    ERROR,
+    DELETED
 }
 
 export interface PictureDTO {

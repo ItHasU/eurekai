@@ -100,6 +100,23 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         });
     }
 
+    public override fixHighres(): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            this._db.run(`
+            UPDATE ${t("pictures")} SET highres = ${HighresStatus.ERROR}, highresAttachmentId = NULL WHERE id IN (
+                SELECT pictures.id FROM pictures 
+                    LEFT JOIN attachments ON pictures.highresAttachmentId=attachments.id 
+                    WHERE pictures.highresAttachmentId IS NOT NULL AND attachments.id IS NULL
+            )`, (err) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
+    }
+
     //#endregion
 
     //#region SD Models management --------------------------------------------
@@ -260,7 +277,9 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         // Purge attachments not linked to pictures anymore
         await new Promise<void>((resolve, reject) => {
             this._db.run(`DELETE FROM ${t("attachments")} WHERE id IN (
-                    SELECT attachments.id FROM attachments LEFT JOIN pictures ON attachments.id=pictures.attachmentId WHERE pictures.id IS NULL
+                    SELECT attachments.id FROM attachments 
+                    LEFT JOIN pictures ON attachments.id=pictures.attachmentId OR attachments.id=pictures.highresAttachmentId
+                    WHERE pictures.id IS NULL
                 );`, function (err) {
                 if (err) {
                     reject(err);
@@ -624,6 +643,8 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             this._db.get(`SELECT data FROM ${t("attachments")} WHERE id = ?`, [id], (err, row) => {
                 if (err) {
                     reject(err);
+                } else if (!row) {
+                    reject(new Error(`Attachment ${id} not found`));
                 } else {
                     resolve((row as AttachmentDTO).data);
                 }

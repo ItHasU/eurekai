@@ -177,7 +177,11 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
                 highresButton.disabled = true;
                 break;
             case HighresStatus.ERROR:
-                highresIcon.classList.add("bi-star");
+                highresIcon.classList.add("bi-star", "text-danger");
+                highresButton.disabled = false;
+                break;
+            case HighresStatus.DELETED:
+                highresIcon.classList.add("bi-star-fill", "text-muted");
                 highresButton.disabled = false;
                 break;
         }

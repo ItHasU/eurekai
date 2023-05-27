@@ -25,18 +25,23 @@ export function buildRoutes(data: AbstractDataWrapper): Router {
     router.get("/attachment/:id", async (req, res) => {
         // Send attachment as a png image from the base 64 string
         const id = +req.params.id;
-        const attachment = await data.getAttachment(id);
-        if (!attachment) {
-            res.status(404).send(`Attachment ${id} not found`);
-        } else {
-            var img = Buffer.from(attachment, 'base64');
+        try {
+            const attachment = await data.getAttachment(id);
+            if (!attachment) {
+                res.status(404).send(`Attachment ${id} not found`);
+            } else {
+                var img = Buffer.from(attachment, 'base64');
 
-            res.writeHead(200, {
-                'Content-Type': 'image/png',
-                'Content-Length': img.length,
-                'Cache-Control': 'max-age=86400' // 1 day in seconds
-            });
-            res.end(img);
+                res.writeHead(200, {
+                    'Content-Type': 'image/png',
+                    'Content-Length': img.length,
+                    'Cache-Control': 'max-age=86400' // 1 day in seconds
+                });
+                res.end(img);
+            }
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: new String(err) });
         }
     });
 
