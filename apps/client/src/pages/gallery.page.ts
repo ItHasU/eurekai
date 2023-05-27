@@ -35,7 +35,8 @@ export class GalleryPage extends AbstractPageElement {
                     await this._cache.withData(async (data) => {
                         data.deletePictureHighres(picture.id);
                     });
-                    this.refresh();
+                    // Remove item from the DOM
+                    item.remove();
                 }
             });
             item.classList.add("col-sm-12", "col-md-6");
