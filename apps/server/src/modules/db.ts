@@ -424,15 +424,12 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     /** Get rows */
     protected _all<Row>(query: string, params?: unknown[]): Promise<Row[]> {
         return new Promise((resolve, reject) => {
-            this._db.all(query, params, (err, rows) => {
+            this._db.all<Row>(query, params, (err, rows) => {
                 if (err) {
                     reject(err);
                 } else {
                     try {
-                        resolve(rows.map((row: any) => {
-                            row.options = JSON.parse(row.options);
-                            return row;
-                        }));
+                        resolve(rows);
                     } catch (e) {
                         reject(e);
                     }
@@ -442,15 +439,43 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     }
 
     protected _get<Row>(query: string, params?: unknown[]): Promise<Row | null> {
-        return Promise.resolve(null);
+        return new Promise((resolve, reject) => {
+            this._db.get<Row>(query, params, (err, row) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    try {
+                        resolve(row);
+                    } catch (e) {
+                        reject(e);
+                    }
+                }
+            });
+        });
     }
 
     protected _insert(query: string, params?: unknown[]): Promise<number> {
-        return Promise.resolve(-1);
+        return new Promise<number>((resolve, reject) => {
+            this._db.run(query, params, function (err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(this.lastID);
+                }
+            });
+        });
     }
 
     protected _run(query: string, params?: unknown[]): Promise<void> {
-        return Promise.resolve();
+        return new Promise<void>((resolve, reject) => {
+            this._db.run(query, params, function (err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
     }
 
     //#endregion
