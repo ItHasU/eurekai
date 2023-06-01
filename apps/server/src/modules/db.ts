@@ -1,9 +1,8 @@
 import { AttachmentDTO, HighresStatus, ProjectWithStats, Txt2ImgOptions } from "@eurekai/shared/src/types";
 import { ProjectDTO, Tables, TableName, t, PromptDTO, PictureDTO, ComputationStatus } from "@eurekai/shared/src/types";
 import { AbstractDataWrapper, SDModels } from "@eurekai/shared/src/data";
-import sqlite3 from "sqlite3";
 import { getModel, getModels, setModel } from "./api";
-import { resolve } from "path";
+import sqlite from "node-sqlite3-wasm";
 
 export interface PendingPrompt extends PromptDTO {
     pendingPictureCount: number;
@@ -28,11 +27,11 @@ const DEFAULT_PARAMETERS: Txt2ImgOptions = {
 };
 
 export class DatabaseWrapper extends AbstractDataWrapper {
-    protected _db: sqlite3.Database;
+    protected _db: sqlite.Database;
 
     constructor(protected _apiURL: string, dbPath: string) {
         super();
-        this._db = new sqlite3.Database(dbPath);
+        this._db = new sqlite.Database(dbPath);
     }
 
     //#region General management ----------------------------------------------
@@ -77,15 +76,8 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     }
 
     public async close(): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            this._db.close((err) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve();
-                }
-            });
-        });
+        this._db.close();
+        return Promise.resolve();
     }
 
     /** @inheritdoc */
@@ -218,7 +210,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     /** @inheritdoc */
     public override async addPrompt(entry: Omit<PromptDTO, "id" | "orderIndex">): Promise<void> {
         const nextIndex = await this._getPromptNextOrderIndex(entry.projectId);
-        return this._run(`INSERT INTO ${t("prompts")} (projectId, orderIndex, active, prompt, negative_prompt, bufferSize, acceptedTarget) VALUES (?, ?, ?, ?, ?, ?, ?)`, [entry.projectId, nextIndex, entry.active, entry.prompt, entry.negative_prompt, entry.bufferSize, entry.acceptedTarget]);
+        return this._run(`INSERT INTO ${t("prompts")} (projectId, orderIndex, active, prompt, negative_prompt, bufferSize, acceptedTarget) VALUES (?, ?, ?, ?, ?, ?, ?)`, [entry.projectId, nextIndex, entry.active, entry.prompt, entry.negative_prompt ?? null, entry.bufferSize, entry.acceptedTarget]);
     }
 
     protected async _getPromptNextOrderIndex(projectId: number): Promise<number> {
@@ -316,7 +308,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
 
     /** Save a picture in pending state */
     public async addPicture(entry: Omit<PictureDTO, "id" | "computed">): Promise<PictureDTO> {
-        const id = await this._insert(`INSERT INTO ${t("pictures")} (projectId, promptId, options, createdAt, computed, attachmentId) VALUES (?, ?, ?, ?, ?, ?)`, [entry.projectId, entry.promptId, JSON.stringify(entry.options), entry.createdAt, ComputationStatus.PENDING, entry.attachmentId]);
+        const id = await this._insert(`INSERT INTO ${t("pictures")} (projectId, promptId, options, createdAt, computed, attachmentId) VALUES (?, ?, ?, ?, ?, ?)`, [entry.projectId, entry.promptId, JSON.stringify(entry.options), entry.createdAt, ComputationStatus.PENDING, entry.attachmentId ?? null]);
         return {
             ...entry,
             id,
@@ -422,60 +414,41 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     //#region Tools -----------------------------------------------------------
 
     /** Get rows */
-    protected _all<Row>(query: string, params?: unknown[]): Promise<Row[]> {
-        return new Promise((resolve, reject) => {
-            this._db.all<Row>(query, params, (err, rows) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    try {
-                        resolve(rows);
-                    } catch (e) {
-                        reject(e);
-                    }
-                }
-            });
-        });
+    protected _all<Row>(query: string, params?: sqlite.JSValue[]): Promise<Row[]> {
+        try {
+            const rows = this._db.all(query, params) as Row[];
+            return Promise.resolve(rows);
+        } catch (e) {
+            return Promise.reject(e);
+        }
     }
 
-    protected _get<Row>(query: string, params?: unknown[]): Promise<Row | null> {
-        return new Promise((resolve, reject) => {
-            this._db.get<Row>(query, params, (err, row) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    try {
-                        resolve(row);
-                    } catch (e) {
-                        reject(e);
-                    }
-                }
-            });
-        });
+    protected _get<Row>(query: string, params?: sqlite.JSValue[]): Promise<Row | null> {
+        try {
+            const row = this._db.get(query, params) as Row | undefined;
+            return Promise.resolve(row ?? null);
+        } catch (e) {
+            return Promise.reject(e);
+        }
     }
 
-    protected _insert(query: string, params?: unknown[]): Promise<number> {
-        return new Promise<number>((resolve, reject) => {
-            this._db.run(query, params, function (err) {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(this.lastID);
-                }
-            });
-        });
+    protected async _insert(query: string, params?: sqlite.JSValue[]): Promise<number> {
+        try {
+            await this._run(query, params);
+            return (await this._get<{ id: number }>("SELECT last_insert_rowid() AS id"))?.id ?? -1;
+        } catch (e) {
+            return Promise.reject(e);
+        }
     }
 
-    protected _run(query: string, params?: unknown[]): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            this._db.run(query, params, function (err) {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve();
-                }
-            });
-        });
+    protected _run(query: string, params?: sqlite.JSValue[]): Promise<void> {
+        try {
+            this._db.run(query, params);
+            return Promise.resolve();
+        } catch (e) {
+            return Promise.reject(e);
+        }
+
     }
 
     //#endregion
