@@ -2,7 +2,7 @@ import { AttachmentDTO, HighresStatus, ProjectWithStats, Txt2ImgOptions } from "
 import { ProjectDTO, Tables, TableName, t, PromptDTO, PictureDTO, ComputationStatus } from "@eurekai/shared/src/types";
 import { AbstractDataWrapper, SDModels } from "@eurekai/shared/src/data";
 import { getModel, getModels, setModel } from "./api";
-import sqlite from "node-sqlite3-wasm";
+import sqlite from "better-sqlite3";
 
 export interface PendingPrompt extends PromptDTO {
     pendingPictureCount: number;
@@ -31,7 +31,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
 
     constructor(protected _apiURL: string, dbPath: string) {
         super();
-        this._db = new sqlite.Database(dbPath);
+        this._db = new sqlite(dbPath);
     }
 
     //#region General management ----------------------------------------------
@@ -210,7 +210,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     /** @inheritdoc */
     public override async addPrompt(entry: Omit<PromptDTO, "id" | "orderIndex">): Promise<void> {
         const nextIndex = await this._getPromptNextOrderIndex(entry.projectId);
-        return this._run(`INSERT INTO ${t("prompts")} (projectId, orderIndex, active, prompt, negative_prompt, bufferSize, acceptedTarget) VALUES (?, ?, ?, ?, ?, ?, ?)`, [entry.projectId, nextIndex, entry.active, entry.prompt, entry.negative_prompt ?? null, entry.bufferSize, entry.acceptedTarget]);
+        return this._run(`INSERT INTO ${t("prompts")} (projectId, orderIndex, active, prompt, negative_prompt, bufferSize, acceptedTarget) VALUES (?, ?, ?, ?, ?, ?, ?)`, [entry.projectId, nextIndex, entry.active, entry.prompt, entry.negative_prompt, entry.bufferSize, entry.acceptedTarget]);
     }
 
     protected async _getPromptNextOrderIndex(projectId: number): Promise<number> {
@@ -247,19 +247,20 @@ export class DatabaseWrapper extends AbstractDataWrapper {
 
     /** Get one preferred seed that is not generated yet for the given prompt */
     public async getSeedPending(promptId: number): Promise<number | null> {
-        return this._get<{ seed: number }>(`
-                SELECT seeds.seed FROM prompts 
-                JOIN seeds ON seeds.projectId = prompts.projectId 
-                WHERE 
-                    prompts.id = ? AND 
-                    seeds.seed NOT IN (
-                        SELECT pictures.options->>"$.seed" AS seed FROM pictures 
-                        WHERE pictures.promptId = ?
-                    );
-            `, [promptId, promptId])
-            .then(function (row) {
-                return row?.seed ?? null;
-            });
+        return Promise.resolve(null); // FIXME: Re-implement
+        // return this._get<{ seed: number }>(`
+        //         SELECT seeds.seed FROM prompts 
+        //         JOIN seeds ON seeds.projectId = prompts.projectId 
+        //         WHERE 
+        //             prompts.id = ? AND 
+        //             seeds.seed NOT IN (
+        //                 SELECT pictures.options->>"$.seed" AS seed FROM pictures 
+        //                 WHERE pictures.promptId = ?
+        //             );
+        //     `, [promptId, promptId])
+        //     .then(function (row) {
+        //         return row?.seed ?? null;
+        //     });
     }
 
     //#endregion
@@ -308,7 +309,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
 
     /** Save a picture in pending state */
     public async addPicture(entry: Omit<PictureDTO, "id" | "computed">): Promise<PictureDTO> {
-        const id = await this._insert(`INSERT INTO ${t("pictures")} (projectId, promptId, options, createdAt, computed, attachmentId) VALUES (?, ?, ?, ?, ?, ?)`, [entry.projectId, entry.promptId, JSON.stringify(entry.options), entry.createdAt, ComputationStatus.PENDING, entry.attachmentId ?? null]);
+        const id = await this._insert(`INSERT INTO ${t("pictures")} (projectId, promptId, options, createdAt, computed, attachmentId) VALUES (?, ?, ?, ?, ?, ?)`, [entry.projectId, entry.promptId, JSON.stringify(entry.options), entry.createdAt, ComputationStatus.PENDING, entry.attachmentId]);
         return {
             ...entry,
             id,
@@ -414,41 +415,40 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     //#region Tools -----------------------------------------------------------
 
     /** Get rows */
-    protected _all<Row>(query: string, params?: sqlite.JSValue[]): Promise<Row[]> {
+    protected _all<Row>(query: string, params: unknown[] = []): Promise<Row[]> {
         try {
-            const rows = this._db.all(query, params) as Row[];
+            const rows = this._db.prepare(query).all(...params) as Row[];
             return Promise.resolve(rows);
         } catch (e) {
             return Promise.reject(e);
         }
     }
 
-    protected _get<Row>(query: string, params?: sqlite.JSValue[]): Promise<Row | null> {
+    protected _get<Row>(query: string, params: unknown[] = []): Promise<Row | null> {
         try {
-            const row = this._db.get(query, params) as Row | undefined;
+            const row = this._db.prepare(query).get(...params) as Row | undefined;
             return Promise.resolve(row ?? null);
         } catch (e) {
             return Promise.reject(e);
         }
     }
 
-    protected async _insert(query: string, params?: sqlite.JSValue[]): Promise<number> {
+    protected async _insert(query: string, params: unknown[] = []): Promise<number> {
         try {
             await this._run(query, params);
-            return (await this._get<{ id: number }>("SELECT last_insert_rowid() AS id"))?.id ?? -1;
+            return (await this._get<{ id: number }>("SELECT last_insert_rowid() AS id", []))?.id ?? -1;
         } catch (e) {
             return Promise.reject(e);
         }
     }
 
-    protected _run(query: string, params?: sqlite.JSValue[]): Promise<void> {
+    protected _run(query: string, params: unknown[] = []): Promise<void> {
         try {
-            this._db.run(query, params);
+            this._db.prepare(query).run(...params);
             return Promise.resolve();
         } catch (e) {
             return Promise.reject(e);
         }
-
     }
 
     //#endregion

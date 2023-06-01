@@ -1,1 +1,1 @@
-module.exports = require("../../utils/bundle/webpack-server.config")(__dirname, "./src/main.ts", ["node-sqlite3-wasm", "express"]);
+module.exports = require("../../utils/bundle/webpack-server.config")(__dirname, "./src/main.ts", ["better-sqlite3", "express"]);
