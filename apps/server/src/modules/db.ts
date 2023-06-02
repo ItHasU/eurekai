@@ -26,6 +26,8 @@ const DEFAULT_PARAMETERS: Txt2ImgOptions = {
     save_images: true
 };
 
+type SQLValue = number | string | null;
+
 export class DatabaseWrapper extends AbstractDataWrapper {
     protected _db: sqlite.Database;
 
@@ -210,7 +212,17 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     /** @inheritdoc */
     public override async addPrompt(entry: Omit<PromptDTO, "id" | "orderIndex">): Promise<void> {
         const nextIndex = await this._getPromptNextOrderIndex(entry.projectId);
-        return this._run(`INSERT INTO ${t("prompts")} (projectId, orderIndex, active, prompt, negative_prompt, bufferSize, acceptedTarget) VALUES (?, ?, ?, ?, ?, ?, ?)`, [entry.projectId, nextIndex, entry.active, entry.prompt, entry.negative_prompt, entry.bufferSize, entry.acceptedTarget]);
+        return this._run(
+            `INSERT INTO ${t("prompts")} (projectId, orderIndex, active, prompt, negative_prompt, bufferSize, acceptedTarget) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [
+                entry.projectId,
+                nextIndex,
+                entry.active ? 1 : 0,
+                entry.prompt,
+                entry.negative_prompt ?? null,
+                entry.bufferSize,
+                entry.acceptedTarget
+            ]);
     }
 
     protected async _getPromptNextOrderIndex(projectId: number): Promise<number> {
@@ -221,7 +233,10 @@ export class DatabaseWrapper extends AbstractDataWrapper {
 
     /** @inheritdoc */
     public override async setPromptActive(id: number, active: boolean): Promise<void> {
-        return this._run(`UPDATE ${t("prompts")} SET active = ? WHERE id = ?`, [active, id]);
+        return this._run(`UPDATE ${t("prompts")} SET active = ? WHERE id = ?`, [
+            active ? 1 : 0, 
+            id
+        ]);
     }
 
     //#endregion
@@ -308,8 +323,18 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     }
 
     /** Save a picture in pending state */
-    public async addPicture(entry: Omit<PictureDTO, "id" | "computed">): Promise<PictureDTO> {
-        const id = await this._insert(`INSERT INTO ${t("pictures")} (projectId, promptId, options, createdAt, computed, attachmentId) VALUES (?, ?, ?, ?, ?, ?)`, [entry.projectId, entry.promptId, JSON.stringify(entry.options), entry.createdAt, ComputationStatus.PENDING, entry.attachmentId]);
+    public async addPicture(entry: Omit<PictureDTO, "id" | "computed" | "attachmentId">): Promise<PictureDTO> {
+        const id = await this._insert(
+            `INSERT INTO ${t("pictures")} (projectId, promptId, options, createdAt, computed, attachmentId) VALUES (?, ?, ?, ?, ?, ?)`,
+            [
+                entry.projectId,
+                entry.promptId,
+                JSON.stringify(entry.options),
+                entry.createdAt,
+                ComputationStatus.PENDING,
+                null
+            ]
+        );
         return {
             ...entry,
             id,
@@ -415,7 +440,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     //#region Tools -----------------------------------------------------------
 
     /** Get rows */
-    protected _all<Row>(query: string, params: unknown[] = []): Promise<Row[]> {
+    protected _all<Row>(query: string, params: SQLValue[] = []): Promise<Row[]> {
         try {
             const rows = this._db.prepare(query).all(...params) as Row[];
             return Promise.resolve(rows);
@@ -424,7 +449,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         }
     }
 
-    protected _get<Row>(query: string, params: unknown[] = []): Promise<Row | null> {
+    protected _get<Row>(query: string, params: SQLValue[] = []): Promise<Row | null> {
         try {
             const row = this._db.prepare(query).get(...params) as Row | undefined;
             return Promise.resolve(row ?? null);
@@ -433,7 +458,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         }
     }
 
-    protected async _insert(query: string, params: unknown[] = []): Promise<number> {
+    protected async _insert(query: string, params: SQLValue[] = []): Promise<number> {
         try {
             await this._run(query, params);
             return (await this._get<{ id: number }>("SELECT last_insert_rowid() AS id", []))?.id ?? -1;
@@ -442,7 +467,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         }
     }
 
-    protected _run(query: string, params: unknown[] = []): Promise<void> {
+    protected _run(query: string, params: SQLValue[] = []): Promise<void> {
         try {
             this._db.prepare(query).run(...params);
             return Promise.resolve();
