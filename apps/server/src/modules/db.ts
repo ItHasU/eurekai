@@ -64,6 +64,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
             "projectId": "INTEGER",
             "promptId": "INTEGER",
+            "seed": "INTEGER DEFAULT -1",
             "options": "TEXT", // JSON
             "createdAt": "DATE",
             "computed": "INTEGER",
@@ -253,29 +254,28 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     /** @inheritdoc */
     public override async setSeedPreferred(projectId: number, seed: number, preferred: boolean): Promise<void> {
         // Clean preferred seeds
-        await this._all('DELETE FROM seeds WHERE projectId = ? AND seed = ?', [projectId, seed]);
+        await this._run('DELETE FROM seeds WHERE projectId = ? AND seed = ?', [projectId, seed]);
         // Add preferred seed if needed
         if (preferred) {
-            await this._all('INSERT INTO seeds (projectId, seed) VALUES (?, ?)', [projectId, seed]);
+            await this._insert('INSERT INTO seeds (projectId, seed) VALUES (?, ?)', [projectId, seed]);
         }
     }
 
     /** Get one preferred seed that is not generated yet for the given prompt */
     public async getSeedPending(promptId: number): Promise<number | null> {
-        return Promise.resolve(null); // FIXME: Re-implement
-        // return this._get<{ seed: number }>(`
-        //         SELECT seeds.seed FROM prompts 
-        //         JOIN seeds ON seeds.projectId = prompts.projectId 
-        //         WHERE 
-        //             prompts.id = ? AND 
-        //             seeds.seed NOT IN (
-        //                 SELECT pictures.options->>"$.seed" AS seed FROM pictures 
-        //                 WHERE pictures.promptId = ?
-        //             );
-        //     `, [promptId, promptId])
-        //     .then(function (row) {
-        //         return row?.seed ?? null;
-        //     });
+        return this._get<{ seed: number }>(`
+                SELECT seeds.seed FROM prompts 
+                JOIN seeds ON seeds.projectId = prompts.projectId 
+                WHERE 
+                    prompts.id = ? AND 
+                    seeds.seed NOT IN (
+                        SELECT pictures.seed AS seed FROM pictures 
+                        WHERE pictures.promptId = ?
+                    );
+            `, [promptId, promptId])
+            .then(function (row) {
+                return row?.seed ?? null;
+            });
     }
 
     //#endregion
@@ -305,9 +305,11 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             throw new Error(`Project ${prompt.projectId} not found`);
         }
 
+        seed = seed ?? (Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
         const picture: Omit<PictureDTO, "id" | "computed"> = {
             projectId: prompt.projectId,
             promptId: prompt.id,
+            seed,
             createdAt: new Date().getTime(),
             highres: HighresStatus.NONE,
             options: {
@@ -316,7 +318,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
                 height: project.height,
                 prompt: prompt.prompt,
                 negative_prompt: prompt.negative_prompt,
-                seed: seed ?? (Math.floor(Math.random() * Number.MAX_SAFE_INTEGER))
+                seed
             }
         };
         return this.addPicture(picture);
@@ -325,10 +327,11 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     /** Save a picture in pending state */
     public async addPicture(entry: Omit<PictureDTO, "id" | "computed" | "attachmentId">): Promise<PictureDTO> {
         const id = await this._insert(
-            `INSERT INTO ${t("pictures")} (projectId, promptId, options, createdAt, computed, attachmentId) VALUES (?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO ${t("pictures")} (projectId, promptId, seed, options, createdAt, computed, attachmentId) VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [
                 entry.projectId,
                 entry.promptId,
+                entry.seed,
                 JSON.stringify(entry.options),
                 entry.createdAt,
                 ComputationStatus.PENDING,

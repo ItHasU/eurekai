@@ -96,6 +96,8 @@ export interface PictureDTO {
     projectId: number;
     /** id field of a prompt */
     promptId: number;
+    /** seed used to generate the image */
+    seed: number;
     /** Options that were used to generate the picture */
     options: Txt2ImgOptions;
     /** Creation timestamp */
