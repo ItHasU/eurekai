@@ -23,7 +23,7 @@ const DEFAULT_PARAMETERS: Txt2ImgOptions = {
     batch_size: 1,
     cfg_scale: 7,
 
-    save_images: true
+    save_images: false
 };
 
 type SQLValue = number | string | null;
