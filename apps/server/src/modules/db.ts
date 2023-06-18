@@ -235,9 +235,24 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     /** @inheritdoc */
     public override async setPromptActive(id: number, active: boolean): Promise<void> {
         return this._run(`UPDATE ${t("prompts")} SET active = ? WHERE id = ?`, [
-            active ? 1 : 0, 
+            active ? 1 : 0,
             id
         ]);
+    }
+
+    /** @inheritdoc */
+    public override async movePrompt(id: number, projectId: number | null): Promise<void> {
+        if (projectId == null) {
+            // First, delete the prompt
+            await this._run(`DELETE FROM ${t("prompts")} WHERE id = ?`, [id]);
+            // Then, delete the pictures as promptId is duplicated
+            await this._run(`DELETE FROM ${t("pictures")} WHERE promptId = ?`, [id]);
+        } else {
+            // Fist, we update the prompt itself
+            await this._run(`UPDATE ${t("prompts")} SET projectId = ? WHERE id = ?`, [projectId, id]);
+            // Then, we update the pictures as projectId is duplicated
+            await this._run(`UPDATE ${t("pictures")} SET projectId = ? WHERE promptId = ?`, [projectId, id]);
+        }
     }
 
     //#endregion

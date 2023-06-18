@@ -120,6 +120,14 @@ export class PicturesPage extends AbstractPageElement {
                             });
                             promptItem.refresh();
                             // Won't refresh pictures, but we don't care
+                        },
+                        delete: async () => {
+                            await this._cache.withData(async (data) => {
+                                await data.movePrompt(picture.promptId, null);
+                            });
+                            promptItem.remove();
+                        },
+                        move: async () => {
                         }
                     });
                     promptItem.classList.add("col-12");

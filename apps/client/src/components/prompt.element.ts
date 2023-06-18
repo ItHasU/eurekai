@@ -14,6 +14,8 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> {
         pictures: PictureDTO[],
         start: () => void,
         stop: () => void,
+        delete: () => void,
+        move: () => void,
         clone?: () => void
     }) {
         super(data, require("./prompt.element.html").default);
@@ -37,6 +39,8 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> {
         if (this._options.clone) {
             this._bindClick("clone", this._options.clone);
         }
+        this._bindClick("delete", this._options.delete);
+        this._bindClick("move", this._options.move);
     }
 
 }

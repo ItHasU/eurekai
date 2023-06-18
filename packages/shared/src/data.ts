@@ -67,6 +67,9 @@ export abstract class AbstractDataWrapper {
     /** Toggle prompt active state */
     public abstract setPromptActive(id: number, active: boolean): Promise<void>;
 
+    /** Move prompt to another project or delete it */
+    public abstract movePrompt(id: number, projectId: number | null): Promise<void>;
+
     //#endregion
 
     //#region Seeds

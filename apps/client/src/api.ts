@@ -83,6 +83,11 @@ export class API extends AbstractDataWrapper {
         return this._apiCall<void>("setPromptActive", id, active);
     }
 
+    /** @inheritdoc */
+    public override movePrompt(id: number, projectId: number | null): Promise<void> {
+        return this._apiCall<void>("movePrompt", id, projectId);
+    }
+
     //#endregion
 
     //#region Seeds

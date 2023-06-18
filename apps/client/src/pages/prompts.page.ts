@@ -60,6 +60,14 @@ export class PromptsPage extends AbstractPageElement {
                     });
                     item.refresh();
                 },
+                delete: async () => {
+                    await this._cache.withData(async (data) => {
+                        await data.movePrompt(prompt.id, null);
+                        item.remove();
+                    });
+                },
+                move: async () => {
+                },
                 clone: () => {
                     this._positiveInput.value = prompt.prompt;
                     this._negativeInput.value = prompt.negative_prompt ?? "";
