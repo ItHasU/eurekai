@@ -1,7 +1,8 @@
 import { AbstractPageElement } from "./abstract.page.element";
 import { PromptElement } from "src/components/prompt.element";
 import { DataCache } from "@eurekai/shared/src/cache";
-import { PictureDTO } from "@eurekai/shared/src/types";
+import { PictureDTO, ProjectDTO } from "@eurekai/shared/src/types";
+import { showSelect } from "src/components/tools";
 
 /** Display projects and fire an event on project change */
 export class PromptsPage extends AbstractPageElement {
@@ -67,6 +68,18 @@ export class PromptsPage extends AbstractPageElement {
                     });
                 },
                 move: async () => {
+                    await this._cache.withData(async (data) => {
+                        const projects = await data.getProjects();
+                        const selectedProject = await showSelect<ProjectDTO>(projects, {
+                            valueKey: "id",
+                            displayString: "name",
+                            selected: projects.find(p => p.id === prompt.projectId)
+                        });
+                        if (selectedProject != null && selectedProject.id != prompt.projectId) {
+                            await data.movePrompt(prompt.id, selectedProject.id);
+                            item.remove();
+                        }
+                    });
                 },
                 clone: () => {
                     this._positiveInput.value = prompt.prompt;

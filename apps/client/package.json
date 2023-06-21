@@ -9,7 +9,8 @@
     "w": "webpack --watch"
   },
   "devDependencies": {
-    "@eurekai/shared": "*"
+    "@eurekai/shared": "*",
+    "@types/bootstrap": "^5.2.6"
   },
   "dependencies": {
     "bootstrap": "=5.3.0-alpha3",
