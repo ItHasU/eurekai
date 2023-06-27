@@ -6,7 +6,8 @@ enum SwipeMode {
     ACCEPT_STARTED,
     ACCEPT_DONE,
     REJECT_STARTED,
-    REJECT_DONE
+    REJECT_DONE,
+    HIGHRES_DONE
 }
 
 const colors: Record<SwipeMode, string> = {
@@ -14,7 +15,8 @@ const colors: Record<SwipeMode, string> = {
     [SwipeMode.ACCEPT_STARTED]: "rgba(0, 255, 0, 0.15)",
     [SwipeMode.ACCEPT_DONE]: "rgba(0, 255, 0, 0.25)",
     [SwipeMode.REJECT_STARTED]: "rgba(255, 0, 0, 0.15)",
-    [SwipeMode.REJECT_DONE]: "rgba(255, 0, 0, 0.25)"
+    [SwipeMode.REJECT_DONE]: "rgba(255, 0, 0, 0.25)",
+    [SwipeMode.HIGHRES_DONE]: "rgba(0, 0, 255, 0.25)"
 };
 
 const ACTION_SWIPE_MARGIN = 0.2;
@@ -134,6 +136,12 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
             } else if (this._swipeMode == SwipeMode.ACCEPT_DONE && ratio > (1 - ACTION_SWIPE_MARGIN)) {
                 // Cancel the accept mode
                 this._swipeMode = SwipeMode.ACCEPT_STARTED;
+            } else if (this._swipeMode == SwipeMode.ACCEPT_DONE && ratio < ACTION_SWIPE_MARGIN) {
+                // Cancel the accept mode
+                this._swipeMode = SwipeMode.HIGHRES_DONE;
+            } else if (this._swipeMode == SwipeMode.HIGHRES_DONE && ratio > ACTION_SWIPE_MARGIN) {
+                // Cancel the accept mode
+                this._swipeMode = SwipeMode.ACCEPT_DONE;
             } else {
                 // Nothing to do
             }
@@ -147,6 +155,10 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
             } else if (this._swipeMode == SwipeMode.REJECT_DONE) {
                 // We crossed the reject limit, reject the image
                 this._options.reject();
+            } else if (this._swipeMode == SwipeMode.HIGHRES_DONE) {
+                // We crossed the reject limit, reject the image
+                this._options.accept();
+                this._options.toggleHighres();
             } else {
                 // Nothing to do
             }
