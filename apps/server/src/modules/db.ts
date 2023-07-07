@@ -84,8 +84,9 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     }
 
     /** @inheritdoc */
-    public override vacuum(): Promise<void> {
-        return this._run("VACUUM");
+    public override async vacuum(): Promise<void> {
+        await this._purgeAttachments();
+        await this._run("VACUUM");
     }
 
     public override fixHighres(): Promise<void> {
@@ -159,7 +160,6 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         await this._run(`DELETE FROM ${t("prompts")} WHERE projectId = ?`, [projectId]);
         // -- Delete the project --
         await this._run(`DELETE FROM ${t("projects")} WHERE id = ?`, [projectId]);
-        await this._purgeAttachments();
     }
 
     /** @inheritdoc */
@@ -168,7 +168,6 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         await this._run(`UPDATE ${t("prompts")} SET active=false WHERE projectId=?;`, [id]);
         // Remove all rejected pictures
         await this._run(`DELETE FROM ${t("pictures")} WHERE projectId=? AND computed=${ComputationStatus.REJECTED};`, [id]);
-        await this._purgeAttachments();
     }
 
     /** Clean attachments that are not referenced anymore */
@@ -409,7 +408,6 @@ export class DatabaseWrapper extends AbstractDataWrapper {
 
     public override async deletePictureHighres(id: number): Promise<void> {
         await this._run(`UPDATE ${t("pictures")} SET highres = ${HighresStatus.DELETED} WHERE id = ? AND highres >= ${HighresStatus.DONE}`, [id]);
-        await this._purgeAttachments();
     }
 
     //#endregion
