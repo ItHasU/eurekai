@@ -22,6 +22,7 @@ export class GalleryPage extends AbstractPageElement {
     protected override async _refresh(): Promise<void> {
         const picturesRaw = await this._cache.getPictures();
         const pictures = picturesRaw.filter(p => p.highres === HighresStatus.DONE && p.highresAttachmentId != null);
+        pictures.sort((a, b) => -((a.highresAttachmentId ?? 0) - (b.highresAttachmentId ?? 0)));
 
         // -- Clear --
         this._picturesDiv.innerHTML = "";
