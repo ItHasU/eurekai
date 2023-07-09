@@ -178,7 +178,6 @@ export class PicturesPage extends AbstractPageElement {
                 },
                 toggleHighres: async () => {
                     await this._cache.withData(async (data) => {
-                        // FIXME : To implement
                         switch (picture.highres) {
                             case HighresStatus.DELETED:
                             case HighresStatus.ERROR:
@@ -197,6 +196,11 @@ export class PicturesPage extends AbstractPageElement {
                         }
                     });
                     item.refresh();
+                },
+                setAsFeatured: async () => {
+                    await this._cache.withData(async (data) => {
+                        await data.setProjectFeaturedImage(picture.projectId, picture.attachmentId ?? null);
+                    });
                 },
                 fetch: this._cache.data.getAttachment.bind(this._cache.data)
             });

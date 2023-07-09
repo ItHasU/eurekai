@@ -166,6 +166,11 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     }
 
     /** @inheritdoc */
+    public override async setProjectFeaturedImage(projectId: number, attachmentId: number | null): Promise<void> {
+        await this._run(`UPDATE ${t("projects")} SET featuredAttachmentId = ? WHERE id = ?`, [attachmentId, projectId]);
+    }
+
+    /** @inheritdoc */
     public override async cleanProject(id: number): Promise<void> {
         // Stop all prompts
         await this._run(`UPDATE ${t("prompts")} SET active=false WHERE projectId=?;`, [id]);

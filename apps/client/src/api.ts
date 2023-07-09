@@ -56,6 +56,11 @@ export class API extends AbstractDataWrapper {
     }
 
     /** @inheritdoc */
+    public override setProjectFeaturedImage(projectId: number, attachmentId: number | null): Promise<void> {
+        return this._apiCall<void>("setProjectFeaturedImage", projectId, attachmentId);
+    }
+
+    /** @inheritdoc */
     public override cleanProject(id: number): Promise<void> {
         return this._apiCall<void>("cleanProject", id);
     }
@@ -115,11 +120,11 @@ export class API extends AbstractDataWrapper {
     public override setPictureHighres(id: number, highres: boolean): Promise<void> {
         return this._apiCall<void>("setPictureHighres", id, highres);
     }
-    
+
     public override deletePictureHighres(id: number): Promise<void> {
         return this._apiCall<void>("deletePictureHighres", id);
     }
-    
+
     //#endregion
 
     //#region Attachments

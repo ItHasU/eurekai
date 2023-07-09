@@ -1,7 +1,10 @@
-<div class="card mb-3 border-2 {{#if isAccepted}}border-success{{/if}} {{#if isRejected}}border-danger{{/if}}" data-id="{{data.id}}">
+<div class="card mb-3 border-2 {{#if isAccepted}}border-success{{/if}} {{#if isRejected}}border-danger{{/if}}"
+  data-id="{{data.id}}">
   <!-- Force image aspect ratio -->
-  <div class="card-img-top w-100" style="position: relative; aspect-ratio: {{data.options.width}}/{{data.options.height}};">
-    <div style="position: absolute; top: 0; left: 0; height: 100%; width: 100%; background-color: rgba(255,0,0, 0); pointer-events: none;">
+  <div class="card-img-top w-100"
+    style="position: relative; aspect-ratio: {{data.options.width}}/{{data.options.height}};">
+    <div
+      style="position: absolute; top: 0; left: 0; height: 100%; width: 100%; background-color: rgba(255,0,0, 0); pointer-events: none;">
     </div>
     <img class="w-100 h-100" alt="Loading...">
   </div>
@@ -11,11 +14,11 @@
         <div>
           {{#if prompt}}
           <span title="{{prompt.prompt}} // {{prompt.negative_prompt}}">#{{prompt.orderIndex}}</span>
-            {{#if prompt.active}}
-            <i class="bi bi-play text-success"></i>
-            {{else}}
-            <i class="bi bi-stop text-danger"></i>
-            {{/if}}
+          {{#if prompt.active}}
+          <i class="bi bi-play text-success"></i>
+          {{else}}
+          <i class="bi bi-stop text-danger"></i>
+          {{/if}}
           {{else}}
           <span title="{{data.options.prompt}} // {{data.options.negative_prompt}}">#?</span>
           {{/if}}
@@ -36,7 +39,8 @@
       </div>
       {{else}}
       <div class="col">
-        <button ref="start" type="button" class="btn btn-outline-success form-control"><i class="bi bi-play"></i></button>
+        <button ref="start" type="button" class="btn btn-outline-success form-control"><i
+            class="bi bi-play"></i></button>
       </div>
       {{/if}}
       <div class="col">
@@ -47,6 +51,9 @@
       </div>
       <div class="col">
         <button ref="highres" type="button" class="btn btn-primary form-control"><i class="bi bi-star"></i></button>
+      </div>
+      <div class="col">
+        <button ref="featured" type="button" class="btn btn-secondary form-control"><i class="bi bi-image"></i></button>
       </div>
     </div>
     {{/if}}

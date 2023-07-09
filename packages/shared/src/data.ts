@@ -44,6 +44,9 @@ export abstract class AbstractDataWrapper {
     /** Delete the project and data referencing it */
     public abstract deleteProject(projectId: number): Promise<void>;
 
+    /** Set the project's featured image */
+    public abstract setProjectFeaturedImage(projectId: number, attachmentId: number | null): Promise<void>;
+
     /** 
      * Clean a project
      * - Delete all rejected pictures.

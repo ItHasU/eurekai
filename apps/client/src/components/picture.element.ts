@@ -32,6 +32,7 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         stop: () => void,
         toggleSeed: () => void,
         toggleHighres: () => void,
+        setAsFeatured: () => void,
         fetch: (attachmentId: number) => Promise<string>
     }) {
         super(data, require("./picture.element.html").default);
@@ -57,6 +58,7 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         this._bindClick("stop", this._options.stop);
         this._bindClick("seed", this._options.toggleSeed);
         this._bindClick("highres", this._options.toggleHighres);
+        this._bindClick("featured", this._options.setAsFeatured);
 
         // Get element with class "image"
         const img: HTMLImageElement = this.querySelector(".card-img-top > img") as HTMLImageElement;
