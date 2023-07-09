@@ -13,11 +13,14 @@ export class ProjectElement extends AbstractDTOElement<ProjectWithStats> {
         this.addEventListener("click", () => {
             this._cache.setSelectedProjectId(project.id);
         });
-       
+
     }
     public override refresh(): void {
         super.refresh();
 
+        if (this.data.featuredAttachmentId != null) {
+            (<HTMLImageElement>this.querySelector("[ref='featured']")!).src = `/api/attachment/${this.data.featuredAttachmentId}`;
+        }
         this._bindClick("clean", (evt) => {
             evt.stopPropagation();
 

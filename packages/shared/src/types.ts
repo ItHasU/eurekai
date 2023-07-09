@@ -55,11 +55,15 @@ export interface ProjectDTO {
     height: number;
     /** Highres scale */
     scale: number;
+    /** Featured image */
+    featuredAttachmentId?: number;
 }
 
 export interface ProjectWithStats extends ProjectDTO {
     /** Count of prompts */
     prompts: number;
+    /** Count of active prompts */
+    activePrompts: number;
     /** Count of pictures waiting for evaluaton */
     doneCount: number;
     /** Count of accepted pictures */
@@ -68,6 +72,8 @@ export interface ProjectWithStats extends ProjectDTO {
     rejectedCount: number;
     /** Count of highres pictures */
     highresCount: number;
+    /** Count of highres pictures pending */
+    highresPendingCount: number;
 }
 
 export enum ComputationStatus {

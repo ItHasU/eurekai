@@ -1,11 +1,39 @@
-<strong>{{data.name}}</strong>
-<small class="text-secondary float-end text-end">
-    {{data.width}}&nbsp;x&nbsp;{{data.height}}&nbsp;px<br>
-    <button ref="clean" class="btn btn-link p-0" title="Clean project"><i class="bi bi-archive"></i></button>
-</small>
-<br>
-<small class="text-primary"><i class="bi bi-terminal"></i>&nbsp;{{data.prompts}}</small>
-<small class="text-danger"><i class="bi bi-x-square"></i>&nbsp;{{data.rejectedCount}}</small>
-<small class="text-secondary"><i class="bi bi-question-square"></i>&nbsp;{{data.doneCount}}</small>
-<small class="text-success"><i class="bi bi-check-square"></i>&nbsp;{{data.acceptedCount}}</small>
-<small class="text-warning"><i class="bi bi-star-fill"></i>&nbsp;{{data.highresCount}}</small>
+<div class="card mb-3" style="cursor: pointer;">
+
+    <div class="row g-0">
+        {{#if data.featuredAttachmentId}}
+        <div class="col-3">
+            <img ref="featured" class="img-fluid rounded-start" alt="{{data.name}}">
+        </div>
+        <div class="col-9 d-flex flex-column">
+            {{/if}}
+            <div class="card-body flex-grow-1">
+                <h5 class="card-title mb-0">
+                    {{data.name}}
+                    <small class="text-secondary float-end text-end">
+                        {{data.width}}&nbsp;x&nbsp;{{data.height}}&nbsp;px * {{data.scale}}
+                    </small>
+                </h5>
+            </div>
+            <div class="card-footer">
+                <small class="text-primary"><i class="bi bi-terminal"></i>&nbsp;{{data.prompts}}</small>
+                <small class="text-danger"><i class="bi bi-x-square"></i>&nbsp;{{data.rejectedCount}}</small>
+                <small class="text-secondary"><i class="bi bi-question-square"></i>&nbsp;{{data.doneCount}}</small>
+                <small class="text-success"><i class="bi bi-check-square"></i>&nbsp;{{data.acceptedCount}}</small>
+                <small class="text-warning">
+                    <i class="bi bi-star-fill"></i>&nbsp;{{data.highresCount}}
+                </small>
+                <span class="float-end">
+                    <!-- Quick action buttons -->
+                    <button ref="clean" class="btn btn-link p-0" title="Erase rejected images">
+                        <i class="bi bi-eraser"></i>
+                    </button>
+                </span>
+            </div>
+            {{#if data.featuredAttachmentId}}
+        </div>
+        {{/if}}
+    </div>
+
+
+</div>

@@ -8,7 +8,8 @@ export class ProjectsPage extends AbstractPageElement {
     protected readonly _nameInput: HTMLInputElement;
     protected readonly _widthInput: HTMLInputElement;
     protected readonly _heightInput: HTMLInputElement;
-    protected readonly _projectsDiv: HTMLDivElement;
+    protected readonly _projectsActiveDiv: HTMLDivElement;
+    protected readonly _projectsArchivedDiv: HTMLDivElement;
 
     constructor(cache: DataCache) {
         super(require("./projects.page.html").default, cache);
@@ -17,7 +18,8 @@ export class ProjectsPage extends AbstractPageElement {
         this._nameInput = this.querySelector("#projectNameInput") as HTMLInputElement;
         this._widthInput = this.querySelector("#widthInput") as HTMLInputElement;
         this._heightInput = this.querySelector("#heightInput") as HTMLInputElement;
-        this._projectsDiv = this.querySelector("#projectsDiv") as HTMLDivElement;
+        this._projectsActiveDiv = this.querySelector("#projectsActiveDiv") as HTMLDivElement;
+        this._projectsArchivedDiv = this.querySelector("#projectsArchivedDiv") as HTMLDivElement;
 
         // Bind click on add project
         this._bindClickForRef("projectNewButton", async () => {
@@ -47,7 +49,8 @@ export class ProjectsPage extends AbstractPageElement {
 
         // -- Render projects --
         // Clear projects
-        this._projectsDiv.innerHTML = "";
+        this._projectsActiveDiv.innerHTML = "";
+        this._projectsArchivedDiv.innerHTML = "";
         // Render projects
         for (const project of projects) {
             const projectId = project.id;
@@ -64,7 +67,11 @@ export class ProjectsPage extends AbstractPageElement {
                 console.debug(`Project ${project.id} selected`);
                 this._cache.setSelectedProjectId(project.id);
             });
-            this._projectsDiv.appendChild(element);
+            if (project.highresPendingCount > 0 || project.activePrompts > 0) {
+                this._projectsActiveDiv.appendChild(element);
+            } else {
+                this._projectsArchivedDiv.appendChild(element);
+            }
             element.refresh();
         }
     }

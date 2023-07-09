@@ -44,7 +44,8 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             "name": "TEXT",
             "width": "INTEGER DEFAULT 512",
             "height": "INTEGER DEFAULT 512",
-            "scale": "INTEGER DEFAULT 2"
+            "scale": "INTEGER DEFAULT 2",
+            "featuredAttachmentId": "INTEGER NULL"
         });
         await this._initTable("prompts", {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
@@ -134,10 +135,12 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             SELECT
                 ${t("projects")}.*,
                 (SELECT COUNT(id) FROM prompts WHERE projectId = projects.id) prompts,
+                (SELECT COUNT(id) FROM prompts WHERE projectId = projects.id AND active=1) activePrompts,
                 (SELECT COUNT(id) FROM pictures WHERE computed=${ComputationStatus.DONE} AND projectId = projects.id) doneCount,
                 (SELECT COUNT(id) FROM pictures WHERE computed=${ComputationStatus.ACCEPTED} AND projectId = projects.id) acceptedCount,
                 (SELECT COUNT(id) FROM pictures WHERE computed=${ComputationStatus.REJECTED} AND projectId = projects.id) rejectedCount,
-                (SELECT COUNT(id) FROM pictures WHERE highres=${HighresStatus.DONE} AND projectId = projects.id) highresCount
+                (SELECT COUNT(id) FROM pictures WHERE highres=${HighresStatus.DONE} AND projectId = projects.id) highresCount,
+                (SELECT COUNT(id) FROM pictures WHERE highres>=${HighresStatus.PENDING} AND highres<=${HighresStatus.COMPUTING} AND projectId = projects.id) highresPendingCount
             FROM ${t("projects")}`;
         return this._all<ProjectWithStats>(query, undefined);
     }
