@@ -66,6 +66,7 @@ export class ProjectsPage extends AbstractPageElement {
             element.addEventListener("click", () => {
                 console.debug(`Project ${project.id} selected`);
                 this._cache.setSelectedProjectId(project.id);
+                this.refresh();
             });
             if (project.highresPendingCount > 0 || project.activePrompts > 0) {
                 this._projectsActiveDiv.appendChild(element);
@@ -73,6 +74,9 @@ export class ProjectsPage extends AbstractPageElement {
                 this._projectsArchivedDiv.appendChild(element);
             }
             element.refresh();
+            if (projectId === this._cache.getSelectedProjectId()) {
+                element.querySelector(".card")?.classList.add("border-primary");
+            }
         }
     }
 }
