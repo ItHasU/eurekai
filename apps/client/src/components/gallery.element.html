@@ -5,6 +5,13 @@
     style="position: absolute; bottom: 0; right: 0; aspect-ratio: {{data.options.width}}/{{data.options.height}};">
   <!-- Button for cleaning up the image -->
   <div class="p-2" style="position: absolute; top: 0; right: 0; z-index: 1;">
-    <button ref="delete" type="button" class="btn btn-danger"><i class="bi bi-trash"></i></button>
+    <div class="btn-group">
+      <button ref="featured" type="button" class="btn btn-outline-secondary" title="Use as featured image">
+        <i class="bi bi-image"></i>
+      </button>
+      <button ref="delete" type="button" class="btn btn-outline-danger" title="Delete image">
+        <i class="bi bi-trash"></i>
+      </button>
+    </div>
   </div>
 </div>

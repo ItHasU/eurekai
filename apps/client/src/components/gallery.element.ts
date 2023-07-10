@@ -5,6 +5,7 @@ export class GalleryElement extends AbstractDTOElement<PictureDTO> {
 
     constructor(data: PictureDTO, protected _options: {
         delete: () => void;
+        featured: () => void;
     }) {
         super(data, require("./gallery.element.html").default);
     }
@@ -12,7 +13,8 @@ export class GalleryElement extends AbstractDTOElement<PictureDTO> {
     public override refresh(): void {
         super.refresh();
         this._bindClick("delete", this._options.delete);
-        
+        this._bindClick("featured", this._options.featured);
+
         if (this.data.attachmentId) {
             const img = this.querySelector("img.original") as HTMLImageElement;
             img.src = `/api/attachment/${this.data.attachmentId}`;

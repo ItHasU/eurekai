@@ -38,6 +38,12 @@ export class GalleryPage extends AbstractPageElement {
                     });
                     // Remove item from the DOM
                     item.remove();
+                },
+                featured: async () => {
+                    await this._cache.withData(async (data) => {
+                        await data.setProjectFeaturedImage(picture.projectId, picture.attachmentId ?? picture.highresAttachmentId ?? null);
+                    });
+                    await this.refresh();
                 }
             });
             item.classList.add("col-sm-12", "col-md-6");
