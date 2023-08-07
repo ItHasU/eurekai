@@ -26,6 +26,8 @@ class App {
     protected readonly _pageDiv: HTMLDivElement;
     protected _currentPage: AbstractPageElement | null = null;
 
+    protected _lastRefreshed: DOMHighResTimeStamp | null = null;
+
     constructor() {
         // -- Bind refresh button --
         const refreshButton = document.getElementById("refreshButton");
@@ -41,9 +43,7 @@ class App {
         // -- Bind lock button --
         const lockButton = document.getElementById("lockButton");
         if (lockButton) {
-            lockButton.addEventListener("click", () => {
-                document.body.classList.toggle("locked");
-            });
+            lockButton.addEventListener("click", () => this._toggleLocked());
         }
         // -- Bind pages --
         this._pageDiv = document.getElementById("pageDiv") as HTMLDivElement;
@@ -55,6 +55,17 @@ class App {
         this._bindPage("settingsButton", SettingsPage);
 
         this._setPage(ProjectsPage);
+
+        // -- Auto-lock on inactivity --
+        // Wait for next frame animation and if delta is > to 5 seconds, lock
+        const step = (timestamp: DOMHighResTimeStamp) => {
+            if (this._lastRefreshed == null || (timestamp - this._lastRefreshed) > 5000) {
+                this._toggleLocked(true);
+            }
+            this._lastRefreshed = timestamp;
+            window.requestAnimationFrame(step);
+        }
+        window.requestAnimationFrame(step);
     }
 
     protected _bindPage(buttonId: string, pageConstructor: PageConstructor): void {
@@ -73,6 +84,10 @@ class App {
         this._currentPage = new pageConstructor(this._cache);
         this._pageDiv.appendChild(this._currentPage);
         this._currentPage.refresh(); // Catched by the page
+    }
+
+    protected _toggleLocked(locked?: boolean): void {
+        document.body.classList.toggle("locked", locked);
     }
 }
 
