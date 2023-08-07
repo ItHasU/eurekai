@@ -12,46 +12,67 @@
             transition: width 0.3s ease-in-out;
             width: 25%;
         }
+
         img.original:hover {
             opacity: 0.5;
             width: 100%;
         }
+
+        div.lockable-container {
+            overflow: hidden;
+        }
+
+        body.locked img.lockable {
+            filter: blur(48px);
+        }
     </style>
 </head>
 
-<body class="h-100 d-flex flex-column">
+<body class="h-100 d-flex flex-column locked">
     <nav class="navbar navbar-expand-sm bg-body-tertiary">
         <div class="container-fluid flex-nowrap">
             <a id="projectsButton" class="navbar-brand" href="javascript: void(0);"><i class="bi bi-house"></i><span
                     class="d-none d-md-inline">&nbsp;eurekAI</span></a>
             <ul class="navbar-nav flex-row" style="overflow-x: auto;">
                 <li class="nav-item">
-                    <a id="promptsButton" class="nav-link text-nowrap px-1" aria-current="page" href="javascript: void(0);">
+                    <a id="promptsButton" class="nav-link text-nowrap px-1" aria-current="page"
+                        href="javascript: void(0);">
                         <i class="bi bi-terminal"></i>&nbsp;Prompts
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a id="picturesButton" class="nav-link text-nowrap px-1" aria-current="page" href="javascript: void(0);">
+                    <a id="picturesButton" class="nav-link text-nowrap px-1" aria-current="page"
+                        href="javascript: void(0);">
                         <i class="bi bi-images"></i>&nbsp;Pictures
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a id="galleryButton" class="nav-link text-nowrap px-1" aria-current="page" href="javascript: void(0);">
+                    <a id="galleryButton" class="nav-link text-nowrap px-1" aria-current="page"
+                        href="javascript: void(0);">
                         <i class="bi bi-star-fill"></i>&nbsp;Gallery
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a id="refreshButton" class="nav-link text-nowrap px-1" aria-current="page" href="javascript: void(0);">
+                    <a id="refreshButton" class="nav-link text-nowrap px-1" aria-current="page"
+                        href="javascript: void(0);">
                         <i class="bi bi-arrow-repeat"></i>&nbsp;Refresh
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a id="editButton" class="nav-link text-nowrap px-1" aria-current="page" href="javascript: void(0);">
+                    <a id="lockButton" class="nav-link text-nowrap px-1" aria-current="page"
+                        href="javascript: void(0);">
+                        <i class="bi bi-eye-slash"></i>&nbsp;Secret
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a id="editButton" class="nav-link text-nowrap px-1" aria-current="page"
+                        href="javascript: void(0);">
                         <i class="bi bi-pencil"></i>&nbsp;Edit
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a id="settingsButton" class="nav-link text-nowrap px-1" aria-current="page" href="javascript: void(0);">
+                    <a id="settingsButton" class="nav-link text-nowrap px-1" aria-current="page"
+                        href="javascript: void(0);">
                         <i class="bi bi-tools"></i>&nbsp;Settings
                     </a>
                 </li>

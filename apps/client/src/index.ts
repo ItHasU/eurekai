@@ -38,6 +38,13 @@ class App {
                 }
             });
         }
+        // -- Bind lock button --
+        const lockButton = document.getElementById("lockButton");
+        if (lockButton) {
+            lockButton.addEventListener("click", () => {
+                document.body.classList.toggle("locked");
+            });
+        }
         // -- Bind pages --
         this._pageDiv = document.getElementById("pageDiv") as HTMLDivElement;
         this._bindPage("editButton", EditPage);

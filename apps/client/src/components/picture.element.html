@@ -1,12 +1,12 @@
 <div class="card mb-3 border-2 {{#if isAccepted}}border-success{{/if}} {{#if isRejected}}border-danger{{/if}}"
   data-id="{{data.id}}">
   <!-- Force image aspect ratio -->
-  <div class="card-img-top w-100"
+  <div class="card-img-top w-100 lockable-container"
     style="position: relative; aspect-ratio: {{data.options.width}}/{{data.options.height}};">
     <div
       style="position: absolute; top: 0; left: 0; height: 100%; width: 100%; background-color: rgba(255,0,0, 0); pointer-events: none;">
     </div>
-    <img class="w-100 h-100" alt="Loading...">
+    <img class="w-100 h-100 lockable" alt="Loading...">
   </div>
   <div class="card-body">
     <div class="card-text pb-2">
