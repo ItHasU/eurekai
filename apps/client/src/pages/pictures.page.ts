@@ -60,7 +60,7 @@ export class PicturesPage extends AbstractPageElement {
                 const prompt1 = promptsMap[p1.promptId];
                 const prompt2 = promptsMap[p2.promptId];
                 if (prompt1 && prompt2) {
-                    res = prompt1.orderIndex - prompt2.orderIndex;
+                    res = -(prompt1.orderIndex - prompt2.orderIndex);
                 }
             }
 
