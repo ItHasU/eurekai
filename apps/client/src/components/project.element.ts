@@ -1,4 +1,4 @@
-import { ProjectWithStats } from "@eurekai/shared/src/types";
+import { BooleanEnum, ProjectWithStats } from "@eurekai/shared/src/types";
 import { AbstractDTOElement } from "./abstract.dto.element";
 import { DataCache } from "@eurekai/shared/src/cache";
 
@@ -9,6 +9,7 @@ export class ProjectElement extends AbstractDTOElement<ProjectWithStats> {
     }) {
         super(project, require("./project.element.html").default);
         this.classList.add("list-group-item", "list-group-item-action");
+        this.classList.toggle("lockable", project.lockable === BooleanEnum.TRUE);
 
         this.addEventListener("click", () => {
             this._cache.setSelectedProjectId(project.id);

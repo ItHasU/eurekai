@@ -1,20 +1,21 @@
 <div class="card mb-3 border-2 {{#if isAccepted}}border-success{{/if}} {{#if isRejected}}border-danger{{/if}}"
   data-id="{{data.id}}">
   <!-- Force image aspect ratio -->
-  <div class="card-img-top w-100"
+  <div class="card-img-top w-100 lockable-container"
     style="position: relative; aspect-ratio: {{data.options.width}}/{{data.options.height}};">
     <div
       style="position: absolute; top: 0; left: 0; height: 100%; width: 100%; background-color: rgba(255,0,0, 0); pointer-events: none;">
     </div>
-    <img class="w-100 h-100" alt="Loading...">
+    <img class="w-100 h-100 {{#if _options.isLockable}}lockable{{/if}}" alt="Loading...">
   </div>
   <div class="card-body">
     <div class="card-text pb-2">
       <div class="d-flex justify-content-between">
         <div>
-          {{#if prompt}}
-          <span title="{{prompt.prompt}} // {{prompt.negative_prompt}}">#{{prompt.orderIndex}}</span>
-          {{#if prompt.active}}
+          {{#if _options.prompt}}
+          <span
+            title="{{_options.prompt.prompt}} // {{_options.prompt.negative_prompt}}">#{{_options.prompt.orderIndex}}</span>
+          {{#if _options.prompt.active}}
           <i class="bi bi-play text-success"></i>
           {{else}}
           <i class="bi bi-stop text-danger"></i>
@@ -26,7 +27,7 @@
         <div>
           <a ref="seed" href="javascript: void(0);">
             <span class="seed">{{data.options.seed}}</span>
-            <i class="bi bi-heart{{#if isPreferredSeed}}-fill text-danger{{/if}}"></i>
+            <i class="bi bi-heart{{#if _options.isPreferredSeed}}-fill text-danger{{/if}}"></i>
           </a>
         </div>
       </div>

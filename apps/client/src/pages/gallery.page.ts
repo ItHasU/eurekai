@@ -1,4 +1,4 @@
-import { ComputationStatus, HighresStatus, PictureDTO, ProjectDTO, PromptDTO } from "@eurekai/shared/src/types";
+import { BooleanEnum, ComputationStatus, HighresStatus, PictureDTO, ProjectDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { AbstractPageElement } from "./abstract.page.element";
 import { PictureElement } from "src/components/picture.element";
 import { zipPictures } from "@eurekai/shared/src/utils";
@@ -20,6 +20,7 @@ export class GalleryPage extends AbstractPageElement {
 
     /** @inheritdoc */
     protected override async _refresh(): Promise<void> {
+        const project = await this._cache.getSelectedProject();
         const picturesRaw = await this._cache.getPictures();
         const pictures = picturesRaw.filter(p => p.highres === HighresStatus.DONE && p.highresAttachmentId != null);
         pictures.sort((a, b) => -((a.highresAttachmentId ?? 0) - (b.highresAttachmentId ?? 0)));
@@ -32,6 +33,7 @@ export class GalleryPage extends AbstractPageElement {
         for (const picture of pictures) {
             // -- Add the picture --
             const item = new GalleryElement(picture, {
+                isLockable: project?.lockable === BooleanEnum.TRUE,
                 delete: async () => {
                     await this._cache.withData(async (data) => {
                         data.deletePictureHighres(picture.id);

@@ -3,7 +3,8 @@ import { AbstractDTOElement } from "./abstract.dto.element";
 
 export class GalleryElement extends AbstractDTOElement<PictureDTO> {
 
-    constructor(data: PictureDTO, protected _options: {
+    constructor(data: PictureDTO, public readonly _options: {
+        isLockable: boolean;
         delete: () => void;
         featured: () => void;
     }) {

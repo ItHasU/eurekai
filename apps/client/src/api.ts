@@ -1,5 +1,5 @@
 import { AbstractDataWrapper, SDModels } from "@eurekai/shared/src/data";
-import { ProjectDTO, PromptDTO, PictureDTO, ComputationStatus, ProjectWithStats } from "@eurekai/shared/src/types";
+import { ProjectDTO, PromptDTO, PictureDTO, ComputationStatus, ProjectWithStats, BooleanEnum } from "@eurekai/shared/src/types";
 
 export class API extends AbstractDataWrapper {
 
@@ -46,8 +46,8 @@ export class API extends AbstractDataWrapper {
     }
 
     /** @inheritdoc */
-    public override updateProject(projectId: number, name: string, width: number, height: number, scale: number): Promise<void> {
-        return this._apiCall<void>("updateProject", projectId, name, width, height, scale);
+    public override updateProject(projectId: number, name: string, width: number, height: number, scale: number, lockable: BooleanEnum): Promise<void> {
+        return this._apiCall<void>("updateProject", projectId, name, width, height, scale, lockable);
     }
 
     /** @inheritdoc */

@@ -84,6 +84,14 @@ export class DataCache {
         return this._selectedProjectId;
     }
 
+    /** Get the selected project DTO */
+    public async getSelectedProject(): Promise<ProjectDTO | null> {
+        if (this._selectedProjectId == null) {
+            return null;
+        }
+        return this.getProject(this._selectedProjectId);
+    }
+
     /** Set the id of the selected project */
     public async setSelectedProjectId(id: number | null): Promise<void> {
         if (this._selectedProjectId !== id) {

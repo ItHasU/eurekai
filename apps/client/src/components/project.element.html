@@ -10,6 +10,9 @@
             <div class="card-body flex-grow-1">
                 <h5 class="card-title mb-0">
                     {{data.name}}
+                    {{#if data.lockable}}<small><i class="bi bi-lock text-muted"
+                            title="Project will only be visible if app is unlocked"></i>
+                    </small>{{/if}}
                     <small class="text-secondary float-end text-end">
                         {{data.width}}&nbsp;x&nbsp;{{data.height}}&nbsp;px * {{data.scale}}
                     </small>
