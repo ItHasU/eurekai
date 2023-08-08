@@ -1,3 +1,4 @@
+import { BooleanEnum } from "@eurekai/shared/src/types";
 import { AbstractPageElement } from "./abstract.page.element";
 import { DataCache } from "@eurekai/shared/src/cache";
 
@@ -8,6 +9,7 @@ export class EditPage extends AbstractPageElement {
     protected readonly _widthInput: HTMLInputElement;
     protected readonly _heightInput: HTMLInputElement;
     protected readonly _scaleInput: HTMLInputElement;
+    protected readonly _lockableInput: HTMLInputElement;
 
     constructor(cache: DataCache) {
         super(require("./edit.page.html").default, cache);
@@ -17,6 +19,7 @@ export class EditPage extends AbstractPageElement {
         this._widthInput = this.querySelector("#widthInput") as HTMLInputElement;
         this._heightInput = this.querySelector("#heightInput") as HTMLInputElement;
         this._scaleInput = this.querySelector("#scaleInput") as HTMLInputElement;
+        this._lockableInput = this.querySelector("#lockableInput") as HTMLInputElement;
 
         // Bind click on add project
         this._bindClickForRef("updateButton", async () => {
@@ -28,10 +31,11 @@ export class EditPage extends AbstractPageElement {
             const width = +this._widthInput.value;
             const height = +this._heightInput.value;
             const scale = +this._scaleInput.value;
+            const lockable = this._lockableInput.checked ? BooleanEnum.TRUE : BooleanEnum.FALSE;
             if (name && width && height) {
                 try {
                     await this._cache.withData(async (data) => {
-                        await data.updateProject(projectId, name, width, height, scale);
+                        await data.updateProject(projectId, name, width, height, scale, lockable);
                     });
                 } catch (err) {
                     console.error(err);
@@ -65,13 +69,10 @@ export class EditPage extends AbstractPageElement {
         this._widthInput.value = "";
         this._heightInput.value = "";
         this._scaleInput.value = "";
+        this._lockableInput.checked = false;
 
         // -- Get selected project --
-        const projectId = await this._cache.getSelectedProjectId();
-        if (projectId == null) {
-            return;
-        }
-        const project = await this._cache.getProject(projectId);
+        const project = await this._cache.getSelectedProject();
         if (!project) {
             return;
         }
@@ -81,6 +82,7 @@ export class EditPage extends AbstractPageElement {
         this._widthInput.value = project.width.toString();
         this._heightInput.value = project.height.toString();
         this._scaleInput.value = project.scale.toString();
+        this._lockableInput.checked = project.lockable === BooleanEnum.TRUE ? true : false;
     }
 }
 

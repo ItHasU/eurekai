@@ -1,4 +1,4 @@
-import { ComputationStatus, PictureDTO, ProjectDTO, ProjectWithStats, PromptDTO } from "./types";
+import { BooleanEnum, ComputationStatus, PictureDTO, ProjectDTO, ProjectWithStats, PromptDTO } from "./types";
 
 /** Stable Diffusion model information */
 export interface SDModels {
@@ -39,7 +39,7 @@ export abstract class AbstractDataWrapper {
     public abstract addProject(name: string, width: number, height: number): Promise<number>;
 
     /** Update the project properties */
-    public abstract updateProject(projectId: number, name: string, width: number, height: number, scale: number): Promise<void>;
+    public abstract updateProject(projectId: number, name: string, width: number, height: number, scale: number, lockable: BooleanEnum): Promise<void>;
 
     /** Delete the project and data referencing it */
     public abstract deleteProject(projectId: number): Promise<void>;

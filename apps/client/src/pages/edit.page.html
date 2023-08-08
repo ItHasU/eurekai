@@ -1,9 +1,25 @@
 <div class="container">
     <div class="row">
-        <div class="col-md-6 mt-2">
-            <!-- Project creation form -->
-            <label for="projectNameInput" class="form-label">Name</label>
-            <input id="projectNameInput" class="form-control"></input>
+        <div class="col-md-6">
+            <div class="row">
+                <div class="col mt-2">
+                    <!-- Project creation form -->
+                    <label for="projectNameInput" class="form-label">Name</label>
+                    <input id="projectNameInput" class="form-control"></input>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col mt-2">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="lockableInput">
+                        <label class="form-check-label" for="projectLockableCheckbox">Lockable</label>
+                        <div class="form-text">
+                            Lockable projects are not shown by default.<br>
+                            Application is automatically locked after 5 seconds.
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="col-md-6">
             <div class="row">

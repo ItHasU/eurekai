@@ -1,4 +1,4 @@
-import { AttachmentDTO, HighresStatus, ProjectWithStats, Txt2ImgOptions } from "@eurekai/shared/src/types";
+import { AttachmentDTO, BooleanEnum, HighresStatus, ProjectWithStats, Txt2ImgOptions } from "@eurekai/shared/src/types";
 import { ProjectDTO, Tables, TableName, t, PromptDTO, PictureDTO, ComputationStatus } from "@eurekai/shared/src/types";
 import { AbstractDataWrapper, SDModels } from "@eurekai/shared/src/data";
 import { getModel, getModels, setModel } from "./api";
@@ -152,8 +152,8 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     }
 
     /** @inheritdoc */
-    public override updateProject(projectId: number, name: string, width: number, height: number, scale: number): Promise<void> {
-        return this._run(`UPDATE ${t("projects")} SET name = ?, width = ?, height = ?, scale = ? WHERE id = ?`, [name, width, height, scale, projectId]);
+    public override updateProject(projectId: number, name: string, width: number, height: number, scale: number, lockable: BooleanEnum): Promise<void> {
+        return this._run(`UPDATE ${t("projects")} SET name = ?, width = ?, height = ?, scale = ?, lockable = ? WHERE id = ?`, [name, width, height, scale, lockable, projectId]);
     }
 
     /** @inheritdoc */
