@@ -1,4 +1,4 @@
-import { ComputationStatus, HighresStatus, PictureDTO, ProjectDTO, PromptDTO } from "@eurekai/shared/src/types";
+import { BooleanEnum, ComputationStatus, HighresStatus, PictureDTO, ProjectDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { AbstractPageElement } from "./abstract.page.element";
 import { PictureElement } from "src/components/picture.element";
 import { zipPictures } from "@eurekai/shared/src/utils";
@@ -46,6 +46,7 @@ export class PicturesPage extends AbstractPageElement {
         const prompts = await this._cache.getPrompts();
         const picturesRaw = await this._cache.getPictures();
         const preferredSeeds = await this._cache.getSeeds();
+        const project = await this._cache.getSelectedProject();
 
         const promptsMap: { [id: number]: PromptDTO } = {};
         for (const prompt of prompts) {
@@ -138,7 +139,10 @@ export class PicturesPage extends AbstractPageElement {
             previousPromptId = picture.promptId;
 
             // -- Add the picture --
-            const item = new PictureElement(picture, prompt, preferredSeeds.has(picture.options.seed), {
+            const item = new PictureElement(picture, {
+                prompt,
+                isPreferredSeed: preferredSeeds.has(picture.options.seed),
+                isLockable: project?.lockable === BooleanEnum.TRUE,
                 accept: async () => {
                     await this._cache.withData(async (data) => {
                         await data.setPictureStatus(picture.id, ComputationStatus.ACCEPTED);
@@ -171,8 +175,8 @@ export class PicturesPage extends AbstractPageElement {
                 },
                 toggleSeed: async () => {
                     await this._cache.withData(async (data) => {
-                        await data.setSeedPreferred(picture.projectId, picture.options.seed, !item.isPreferredSeed);
-                        item.isPreferredSeed = !item.isPreferredSeed;
+                        await data.setSeedPreferred(picture.projectId, picture.options.seed, !item._options.isPreferredSeed);
+                        item._options.isPreferredSeed = !item._options.isPreferredSeed;
                     });
                     item.refresh();
                 },

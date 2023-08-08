@@ -22,8 +22,14 @@
             overflow: hidden;
         }
 
+        /** Blur images from locked projects */
         body.locked img.lockable {
             filter: blur(48px);
+        }
+
+        /** Hide locked projects */
+        body.locked custom-project.lockable {
+            display: none;
         }
     </style>
 </head>

@@ -45,7 +45,8 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             "width": "INTEGER DEFAULT 512",
             "height": "INTEGER DEFAULT 512",
             "scale": "INTEGER DEFAULT 2",
-            "featuredAttachmentId": "INTEGER NULL"
+            "featuredAttachmentId": "INTEGER NULL",
+            "lockable": "INTEGER DEFAULT FALSE" // FALSE = 0
         });
         await this._initTable("prompts", {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",

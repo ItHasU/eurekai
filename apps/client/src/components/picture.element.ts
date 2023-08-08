@@ -25,7 +25,11 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
 
     protected _swipeMode: SwipeMode = SwipeMode.NONE;
 
-    constructor(data: PictureDTO, public prompt: PromptDTO | undefined, public isPreferredSeed: boolean, protected _options: {
+    constructor(data: PictureDTO, public readonly _options: {
+        prompt: PromptDTO | undefined,
+        /** Pass true so image can be blurred if app is locked */
+        isLockable: boolean,
+        isPreferredSeed: boolean,
         accept: () => void,
         reject: () => void,
         start: () => void,

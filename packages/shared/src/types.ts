@@ -35,6 +35,11 @@ export interface Txt2ImgOptions {
 
 //#region Database ------------------------------------------------------------
 
+export enum BooleanEnum {
+    FALSE = 0,
+    TRUE = 1
+}
+
 export type Tables = {
     "projects": ProjectDTO;
     "prompts": PromptDTO;
@@ -57,6 +62,8 @@ export interface ProjectDTO {
     scale: number;
     /** Featured image */
     featuredAttachmentId?: number;
+    /** Do pictures need to be blurred by default */
+    lockable: BooleanEnum;
 }
 
 export interface ProjectWithStats extends ProjectDTO {
