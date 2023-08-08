@@ -22,6 +22,22 @@
             overflow: hidden;
         }
 
+        body .onunlocked {
+            display: inline;
+        }
+
+        body .onlocked {
+            display: none;
+        }
+
+        body.locked .onunlocked {
+            display: none;
+        }
+
+        body.locked .onlocked {
+            display: inline;
+        }
+
         /** Blur images from locked projects */
         body.locked img.lockable {
             filter: blur(48px);
@@ -37,8 +53,10 @@
 <body class="h-100 d-flex flex-column locked">
     <nav class="navbar navbar-expand-sm bg-body-tertiary">
         <div class="container-fluid flex-nowrap">
-            <a id="projectsButton" class="navbar-brand" href="javascript: void(0);"><i class="bi bi-house"></i><span
-                    class="d-none d-md-inline">&nbsp;eurekAI</span></a>
+            <a id="projectsButton" class="navbar-brand me-auto" href="javascript: void(0);">
+                <i class="bi bi-house"></i>
+                <span class="d-none d-md-inline">&nbsp;eurekAI</span>
+            </a>
             <ul class="navbar-nav flex-row" style="overflow-x: auto;">
                 <li class="nav-item">
                     <a id="promptsButton" class="nav-link text-nowrap px-1" aria-current="page"
@@ -59,18 +77,6 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a id="refreshButton" class="nav-link text-nowrap px-1" aria-current="page"
-                        href="javascript: void(0);">
-                        <i class="bi bi-arrow-repeat"></i>&nbsp;Refresh
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a id="lockButton" class="nav-link text-nowrap px-1" aria-current="page"
-                        href="javascript: void(0);">
-                        <i class="bi bi-eye-slash"></i>&nbsp;Secret
-                    </a>
-                </li>
-                <li class="nav-item">
                     <a id="editButton" class="nav-link text-nowrap px-1" aria-current="page"
                         href="javascript: void(0);">
                         <i class="bi bi-pencil"></i>&nbsp;Edit
@@ -80,6 +86,25 @@
                     <a id="settingsButton" class="nav-link text-nowrap px-1" aria-current="page"
                         href="javascript: void(0);">
                         <i class="bi bi-tools"></i>&nbsp;Settings
+                    </a>
+                </li>
+            </ul>
+            <ul class="navbar-nav flex-row">
+                <li class="nav-item">
+                    <a id="refreshButton" class="nav-link text-nowrap px-1" aria-current="page"
+                        href="javascript: void(0);">
+                        <i class="bi bi-arrow-repeat"></i><span class="d-none d-sm-inline">&nbsp;Refresh</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a id="lockButton" class="nav-link text-nowrap px-1" aria-current="page"
+                        href="javascript: void(0);">
+                        <i class="bi bi-lock onlocked" title="Hide lockables"></i>
+                        <i class="bi bi-unlock text-danger onunlocked" title="Show lockables"></i>
+                        <span class="d-none d-sm-inline">
+                            <span class="onlocked">Locked</span>
+                            <span class="onunlocked">Unlocked</span>
+                        </span>
                     </a>
                 </li>
             </ul>
