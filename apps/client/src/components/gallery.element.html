@@ -2,17 +2,42 @@
   <!-- Force image aspect ratio -->
   <img class="card-img-top highres {{#if _options.isLockable}}lockable{{/if}}"
     style="aspect-ratio: {{data.options.width}}/{{data.options.height}}">
+  <!-- Original image before highres fix -->
   <img class="original {{#if _options.isLockable}}lockable{{/if}}"
-    style="position: absolute; bottom: 0; right: 0; aspect-ratio: {{data.options.width}}/{{data.options.height}};">
-  <!-- Button for cleaning up the image -->
-  <div class="p-2" style="position: absolute; top: 0; right: 0; z-index: 1;">
-    <div class="btn-group">
-      <button ref="featured" type="button" class="btn btn-outline-secondary" title="Use as featured image">
-        <i class="bi bi-image"></i>
-      </button>
-      <button ref="delete" type="button" class="btn btn-outline-danger" title="Delete image">
-        <i class="bi bi-trash"></i>
-      </button>
+    style="position: absolute; top: 0; left: 0; aspect-ratio: {{data.options.width}}/{{data.options.height}}; display: none;">
+  <div class="card-body">
+    <p class="card-text">
+      #{{_options.prompt.orderIndex}}<br>
+      <i class="bi bi-plus-square"></i>&nbsp;{{_options.prompt.prompt}}<br>
+      <i class="bi bi-dash-square"></i>&nbsp;<i>{{_options.prompt.negative_prompt}}</i>
+    </p>
+
+    <!-- A series of button groups -->
+    <div>
+
+      <div class="btn-group" role="group" aria-label="Select display mode">
+        <button type="button" class="btn btn-outline-secondary active">
+          <i class="bi bi-image"></i>
+        </button>
+
+        <button type="button" class="btn btn-outline-secondary">
+          <i class="bi bi-image-alt"></i>
+        </button>
+
+        <button type="button" class="btn btn-outline-secondary">
+          <i class="bi bi-images"></i>
+        </button>
+      </div>
+
+      <div class="btn-group">
+        <button ref="featured" type="button" class="btn btn-outline-secondary" title="Use as featured image">
+          <i class="bi bi-image"></i>
+        </button>
+        <button ref="delete" type="button" class="btn btn-outline-danger" title="Delete image">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
     </div>
+
   </div>
 </div>

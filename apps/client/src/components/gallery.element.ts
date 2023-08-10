@@ -1,9 +1,10 @@
-import { PictureDTO } from "@eurekai/shared/src/types";
+import { PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { AbstractDTOElement } from "./abstract.dto.element";
 
 export class GalleryElement extends AbstractDTOElement<PictureDTO> {
 
     constructor(data: PictureDTO, public readonly _options: {
+        prompt?: PromptDTO;
         isLockable: boolean;
         delete: () => void;
         featured: () => void;

@@ -1,8 +1,5 @@
-import { BooleanEnum, ComputationStatus, HighresStatus, PictureDTO, ProjectDTO, PromptDTO } from "@eurekai/shared/src/types";
+import { BooleanEnum, HighresStatus, PromptDTO } from "@eurekai/shared/src/types";
 import { AbstractPageElement } from "./abstract.page.element";
-import { PictureElement } from "src/components/picture.element";
-import { zipPictures } from "@eurekai/shared/src/utils";
-import { PromptElement } from "src/components/prompt.element";
 import { DataCache } from "@eurekai/shared/src/cache";
 import { GalleryElement } from "src/components/gallery.element";
 
@@ -25,6 +22,13 @@ export class GalleryPage extends AbstractPageElement {
         const pictures = picturesRaw.filter(p => p.highres === HighresStatus.DONE && p.highresAttachmentId != null);
         pictures.sort((a, b) => -((a.highresAttachmentId ?? 0) - (b.highresAttachmentId ?? 0)));
 
+        const promptsById = new Map<number, PromptDTO>();
+        for (const picture of pictures) {
+            const prompt = await this._cache.getPrompt(picture.promptId);
+            if (prompt != null) {
+                promptsById.set(picture.promptId, prompt);
+            }
+        }
         // -- Clear --
         this._picturesDiv.innerHTML = "";
 
@@ -32,7 +36,9 @@ export class GalleryPage extends AbstractPageElement {
         const picturesDiv = this.querySelector("#picturesDiv") as HTMLDivElement;
         for (const picture of pictures) {
             // -- Add the picture --
+            const prompt = promptsById.get(picture.promptId);
             const item = new GalleryElement(picture, {
+                prompt: prompt ?? undefined,
                 isLockable: project?.lockable === BooleanEnum.TRUE,
                 delete: async () => {
                     await this._cache.withData(async (data) => {
