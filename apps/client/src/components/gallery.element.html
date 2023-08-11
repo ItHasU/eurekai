@@ -3,8 +3,8 @@
   <img class="card-img-top highres {{#if _options.isLockable}}lockable{{/if}}"
     style="aspect-ratio: {{data.options.width}}/{{data.options.height}}">
   <!-- Original image before highres fix -->
-  <img class="original {{#if _options.isLockable}}lockable{{/if}}"
-    style="position: absolute; top: 0; left: 0; aspect-ratio: {{data.options.width}}/{{data.options.height}}; display: none;">
+  <img class="card-img-top original {{#if _options.isLockable}}lockable{{/if}}"
+    style="aspect-ratio: {{data.options.width}}/{{data.options.height}};">
   <div class="card-body">
     <p class="card-text">
       #{{_options.prompt.orderIndex}}<br>
@@ -16,15 +16,15 @@
     <div>
 
       <div class="btn-group" role="group" aria-label="Select display mode">
-        <button type="button" class="btn btn-outline-secondary active">
+        <button ref="highres" type="button" class="btn btn-outline-secondary">
           <i class="bi bi-image"></i>
         </button>
 
-        <button type="button" class="btn btn-outline-secondary">
+        <button ref="normal" type="button" class="btn btn-outline-secondary">
           <i class="bi bi-image-alt"></i>
         </button>
 
-        <button type="button" class="btn btn-outline-secondary">
+        <button ref="both" type="button" class="btn btn-outline-secondary">
           <i class="bi bi-images"></i>
         </button>
       </div>

@@ -1,7 +1,7 @@
 import * as Handlebars from "handlebars";
 
 export abstract class AbstractDTOElement<DTO> extends HTMLElement {
-    
+
     protected readonly _template: HandlebarsTemplateDelegate;
 
     constructor(protected data: DTO, template: string) {
@@ -24,7 +24,10 @@ export abstract class AbstractDTOElement<DTO> extends HTMLElement {
     }
 
     protected _bindClick(ref: string, cb: (evt: MouseEvent) => void): void {
-        (this.querySelector(`*[ref="${ref}"]`) as HTMLButtonElement | undefined)?.addEventListener("click", cb);
+        this._getElementByRef(ref)?.addEventListener("click", cb);
     }
 
+    protected _getElementByRef<T extends HTMLElement>(ref: string): T | undefined {
+        return this.querySelector(`*[ref="${ref}"]`) as T | undefined;
+    }
 }
