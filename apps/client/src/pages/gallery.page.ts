@@ -51,7 +51,6 @@ export class GalleryPage extends AbstractPageElement {
                     await this._cache.withData(async (data) => {
                         await data.setProjectFeaturedImage(picture.projectId, picture.attachmentId ?? picture.highresAttachmentId ?? null);
                     });
-                    await this.refresh();
                 }
             });
             item.classList.add("col-sm-12", "col-md-6");
