@@ -49,7 +49,7 @@ export class GalleryPage extends AbstractPageElement {
                 },
                 featured: async () => {
                     await this._cache.withData(async (data) => {
-                        await data.setProjectFeaturedImage(picture.projectId, picture.attachmentId ?? picture.highresAttachmentId ?? null);
+                        await data.setProjectFeaturedImage(picture.projectId, picture.highresAttachmentId ?? picture.attachmentId ?? null);
                     });
                 }
             });
