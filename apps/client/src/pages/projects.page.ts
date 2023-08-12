@@ -2,6 +2,8 @@ import { AbstractPageElement } from "./abstract.page.element";
 import { DataCache } from "@eurekai/shared/src/cache";
 import { ProjectElement } from "../components/project.element";
 
+const BORDER_CLASSES = ["border-primary", "border-2"];
+
 /** Display projects and fire an event on project change */
 export class ProjectsPage extends AbstractPageElement {
 
@@ -66,7 +68,11 @@ export class ProjectsPage extends AbstractPageElement {
             element.addEventListener("click", () => {
                 console.debug(`Project ${project.id} selected`);
                 this._cache.setSelectedProjectId(project.id);
-                this.refresh();
+                // Remove border from all projects
+                this.querySelectorAll(".card")?.forEach((card) => {
+                    card.classList.remove(...BORDER_CLASSES);
+                });
+                element.querySelector(".card")?.classList.add(...BORDER_CLASSES);
             });
             if (project.highresPendingCount > 0 || project.activePrompts > 0) {
                 this._projectsActiveDiv.appendChild(element);
@@ -75,7 +81,7 @@ export class ProjectsPage extends AbstractPageElement {
             }
             element.refresh();
             if (projectId === this._cache.getSelectedProjectId()) {
-                element.querySelector(".card")?.classList.add("border-primary");
+                element.querySelector(".card")?.classList.add(...BORDER_CLASSES);
             }
         }
     }
