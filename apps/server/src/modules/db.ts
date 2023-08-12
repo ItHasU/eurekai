@@ -100,6 +100,12 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             )`);
     }
 
+    /** Fix pictures marked as computing on startup */
+    public async fixComputingAtStart(): Promise<void> {
+        await this._run(`UPDATE ${t("pictures")} SET computed = ${ComputationStatus.ERROR} WHERE computed = ${ComputationStatus.COMPUTING}`);
+        await this._run(`UPDATE ${t("pictures")} SET highres = ${HighresStatus.ERROR} WHERE highres = ${HighresStatus.COMPUTING}`);
+    }
+
     //#endregion
 
     //#region SD Models management --------------------------------------------

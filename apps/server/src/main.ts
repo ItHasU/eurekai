@@ -8,6 +8,7 @@ async function main(): Promise<void> {
 
     const db = new DatabaseWrapper(apiURL, "eurekai.db");
     await db.initIfNeeded();
+    await db.fixComputingAtStart();
 
     new AppServer({
         data: db,
