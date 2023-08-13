@@ -64,6 +64,8 @@ export interface ProjectDTO {
     featuredAttachmentId?: number;
     /** Do pictures need to be blurred by default */
     lockable: BooleanEnum;
+    /** Pinned */
+    pinned: BooleanEnum;
 }
 
 export interface ProjectWithStats extends ProjectDTO {

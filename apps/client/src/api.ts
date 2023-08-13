@@ -65,6 +65,11 @@ export class API extends AbstractDataWrapper {
         return this._apiCall<void>("cleanProject", id);
     }
 
+    /** @inheritdoc */
+    public override setProjectPinned(projectId: number, pinned: boolean): Promise<void> {
+        return this._apiCall<void>("setProjectPinned", projectId, pinned);
+    }
+
     //#endregion
 
     //#region Prompts

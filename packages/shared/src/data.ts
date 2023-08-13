@@ -54,6 +54,9 @@ export abstract class AbstractDataWrapper {
      */
     public abstract cleanProject(id: number): Promise<void>;
 
+    /** Update project pinned status */
+    public abstract setProjectPinned(projectId: number, pinned: boolean): Promise<void>;
+
     //#endregion
 
     //#region Prompts

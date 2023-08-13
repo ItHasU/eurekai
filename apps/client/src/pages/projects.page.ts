@@ -1,6 +1,7 @@
 import { AbstractPageElement } from "./abstract.page.element";
 import { DataCache } from "@eurekai/shared/src/cache";
 import { ProjectElement } from "../components/project.element";
+import { BooleanEnum } from "@eurekai/shared/src/types";
 
 const BORDER_CLASSES = ["border-primary", "border-2"];
 
@@ -10,6 +11,7 @@ export class ProjectsPage extends AbstractPageElement {
     protected readonly _nameInput: HTMLInputElement;
     protected readonly _widthInput: HTMLInputElement;
     protected readonly _heightInput: HTMLInputElement;
+    protected readonly _projectsPinnedDiv: HTMLDivElement;
     protected readonly _projectsActiveDiv: HTMLDivElement;
     protected readonly _projectsArchivedDiv: HTMLDivElement;
 
@@ -20,6 +22,7 @@ export class ProjectsPage extends AbstractPageElement {
         this._nameInput = this.querySelector("#projectNameInput") as HTMLInputElement;
         this._widthInput = this.querySelector("#widthInput") as HTMLInputElement;
         this._heightInput = this.querySelector("#heightInput") as HTMLInputElement;
+        this._projectsPinnedDiv = this.querySelector("#projectsPinnedDiv") as HTMLDivElement;
         this._projectsActiveDiv = this.querySelector("#projectsActiveDiv") as HTMLDivElement;
         this._projectsArchivedDiv = this.querySelector("#projectsArchivedDiv") as HTMLDivElement;
 
@@ -51,8 +54,10 @@ export class ProjectsPage extends AbstractPageElement {
 
         // -- Render projects --
         // Clear projects
+        this._projectsPinnedDiv.innerHTML = "";
         this._projectsActiveDiv.innerHTML = "";
         this._projectsArchivedDiv.innerHTML = "";
+
         // Render projects
         for (const project of projects) {
             const projectId = project.id;
@@ -62,6 +67,22 @@ export class ProjectsPage extends AbstractPageElement {
                         await data.cleanProject(projectId);
                     }).finally(() => {
                         this._cache.markDirty();
+                    });
+                },
+                pin: () => {
+                    this._cache.withData(async (data) => {
+                        await data.setProjectPinned(projectId, true);
+                    }).finally(() => {
+                        this._cache.markDirty();
+                        this.refresh();
+                    });
+                },
+                unpin: () => {
+                    this._cache.withData(async (data) => {
+                        await data.setProjectPinned(projectId, false);
+                    }).finally(() => {
+                        this._cache.markDirty();
+                        this.refresh();
                     });
                 }
             });
@@ -74,7 +95,9 @@ export class ProjectsPage extends AbstractPageElement {
                 });
                 element.querySelector(".card")?.classList.add(...BORDER_CLASSES);
             });
-            if (project.highresPendingCount > 0 || project.activePrompts > 0) {
+            if (project.pinned === BooleanEnum.TRUE) {
+                this._projectsPinnedDiv.appendChild(element);
+            } else if (project.highresPendingCount > 0 || project.activePrompts > 0) {
                 this._projectsActiveDiv.appendChild(element);
             } else {
                 this._projectsArchivedDiv.appendChild(element);

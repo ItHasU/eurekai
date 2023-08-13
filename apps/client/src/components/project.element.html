@@ -8,31 +8,54 @@
         <div class="col-9 d-flex flex-column">
             {{/if}}
             <div class="card-body flex-grow-1">
+                <span class="float-end">
+                    <!-- Quick action buttons -->
+                    <div class="dropdown dropstart">
+                        <button class="btn btn-dark" data-bs-toggle="dropdown" aria-expanded="false">
+                            ...
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-dark">
+                            <li>
+                                <a ref="clean" class="dropdown-item" href="javascript: void(0)">
+                                    <i class="bi bi-eraser"></i>&nbsp;Erase rejected images
+                                </a>
+                            </li>
+                            <li>
+                                <a ref="pin" class="dropdown-item" href="javascript: void(0)">
+                                    <i class="bi bi-pin-fill"></i>&nbsp;Pin project
+                                </a>
+                            </li>
+                            <li>
+                                <a ref="unpin" class="dropdown-item" href="javascript: void(0)">
+                                    <i class="bi bi-pin-angle"></i>&nbsp;Un-pin project
+                                </a>
+                            </li>
+                            <!-- <li><a class="dropdown-item" href="javascript: void(0)"><i class="bi "></i>&nbsp;</a></li> -->
+                        </ul>
+                    </div>
+                </span>
                 <h5 class="card-title mb-0">
                     {{data.name}}
                     {{#if data.lockable}}<small><i class="bi bi-lock text-muted"
                             title="Project will only be visible if app is unlocked"></i>
                     </small>{{/if}}
-                    <small class="text-secondary float-end text-end">
+                </h5>
+                <div>
+                    <small class="text-secondary">
                         {{data.width}}&nbsp;x&nbsp;{{data.height}}&nbsp;px * {{data.scale}}
                     </small>
-                </h5>
+                </div>
+                <div>
+                    <small class="text-primary"><i class="bi bi-terminal"></i>&nbsp;{{data.prompts}}</small>
+                    <small class="text-danger"><i class="bi bi-x-square"></i>&nbsp;{{data.rejectedCount}}</small>
+                    <small class="text-secondary"><i class="bi bi-question-square"></i>&nbsp;{{data.doneCount}}</small>
+                    <small class="text-success"><i class="bi bi-check-square"></i>&nbsp;{{data.acceptedCount}}</small>
+                    <small class="text-warning">
+                        <i class="bi bi-star-fill"></i>&nbsp;{{data.highresCount}}
+                    </small>
+                </div>
             </div>
-            <div class="card-footer">
-                <small class="text-primary"><i class="bi bi-terminal"></i>&nbsp;{{data.prompts}}</small>
-                <small class="text-danger"><i class="bi bi-x-square"></i>&nbsp;{{data.rejectedCount}}</small>
-                <small class="text-secondary"><i class="bi bi-question-square"></i>&nbsp;{{data.doneCount}}</small>
-                <small class="text-success"><i class="bi bi-check-square"></i>&nbsp;{{data.acceptedCount}}</small>
-                <small class="text-warning">
-                    <i class="bi bi-star-fill"></i>&nbsp;{{data.highresCount}}
-                </small>
-                <span class="float-end">
-                    <!-- Quick action buttons -->
-                    <button ref="clean" class="btn btn-link p-0" title="Erase rejected images">
-                        <i class="bi bi-eraser"></i>
-                    </button>
-                </span>
-            </div>
+            <!-- <div class="card-footer"></div> -->
             {{#if data.featuredAttachmentId}}
         </div>
         {{/if}}

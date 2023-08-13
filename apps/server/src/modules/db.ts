@@ -46,7 +46,8 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             "height": "INTEGER DEFAULT 512",
             "scale": "INTEGER DEFAULT 2",
             "featuredAttachmentId": "INTEGER NULL",
-            "lockable": "INTEGER DEFAULT FALSE" // FALSE = 0
+            "lockable": "INTEGER DEFAULT FALSE", // FALSE = 0
+            "pinned": "INTEGER DEFAULT FALSE"    // FALSE = 0
         });
         await this._initTable("prompts", {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
@@ -183,6 +184,12 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         await this._run(`UPDATE ${t("prompts")} SET active=false WHERE projectId=?;`, [id]);
         // Remove all rejected pictures
         await this._run(`DELETE FROM ${t("pictures")} WHERE projectId=? AND computed=${ComputationStatus.REJECTED};`, [id]);
+    }
+
+    /** @inheritdoc */
+    public override async setProjectPinned(projectId: number, pinned: boolean): Promise<void> {
+        // Stop all prompts
+        await this._run(`UPDATE ${t("projects")} SET pinned=${pinned ? 1 : 0} WHERE id=?;`, [projectId]);
     }
 
     /** Clean attachments that are not referenced anymore */
