@@ -1,12 +1,11 @@
 import { ComputationStatus, HighresStatus } from "@eurekai/shared/src/types";
-import { txt2img } from "./api";
 import { DatabaseWrapper } from "./db";
+import { AbstractAPI } from "./api/abstract.api";
 
 export class Generator {
-
     protected _stopOnNextTimeout: boolean = false;
 
-    constructor(protected readonly _data: DatabaseWrapper, protected _apiUrl: string) {
+    constructor(protected readonly _data: DatabaseWrapper, protected _api: AbstractAPI) {
         this._scheduleNextIfNeeded();
     }
 
@@ -29,10 +28,8 @@ export class Generator {
                 const preferredSeed = await this._data.getSeedPending(firstPrompt.id);
 
                 const picture = await this._data.createPictureFromPrompt(firstPrompt, preferredSeed ?? undefined);
-                const apiUrl = this._apiUrl;
-                console.debug(`Requesting a new image on ${apiUrl}...`);
                 try {
-                    const images = await txt2img(apiUrl, picture.options);
+                    const images = await this._api.txt2img(picture.options);
                     console.debug(`${images.length} image(s) received`);
                     if (images.length > 0) {
                         await this._data.setPictureData(picture.id, images[0]);
@@ -52,8 +49,7 @@ export class Generator {
             const picture = highresPictures[0];
             const project = await this._data.getProject(picture.projectId);
             if (project != null) {
-                const apiUrl = this._apiUrl;
-                console.debug(`Requesting a new highres image on ${apiUrl}...`);
+                console.debug(`Requesting a new highres image...`);
                 try {
                     await this._data.setPictureHighresStatus(picture.id, HighresStatus.COMPUTING);
                     const options = {
@@ -62,7 +58,7 @@ export class Generator {
                         hr_scale: project.scale,
                         denoising_strength: 0.6
                     };
-                    const images = await txt2img(apiUrl, options);
+                    const images = await this._api.txt2img(options);
                     console.debug(`${images.length} image(s) received`);
                     if (images.length > 0) {
                         await this._data.setPictureHighresData(picture.id, images[0]);

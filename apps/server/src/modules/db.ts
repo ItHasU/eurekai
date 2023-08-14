@@ -1,8 +1,9 @@
 import { AttachmentDTO, BooleanEnum, HighresStatus, ProjectWithStats, Txt2ImgOptions } from "@eurekai/shared/src/types";
 import { ProjectDTO, Tables, TableName, t, PromptDTO, PictureDTO, ComputationStatus } from "@eurekai/shared/src/types";
 import { AbstractDataWrapper, SDModels } from "@eurekai/shared/src/data";
-import { getModel, getModels, setModel } from "./api";
+import { Automatic1111 } from "./api";
 import sqlite from "better-sqlite3";
+import { AbstractAPI } from "./api/abstract.api";
 
 export interface PendingPrompt extends PromptDTO {
     pendingPictureCount: number;
@@ -31,7 +32,7 @@ type SQLValue = number | string | null;
 export class DatabaseWrapper extends AbstractDataWrapper {
     protected _db: sqlite.Database;
 
-    constructor(protected _apiURL: string, dbPath: string) {
+    constructor(dbPath: string, protected _api: AbstractAPI) {
         super();
         this._db = new sqlite(dbPath);
     }
@@ -112,15 +113,15 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     //#region SD Models management --------------------------------------------
 
     public async getModels(): Promise<SDModels[]> {
-        return getModels(this._apiURL);
+        return this._api.getModels();
     }
 
     public override getModel(): Promise<string | null> {
-        return getModel(this._apiURL);
+        return this._api.getSelectedModel();
     }
 
     public async setModel(model: string): Promise<void> {
-        return setModel(this._apiURL, model);
+        return this._api.setSelectedModel(model);
     }
 
     //#endregion

@@ -16,6 +16,7 @@
     "undici": "^5.22.0"
   },
   "dependencies": {
+    "@gradio/client": "^0.1.4",
     "better-sqlite3": "^8.4.0",
     "express": "^4.18.2"
   }
