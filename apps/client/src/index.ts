@@ -20,7 +20,6 @@ interface PageConstructor {
 }
 
 class App {
-
     protected readonly _api: API = new API();
     protected readonly _cache: DataCache = new DataCache(this._api);
 
@@ -31,23 +30,20 @@ class App {
 
     constructor() {
         // -- Bind notifications --
-        const notificationCountSpan = document.getElementById("notificationCountSpan");
-        if (notificationCountSpan) {
-            this._api.notificationCallback = (api: API, notifications: Notification[]) => {
-                this._refreshNotificationsCount(notificationCountSpan, notifications);
-            };
-        }
+        this._api.notificationCallback = (api: API, notification: Notification) => {
+            this._cache.pushNotification(notification);
+        };
+        this._cache.notificationCallback = (data: DataCache, notifications: Notification[]) => {
+            this._refreshNotificationsCount(notifications);
+        };
 
         // -- Bind refresh button --
         const refreshButton = document.getElementById("refreshButton");
         if (refreshButton) {
             refreshButton.addEventListener("click", async () => {
                 console.debug("Refresh button clicked");
+                this._cache.clearNotifications();
                 this._cache.markDirty();
-                if (notificationCountSpan) {
-                    this._api.clearNotifications();
-                    this._refreshNotificationsCount(notificationCountSpan, []);
-                }
                 if (this._currentPage) {
                     await this._currentPage.refresh();
                 }
@@ -103,7 +99,12 @@ class App {
         document.body.classList.toggle("locked", locked);
     }
 
-    protected _refreshNotificationsCount(notificationCountSpan: HTMLSpanElement, notifications: Notification[]): void {
+    protected _refreshNotificationsCount(notifications: Notification[]): void {
+        const notificationCountSpan = document.getElementById("notificationCountSpan");
+        if (notificationCountSpan == null) {
+            return;
+        }
+
         let newCount = 0;
         let newHighresCount = 0;
         let errorsCount = 0;
@@ -123,7 +124,8 @@ class App {
                     unknownCount++;
                     break;
             }
-        };
+        }
+
         notificationCountSpan.classList.remove("bg-danger", "bg-secondary", "bg-success");
         if (errorsCount > 0) {
             notificationCountSpan.innerText = "" + errorsCount;

@@ -1,14 +1,12 @@
 import { AbstractDataWrapper, Notification, SDModels } from "@eurekai/shared/src/data";
 import { ProjectDTO, PromptDTO, PictureDTO, ComputationStatus, ProjectWithStats, BooleanEnum } from "@eurekai/shared/src/types";
 
-export type NotificationCabllback = (api: API, notifications: Notification[]) => void;
+export type NotificationCabllback = (api: API, notification: Notification) => void;
 
 export class API extends AbstractDataWrapper {
 
     /** Callback to be executed on new notification */
     public notificationCallback?: NotificationCabllback;
-    /** Known notifications */
-    protected _notifications: Notification[] = [];
 
     constructor() {
         super();
@@ -164,15 +162,10 @@ export class API extends AbstractDataWrapper {
 
     //#region Notifications
 
-    public clearNotifications(): void {
-        this._notifications = [];
-    }
-
     protected _pollNoritications(): void {
         this.pollNextNotification().then(notification => {
             if (this.notificationCallback) {
-                this._notifications.push(notification);
-                this.notificationCallback(this, this._notifications);
+                this.notificationCallback(this, notification);
             }
         }).catch(err => {
             // We don't care about errors here

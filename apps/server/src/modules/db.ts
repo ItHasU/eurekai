@@ -520,12 +520,14 @@ export class DatabaseWrapper extends AbstractDataWrapper {
 
     protected _pendingNotificationResolves: ((notification: Notification) => void)[] = [];
 
+    /** @inheritdoc */
     public override pollNextNotification(): Promise<Notification> {
         return new Promise(resolve => {
             this._pendingNotificationResolves.push(resolve);
         });
     }
 
+    /** Push a notification to the stack */
     public pushNotification(notification: Notification): void {
         const promises = this._pendingNotificationResolves;
         this._pendingNotificationResolves = [];
