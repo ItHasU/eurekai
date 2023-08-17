@@ -1,6 +1,7 @@
 import { ComputationStatus, HighresStatus } from "@eurekai/shared/src/types";
 import { txt2img } from "./api";
 import { DatabaseWrapper } from "./db";
+import { NotificationKind } from "@eurekai/shared/src/data";
 
 export class Generator {
 
@@ -36,6 +37,11 @@ export class Generator {
                     console.debug(`${images.length} image(s) received`);
                     if (images.length > 0) {
                         await this._data.setPictureData(picture.id, images[0]);
+                        this._data.pushNotification({
+                            kind: NotificationKind.IMAGE_NEW,
+                            projectId: picture.projectId,
+                            message: `New image for #${firstPrompt.orderIndex}`
+                        });
                     }
                 } catch (err) {
                     console.error(err);
@@ -66,6 +72,11 @@ export class Generator {
                     console.debug(`${images.length} image(s) received`);
                     if (images.length > 0) {
                         await this._data.setPictureHighresData(picture.id, images[0]);
+                        this._data.pushNotification({
+                            kind: NotificationKind.IMAGE_NEW_HIGHRES,
+                            projectId: picture.projectId,
+                            message: `New highres image`
+                        });
                     }
                     return true;
                 } catch (err) {

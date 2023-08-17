@@ -1,6 +1,6 @@
 import { AttachmentDTO, BooleanEnum, HighresStatus, ProjectWithStats, Txt2ImgOptions } from "@eurekai/shared/src/types";
 import { ProjectDTO, Tables, TableName, t, PromptDTO, PictureDTO, ComputationStatus } from "@eurekai/shared/src/types";
-import { AbstractDataWrapper, SDModels } from "@eurekai/shared/src/data";
+import { AbstractDataWrapper, Notification, SDModels } from "@eurekai/shared/src/data";
 import { getModel, getModels, setModel } from "./api";
 import sqlite from "better-sqlite3";
 
@@ -511,6 +511,27 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             return Promise.resolve();
         } catch (e) {
             return Promise.reject(e);
+        }
+    }
+
+    //#endregion
+
+    //#region Notifications ---------------------------------------------------
+
+    protected _pendingNotificationResolves: ((notification: Notification) => void)[] = [];
+
+    public override pollNextNotification(): Promise<Notification> {
+        return new Promise(resolve => {
+            this._pendingNotificationResolves.push(resolve);
+        });
+    }
+
+    public pushNotification(notification: Notification): void {
+        const promises = this._pendingNotificationResolves;
+        this._pendingNotificationResolves = [];
+
+        for (const p of promises) {
+            p(notification);
         }
     }
 
