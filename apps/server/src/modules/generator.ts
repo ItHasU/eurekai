@@ -1,11 +1,10 @@
 import { ComputationStatus, HighresStatus } from "@eurekai/shared/src/types";
 import { DatabaseWrapper } from "./db";
-import { AbstractAPI } from "./api/abstract.api";
 
 export class Generator {
     protected _stopOnNextTimeout: boolean = false;
 
-    constructor(protected readonly _data: DatabaseWrapper, protected _api: AbstractAPI) {
+    constructor(protected readonly _data: DatabaseWrapper) {
         this._scheduleNextIfNeeded();
     }
 
@@ -29,11 +28,9 @@ export class Generator {
 
                 const picture = await this._data.createPictureFromPrompt(firstPrompt, preferredSeed ?? undefined);
                 try {
-                    const images = await this._api.txt2img(picture.options);
-                    console.debug(`${images.length} image(s) received`);
-                    if (images.length > 0) {
-                        await this._data.setPictureData(picture.id, images[0]);
-                    }
+                    const image = await this._data.getSelectedDiffuser().txt2img({ ...picture.options }, false);
+                    console.debug(`Lowres image received`);
+                    await this._data.setPictureData(picture.id, image);
                 } catch (err) {
                     console.error(err);
                     await this._data.setPictureStatus(picture.id, ComputationStatus.ERROR);
@@ -58,11 +55,9 @@ export class Generator {
                         hr_scale: project.scale,
                         denoising_strength: 0.6
                     };
-                    const images = await this._api.txt2img(options);
-                    console.debug(`${images.length} image(s) received`);
-                    if (images.length > 0) {
-                        await this._data.setPictureHighresData(picture.id, images[0]);
-                    }
+                    const image = await this._data.getSelectedDiffuser().txt2img(options, true);
+                    console.debug(`Highres image received`);
+                    await this._data.setPictureHighresData(picture.id, image);
                     return true;
                 } catch (err) {
                     await this._data.setPictureHighresStatus(picture.id, HighresStatus.ERROR);

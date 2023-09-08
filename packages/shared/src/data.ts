@@ -2,12 +2,7 @@ import { BooleanEnum, ComputationStatus, PictureDTO, ProjectDTO, ProjectWithStat
 
 /** Stable Diffusion model information */
 export interface SDModels {
-    title: string,
-    model_name: string,
-    hash: string,
-    sha256: string,
-    filename: string,
-    config: string
+    title: string
 }
 
 export abstract class AbstractDataWrapper {

@@ -29,6 +29,9 @@ export interface Txt2ImgOptions {
     denoising_strength?: number;
 
     save_images?: boolean;
+
+    refiner_checkpoint?: string,
+    refiner_switch_at?: number
 }
 
 //#endregion

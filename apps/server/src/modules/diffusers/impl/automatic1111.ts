@@ -1,42 +1,48 @@
 import { Txt2ImgOptions } from "@eurekai/shared/src/types";
-import { AbstractAPI } from "../abstract.api";
+import { AbstractAPI, ImageDescription } from "../abstract.api";
 import { SDModels } from "@eurekai/shared/src/data";
 
 declare var fetch: typeof import('undici').fetch; // Package undici is only required for typing not for runtime
 
+export type GenerateImageOptions = Omit<Txt2ImgOptions, "prompt" | "negative_prompt" | "width" | "height" | "seed">;
+
+export interface ModelOptions {
+    apiURL: string;
+    model: string;
+    lowresTemplate: GenerateImageOptions;
+    highresTemplate: GenerateImageOptions;
+}
+
 export class Automatic1111 extends AbstractAPI {
-    constructor(protected readonly apiURL: string) {
+
+    constructor(protected readonly _options: ModelOptions) {
         super();
     }
 
-    //#region Models management
+    //#region Image generation
 
     /** @inheritdoc */
-    public override async getModels(): Promise<SDModels[]> {
-        const url = `${this.apiURL}/sdapi/v1/sd-models`;
-        const result = await fetch(url);
-        if (result.status !== 200) {
-            throw new Error(result.statusText);
+    public override async txt2img(image: ImageDescription, highres: boolean): Promise<string> {
+        // -- Set model --
+        this._setModel(this._options.model);
+
+        // -- Generate image --
+        const options = {
+            ...(highres ? this._options.highresTemplate : this._options.lowresTemplate),
+            ...image
+        };
+
+        // -- Return image --
+        const images = await this._txt2img(options);
+        if (images == null || images.length === 0) {
+            throw "No image generated";
         } else {
-            return await result.json() as SDModels[];
+            return images[0];
         }
     }
 
-    /** @inheritdoc */
-    public override async getSelectedModel(): Promise<string | null> {
-        const url = `${this.apiURL}/sdapi/v1/options`;
-        const result = await fetch(url);
-        if (result.status !== 200) {
-            throw new Error(result.statusText);
-        } else {
-            const data: Record<string, any> = await result.json() as Record<string, any>;
-            return data["sd_model_checkpoint"] ?? null;
-        }
-    }
-
-    /** @inheritdoc */
-    public override async setSelectedModel(model: string): Promise<void> {
-        const url = `${this.apiURL}/sdapi/v1/options`;
+    protected async _setModel(model: string): Promise<void> {
+        const url = `${this._options.apiURL}/sdapi/v1/options`;
         const result = await fetch(url, {
             method: 'POST',
             body: JSON.stringify({
@@ -51,14 +57,8 @@ export class Automatic1111 extends AbstractAPI {
         }
     }
 
-    //#endregion
-
-
-    //#region Image generation
-
-    /** @inheritdoc */
-    public override async txt2img(options: Txt2ImgOptions): Promise<string[]> {
-        const url = `${this.apiURL}/sdapi/v1/txt2img`;
+    protected async _txt2img(options: Txt2ImgOptions): Promise<string[]> {
+        const url = `${this._options.apiURL}/sdapi/v1/txt2img`;
         const result = await fetch(url, {
             method: 'POST',
             body: JSON.stringify(options),

@@ -1,9 +1,8 @@
 import { AttachmentDTO, BooleanEnum, HighresStatus, ProjectWithStats, Txt2ImgOptions } from "@eurekai/shared/src/types";
 import { ProjectDTO, Tables, TableName, t, PromptDTO, PictureDTO, ComputationStatus } from "@eurekai/shared/src/types";
 import { AbstractDataWrapper, SDModels } from "@eurekai/shared/src/data";
-import { Automatic1111 } from "./api";
 import sqlite from "better-sqlite3";
-import { AbstractAPI } from "./api/abstract.api";
+import { AbstractAPI } from "./diffusers/abstract.api";
 
 export interface PendingPrompt extends PromptDTO {
     pendingPictureCount: number;
@@ -32,7 +31,7 @@ type SQLValue = number | string | null;
 export class DatabaseWrapper extends AbstractDataWrapper {
     protected _db: sqlite.Database;
 
-    constructor(dbPath: string, protected _api: AbstractAPI) {
+    constructor(dbPath: string) {
         super();
         this._db = new sqlite(dbPath);
     }
@@ -112,16 +111,43 @@ export class DatabaseWrapper extends AbstractDataWrapper {
 
     //#region SD Models management --------------------------------------------
 
+    protected _models: Map<string, AbstractAPI> = new Map();
+    protected _selectedModel: string | null = null;
+
+    public registerModel(title: string, api: AbstractAPI): void {
+        this._models.set(title, api);
+        if (this._selectedModel == null) {
+            this._selectedModel = title;
+        }
+    }
+
     public async getModels(): Promise<SDModels[]> {
-        return this._api.getModels();
+        return [...this._models.keys()].map(key => {
+            const fakeModel: SDModels = {
+                title: key
+            };
+            return fakeModel;
+        });
     }
 
     public override getModel(): Promise<string | null> {
-        return this._api.getSelectedModel();
+        return Promise.resolve(this._selectedModel);
     }
 
-    public async setModel(model: string): Promise<void> {
-        return this._api.setSelectedModel(model);
+    public setModel(model: string): Promise<void> {
+        this._selectedModel = model;
+        return Promise.resolve();
+    }
+
+    public getSelectedDiffuser(): AbstractAPI {
+        if (this._selectedModel == null) {
+            throw new Error("No diffuser available");
+        }
+        const diffuser = this._models.get(this._selectedModel);
+        if (diffuser == null) {
+            throw new Error(`Model ${this._selectedModel} not found`);
+        }
+        return diffuser;
     }
 
     //#endregion
