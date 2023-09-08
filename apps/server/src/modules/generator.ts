@@ -49,13 +49,7 @@ export class Generator {
                 console.debug(`Requesting a new highres image...`);
                 try {
                     await this._data.setPictureHighresStatus(picture.id, HighresStatus.COMPUTING);
-                    const options = {
-                        ...picture.options,
-                        enable_hr: true,
-                        hr_scale: project.scale,
-                        denoising_strength: 0.6
-                    };
-                    const image = await this._data.getSelectedDiffuser().txt2img(options, true);
+                    const image = await this._data.getSelectedDiffuser().txt2img({ ...picture.options }, true);
                     console.debug(`Highres image received`);
                     await this._data.setPictureHighresData(picture.id, image);
                     return true;

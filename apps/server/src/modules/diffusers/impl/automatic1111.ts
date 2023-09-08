@@ -29,8 +29,13 @@ export class Automatic1111 extends AbstractAPI {
         // -- Generate image --
         const options = {
             ...(highres ? this._options.highresTemplate : this._options.lowresTemplate),
-            ...image
+            prompt: image.prompt,
+            negative_prompt: image.negative_prompt,
+            width: image.width,
+            height: image.height,
+            seed: image.seed
         };
+        console.log(options);
 
         // -- Return image --
         const images = await this._txt2img(options);

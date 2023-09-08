@@ -20,7 +20,7 @@ export class SDXL extends Automatic1111 {
             },
             highresTemplate: {
                 ...DEFAULT_PARAMETERS,
-                steps: 50,
+                steps: 30,
                 refiner_checkpoint: refiner,
                 refiner_switch_at: 0.6
             }
