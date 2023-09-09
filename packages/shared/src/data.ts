@@ -5,6 +5,18 @@ export interface SDModels {
     title: string
 }
 
+export enum NotificationKind {
+    IMAGE_NEW,
+    IMAGE_NEW_HIGHRES,
+    IMAGE_ERROR
+};
+
+export interface Notification {
+    projectId?: number;
+    kind: NotificationKind;
+    message: string;
+}
+
 export abstract class AbstractDataWrapper {
 
     //#region SD Models
@@ -107,6 +119,9 @@ export abstract class AbstractDataWrapper {
     //#endregion
 
     //#region System
+
+    /** Poll API to wait for the next notification */
+    public abstract pollNextNotification(): Promise<Notification>;
 
     /** Fix highres status for corrupted images */
     public abstract fixHighres(): Promise<void>;

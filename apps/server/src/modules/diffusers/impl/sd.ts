@@ -20,8 +20,9 @@ export class SD extends Automatic1111 {
             },
             highresTemplate: {
                 ...DEFAULT_PARAMETERS,
-                steps: 30,
                 enable_hr: true,
+                steps: 30,
+                denoising_strength: 0.6,
                 hr_scale: 2
             }
         });

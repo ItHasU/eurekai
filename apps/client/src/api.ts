@@ -1,10 +1,16 @@
-import { AbstractDataWrapper, SDModels } from "@eurekai/shared/src/data";
+import { AbstractDataWrapper, Notification, SDModels } from "@eurekai/shared/src/data";
 import { ProjectDTO, PromptDTO, PictureDTO, ComputationStatus, ProjectWithStats, BooleanEnum } from "@eurekai/shared/src/types";
+
+export type NotificationCabllback = (api: API, notification: Notification) => void;
 
 export class API extends AbstractDataWrapper {
 
+    /** Callback to be executed on new notification */
+    public notificationCallback?: NotificationCabllback;
+
     constructor() {
         super();
+        this._pollNoritications();
     }
 
     //#region SD Models
@@ -150,6 +156,26 @@ export class API extends AbstractDataWrapper {
     /** @inheritdoc */
     public override fixHighres(): Promise<void> {
         return this._apiCall<void>("fixHighres");
+    }
+
+    //#endregion
+
+    //#region Notifications
+
+    protected _pollNoritications(): void {
+        this.pollNextNotification().then(notification => {
+            if (this.notificationCallback) {
+                this.notificationCallback(this, notification);
+            }
+        }).catch(err => {
+            // We don't care about errors here
+            console.warn(err);
+            return new Promise<void>(resolve => setTimeout(resolve, 1000));
+        }).then(this._pollNoritications.bind(this)); // Start again
+    }
+
+    public override pollNextNotification(): Promise<Notification> {
+        return this._apiCall<Notification>("pollNextNotification");
     }
 
     //#endregion

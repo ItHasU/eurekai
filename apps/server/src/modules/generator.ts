@@ -1,5 +1,6 @@
 import { ComputationStatus, HighresStatus } from "@eurekai/shared/src/types";
 import { DatabaseWrapper } from "./db";
+import { NotificationKind } from "@eurekai/shared/src/data";
 
 export class Generator {
     protected _stopOnNextTimeout: boolean = false;
@@ -31,6 +32,11 @@ export class Generator {
                     const image = await this._data.getSelectedDiffuser().txt2img({ ...picture.options }, false);
                     console.debug(`Lowres image received`);
                     await this._data.setPictureData(picture.id, image);
+                    this._data.pushNotification({
+                        kind: NotificationKind.IMAGE_NEW,
+                        projectId: picture.projectId,
+                        message: `New image for #${firstPrompt.orderIndex}`
+                    });
                 } catch (err) {
                     console.error(err);
                     await this._data.setPictureStatus(picture.id, ComputationStatus.ERROR);
@@ -52,6 +58,11 @@ export class Generator {
                     const image = await this._data.getSelectedDiffuser().txt2img({ ...picture.options }, true);
                     console.debug(`Highres image received`);
                     await this._data.setPictureHighresData(picture.id, image);
+                    this._data.pushNotification({
+                        kind: NotificationKind.IMAGE_NEW_HIGHRES,
+                        projectId: picture.projectId,
+                        message: `New highres image`
+                    });
                     return true;
                 } catch (err) {
                     await this._data.setPictureHighresStatus(picture.id, HighresStatus.ERROR);

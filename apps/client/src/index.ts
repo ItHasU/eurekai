@@ -13,13 +13,13 @@ import { AbstractPageElement } from "./pages/abstract.page.element";
 import { EditPage } from "./pages/edit.page";
 import { SettingsPage } from "./pages/settings.page";
 import { GalleryPage } from "./pages/gallery.page";
+import { Notification, NotificationKind } from "@eurekai/shared/src/data";
 
 interface PageConstructor {
     new(cache: DataCache): AbstractPageElement;
 }
 
 class App {
-
     protected readonly _api: API = new API();
     protected readonly _cache: DataCache = new DataCache(this._api);
 
@@ -29,11 +29,20 @@ class App {
     protected _lastRefreshed: DOMHighResTimeStamp | null = null;
 
     constructor() {
+        // -- Bind notifications --
+        this._api.notificationCallback = (api: API, notification: Notification) => {
+            this._cache.pushNotification(notification);
+        };
+        this._cache.notificationCallback = (data: DataCache, notifications: Notification[]) => {
+            this._refreshNotificationsCount(notifications);
+        };
+
         // -- Bind refresh button --
         const refreshButton = document.getElementById("refreshButton");
         if (refreshButton) {
             refreshButton.addEventListener("click", async () => {
                 console.debug("Refresh button clicked");
+                this._cache.clearNotifications();
                 this._cache.markDirty();
                 if (this._currentPage) {
                     await this._currentPage.refresh();
@@ -88,6 +97,49 @@ class App {
 
     protected _toggleLocked(locked?: boolean): void {
         document.body.classList.toggle("locked", locked);
+    }
+
+    protected _refreshNotificationsCount(notifications: Notification[]): void {
+        const notificationCountSpan = document.getElementById("notificationCountSpan");
+        if (notificationCountSpan == null) {
+            return;
+        }
+
+        let newCount = 0;
+        let newHighresCount = 0;
+        let errorsCount = 0;
+        let unknownCount = 0;
+        for (const notification of notifications) {
+            switch (notification.kind) {
+                case NotificationKind.IMAGE_NEW:
+                    newCount++;
+                    break;
+                case NotificationKind.IMAGE_NEW_HIGHRES:
+                    newHighresCount++;
+                    break;
+                case NotificationKind.IMAGE_ERROR:
+                    errorsCount++;
+                    break;
+                default:
+                    unknownCount++;
+                    break;
+            }
+        }
+
+        notificationCountSpan.classList.remove("bg-danger", "bg-secondary", "bg-success");
+        if (errorsCount > 0) {
+            notificationCountSpan.innerText = "" + errorsCount;
+            notificationCountSpan.classList.add("bg-primary");
+        } else if (newCount > 0 || newHighresCount > 0) {
+            notificationCountSpan.innerText = `${newCount}+${newHighresCount}`;
+            notificationCountSpan.classList.add("bg-success");
+        } else if (unknownCount > 0) {
+            notificationCountSpan.innerText = "" + unknownCount;
+            notificationCountSpan.classList.add("bg-secondary");
+        } else {
+            notificationCountSpan.innerText = "-";
+            notificationCountSpan.classList.add("bg-secondary");
+        }
     }
 }
 

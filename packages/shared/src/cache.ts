@@ -1,4 +1,4 @@
-import { AbstractDataWrapper } from "./data";
+import { AbstractDataWrapper, Notification } from "./data";
 import { PictureDTO, ProjectDTO, ProjectWithStats, PromptDTO } from "./types";
 
 /**
@@ -11,6 +11,9 @@ import { PictureDTO, ProjectDTO, ProjectWithStats, PromptDTO } from "./types";
  */
 export class DataCache {
 
+    /** Callback called on each notification change */
+    public notificationCallback?: (api: DataCache, notifications: Notification[]) => void;
+
     /** Global list of projects */
     protected _projectsCache: Promise<ProjectWithStats[]> | null = null;
     /** List of prompts for the selected project */
@@ -20,7 +23,11 @@ export class DataCache {
     /** List of pictures for the selected project */
     protected _picturesCache: Promise<PictureDTO[]> | null = null;
 
+    /** Currently selected project */
     protected _selectedProjectId: number | null = null;
+
+    /** List of notifcations known */
+    protected _notifications: Notification[] = [];
 
     constructor(protected readonly _data: AbstractDataWrapper) {
     }
@@ -64,6 +71,7 @@ export class DataCache {
 
     public async getProjects(): Promise<ProjectWithStats[]> {
         if (this._projectsCache == null) {
+            this.clearNotifications();
             this._projectsCache = this._data.getProjectsWithStats();
         }
         return this._projectsCache;
@@ -110,6 +118,7 @@ export class DataCache {
             return Promise.resolve([]);
         }
         if (this._promptsCache == null) {
+            this.clearNotifications();
             this._promptsCache = this._data.getPrompts(this._selectedProjectId);
         }
         return this._promptsCache;
@@ -130,6 +139,7 @@ export class DataCache {
             return Promise.resolve(new Set());
         }
         if (this._seedsCache == null) {
+            this.clearNotifications();
             this._seedsCache = this._data.getSeeds(this._selectedProjectId).then(seeds => new Set(seeds));
         }
         return this._seedsCache;
@@ -145,6 +155,7 @@ export class DataCache {
             return Promise.resolve([]);
         }
         if (this._picturesCache == null) {
+            this.clearNotifications();
             this._picturesCache = this._data.getPictures(this._selectedProjectId);
         }
         return this._picturesCache;
@@ -158,4 +169,21 @@ export class DataCache {
 
     //#endregion
 
+    //#region Notifications ---------------------------------------------------
+
+    public clearNotifications(): void {
+        this._notifications = [];
+        if (this.notificationCallback) {
+            this.notificationCallback(this, this._notifications);
+        }
+    }
+
+    public pushNotification(notification: Notification): void {
+        this._notifications.push(notification);
+        if (this.notificationCallback) {
+            this.notificationCallback(this, this._notifications);
+        }
+    }
+
+    //#endregion
 }
