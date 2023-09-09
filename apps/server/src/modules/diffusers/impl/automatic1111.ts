@@ -35,7 +35,6 @@ export class Automatic1111 extends AbstractAPI {
             height: image.height,
             seed: image.seed
         };
-        console.log(options);
 
         // -- Return image --
         const images = await this._txt2img(options);

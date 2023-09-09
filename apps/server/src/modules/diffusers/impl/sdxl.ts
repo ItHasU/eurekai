@@ -6,7 +6,7 @@ const DEFAULT_PARAMETERS: GenerateImageOptions = {
     sampler_name: "DPM++ 2S a Karras",
     save_images: false,
     cfg_scale: 7,
-    steps: 20
+    steps: 30
 };
 
 export class SDXL extends Automatic1111 {
@@ -20,9 +20,8 @@ export class SDXL extends Automatic1111 {
             },
             highresTemplate: {
                 ...DEFAULT_PARAMETERS,
-                steps: 30,
                 refiner_checkpoint: refiner,
-                refiner_switch_at: 0.6
+                refiner_switch_at: 0.7
             }
         });
     }
