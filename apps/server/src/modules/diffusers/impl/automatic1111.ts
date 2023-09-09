@@ -27,7 +27,7 @@ export class Automatic1111 extends AbstractAPI {
         this._setModel(this._options.model);
 
         // -- Generate image --
-        const options = {
+        const options: Txt2ImgOptions = {
             ...(highres ? this._options.highresTemplate : this._options.lowresTemplate),
             prompt: image.prompt,
             negative_prompt: image.negative_prompt,
