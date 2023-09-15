@@ -13,9 +13,60 @@
                         Download zip
                     </span>
                 </button>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#promptModal">
+                    <i class="bi bi-plus"></i> <span class="d-none d-lg-inline">
+                        New prompt...
+                    </span>
+                </button>
             </div>
         </div>
     </div>
+
     <div id="picturesDiv" class="row flex-grow-1 mt-3" style="overflow-y: auto;">
+    </div>
+</div>
+
+<!-- New prompt dialog -->
+<div class="modal" id="promptModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">New prompt</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Prompts -->
+                <div class="row">
+                    <div class="col mt-2">
+                        <label for="positiveInput" class="form-label">Prompt</label>
+                        <textarea id="positiveInput" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col mt-2">
+                        <label for="negativeInput" class="form-label">Negative prompt</label>
+                        <textarea id="negativeInput" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col mt-2">
+                        <label for="bufferSizeInput" class="form-label">Buffer of images to evaluate</label>
+                        <input id="bufferSizeInput" class="form-control" type="number" min="0" value="10"
+                            placeholder="0 = no limit"></input>
+                        <div class="form-text">
+                            The program will stop generating new images until this limit of images to
+                            evaluate is reach (0 = no limit).
+                            Once an image is evaluated, it will be replaced by a new one.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary">
+                    <i class="bi bi-stack"></i>&nbsp;Add prompt
+                </button>
+            </div>
+        </div>
     </div>
 </div>

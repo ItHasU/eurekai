@@ -6,13 +6,10 @@ import "./pages/projects.page";
 
 import { API } from "./api";
 import { ProjectsPage } from "./pages/projects.page";
-import { PromptsPage } from "./pages/prompts.page";
 import { PicturesPage } from "./pages/pictures.page";
 import { DataCache } from "@eurekai/shared/src/cache";
 import { AbstractPageElement } from "./pages/abstract.page.element";
-import { EditPage } from "./pages/edit.page";
 import { SettingsPage } from "./pages/settings.page";
-import { GalleryPage } from "./pages/gallery.page";
 import { Notification, NotificationKind } from "@eurekai/shared/src/data";
 
 interface PageConstructor {
@@ -56,11 +53,8 @@ class App {
         }
         // -- Bind pages --
         this._pageDiv = document.getElementById("pageDiv") as HTMLDivElement;
-        this._bindPage("editButton", EditPage);
         this._bindPage("projectsButton", ProjectsPage);
-        this._bindPage("promptsButton", PromptsPage);
         this._bindPage("picturesButton", PicturesPage);
-        this._bindPage("galleryButton", GalleryPage);
         this._bindPage("settingsButton", SettingsPage);
 
         this._setPage(ProjectsPage);

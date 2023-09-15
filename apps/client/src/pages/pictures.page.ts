@@ -4,6 +4,7 @@ import { PictureElement } from "src/components/picture.element";
 import { zipPictures } from "@eurekai/shared/src/utils";
 import { PromptElement } from "src/components/prompt.element";
 import { DataCache } from "@eurekai/shared/src/cache";
+import { showSelect } from "src/components/tools";
 
 function scrollToNextSibling(node: HTMLElement): void {
     const parent = node.parentElement;
@@ -129,6 +130,25 @@ export class PicturesPage extends AbstractPageElement {
                             promptItem.remove();
                         },
                         move: async () => {
+                            await this._cache.withData(async (data) => {
+                                const projects = await data.getProjects();
+                                const selectedProject = await showSelect<ProjectDTO>(projects, {
+                                    valueKey: "id",
+                                    displayString: "name",
+                                    selected: projects.find(p => p.id === prompt.projectId)
+                                });
+                                if (selectedProject != null && selectedProject.id != prompt.projectId) {
+                                    await data.movePrompt(prompt.id, selectedProject.id);
+                                    item.remove();
+                                }
+                            });
+                        },
+                        clone: async () => {
+                            // TODO: Fill the dialog and show it
+                            // this._positiveInput.value = prompt.prompt;
+                            // this._negativeInput.value = prompt.negative_prompt ?? "";
+                            // this._bufferSizeInput.value = "" + prompt.bufferSize;
+                            // this._targetAcceptedInput.value = "" + prompt.acceptedTarget;
                         }
                     });
                     promptItem.classList.add("col-12");
