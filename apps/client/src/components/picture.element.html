@@ -34,27 +34,28 @@
     </div>
     {{#if isWaitingEvaluation}}
     <div class="row g-1">
-      {{#if _options.prompt.active}}
       <div class="col">
-        <button ref="stop" type="button" class="btn btn-outline-danger form-control"><i class="bi bi-stop"></i></button>
-      </div>
-      {{else}}
-      <div class="col">
-        <button ref="start" type="button" class="btn btn-outline-success form-control"><i
-            class="bi bi-play"></i></button>
-      </div>
-      {{/if}}
-      <div class="col">
-        <button ref="reject" type="button" class="btn btn-danger form-control"><i class="bi bi-x-lg"></i></button>
-      </div>
-      <div class="col">
-        <button ref="accept" type="button" class="btn btn-success form-control"><i class="bi bi-check-lg"></i></button>
+        <div class="btn-group" role="group" aria-label="Select display mode">
+          <button ref="highres" type="button" class="btn btn-outline-secondary">
+            <i class="bi bi-badge-sd"></i>
+          </button>
+          <button ref="normal" type="button" class="btn btn-outline-secondary">
+            <i class="bi bi-badge-hd"></i>
+          </button>
+          <button ref="both" type="button" class="btn btn-outline-secondary">
+            <i class="bi bi-images"></i>
+          </button>
+        </div>
       </div>
       <div class="col">
-        <button ref="highres" type="button" class="btn btn-primary form-control"><i class="bi bi-star"></i></button>
-      </div>
-      <div class="col">
-        <button ref="featured" type="button" class="btn btn-secondary form-control"><i class="bi bi-image"></i></button>
+        <div class="btn-group" role="group" aria-label="Select display mode">
+          <button ref="reject" type="button" class="btn btn-danger form-control"><i class="bi bi-x-lg"></i></button>
+          <button ref="accept" type="button" class="btn btn-success form-control"><i
+              class="bi bi-check-lg"></i></button>
+          <button ref="highres" type="button" class="btn btn-primary form-control"><i class="bi bi-star"></i></button>
+          <button ref="featured" type="button" class="btn btn-secondary form-control"><i
+              class="bi bi-image"></i></button>
+        </div>
       </div>
     </div>
     {{/if}}
