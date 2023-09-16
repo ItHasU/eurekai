@@ -63,28 +63,35 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         this._bindClick("seed", this._options.toggleSeed);
         this._bindClick("highres", this._options.toggleHighres);
         this._bindClick("featured", this._options.setAsFeatured);
+        this._bindClick("sd", this._setDisplay.bind(this, "sd"));
+        this._bindClick("hd", this._setDisplay.bind(this, "hd"));
+        this._bindClick("both", this._setDisplay.bind(this, "both"));
 
         // Get element with class "image"
-        const img: HTMLImageElement = this.querySelector(".card-img-top > img") as HTMLImageElement;
+        const img_sd: HTMLImageElement = this.querySelector(".card-img-top > img.sd") as HTMLImageElement;
+        const img_hd: HTMLImageElement = this.querySelector(".card-img-top > img.hd") as HTMLImageElement;
         // Use an observer to detect when the image is displayed on screen
         const observer = new IntersectionObserver(async (entries) => {
-            if (entries.length > 0 && entries[0].target === img.parentElement && entries[0].isIntersecting) {
+            if (entries.length > 0 && entries[0].target === img_sd.parentElement && entries[0].isIntersecting) {
                 // Load the image
                 if (this.data.attachmentId != null) {
-                    img.src = `/api/attachment/${this.data.attachmentId}`;
+                    img_sd.src = `/api/attachment/${this.data.attachmentId}`;
+                }
+                if (this.data.highresAttachmentId != null) {
+                    img_hd.src = `/api/attachment/${this.data.highresAttachmentId}`;
                 }
             } else {
                 // Unload the image
-                img.removeAttribute("src");
+                img_sd.removeAttribute("src");
             }
         });
-        observer.observe(img.parentElement!); // Here we know that we have a parent element for sure due to the CSS selector
+        observer.observe(img_sd.parentElement!); // Here we know that we have a parent element for sure due to the CSS selector
 
         // -- Handle swipe --
         // Handle accept / reject swipe moves
         // Prevent scrolling when touching outside the center of the image
         const feedbackDiv: HTMLDivElement = this.querySelector(".card-img-top > div") as HTMLDivElement;
-        img.addEventListener("touchstart", (ev) => {
+        img_sd.addEventListener("touchstart", (ev) => {
             if (ev.touches.length != 1) {
                 // Don't care about multi-touch
                 this._swipeMode = SwipeMode.NONE;
@@ -95,7 +102,7 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
             const touch = ev.touches[0];
             const x = touch.clientX;
             // Do a ratio with the image width
-            const ratio = x / img.clientWidth;
+            const ratio = x / img_sd.clientWidth;
             // If the touch is in the center of the image
             if (ratio < ACTION_SWIPE_MARGIN) {
                 // Prevent scrolling, show reject icon
@@ -111,7 +118,7 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
             }
             feedbackDiv.style.background = colors[this._swipeMode];
         });
-        img.addEventListener("touchmove", (ev) => {
+        img_sd.addEventListener("touchmove", (ev) => {
             if (ev.touches.length < 1) {
                 // Don't care about multi-touch
                 this._swipeMode = SwipeMode.NONE;
@@ -128,7 +135,7 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
             const touch = ev.touches[0];
             const x = touch.clientX;
             // Do a ratio with the image width
-            const ratio = x / img.clientWidth;
+            const ratio = x / img_sd.clientWidth;
             // If the touch is in the center of the image
             if (this._swipeMode == SwipeMode.REJECT_STARTED && ratio > ACTION_SWIPE_MARGIN) {
                 // We crossed the accept limit, reject the image
@@ -154,7 +161,7 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
 
             feedbackDiv.style.background = colors[this._swipeMode];
         });
-        img.addEventListener("touchend", (ev) => {
+        img_sd.addEventListener("touchend", (ev) => {
             if (this._swipeMode == SwipeMode.ACCEPT_DONE) {
                 // We crossed the accept limit, accept the image
                 this._options.accept();
@@ -203,6 +210,17 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
                 highresButton.disabled = false;
                 break;
         }
+    }
+
+    protected _setDisplay(buttonRef: "sd" | "hd" | "both"): void {
+        const img_sd: HTMLImageElement = this.querySelector(".card-img-top > img.sd") as HTMLImageElement;
+        const img_hd: HTMLImageElement = this.querySelector(".card-img-top > img.hd") as HTMLImageElement;
+        // Toggle images visibility
+        img_sd.style.display = buttonRef !== "hd" ? "block" : "none";
+        img_hd.style.display = buttonRef !== "sd" ? "block" : "none";
+        // Toggle button active state
+        this._getElementByRef("display")?.querySelectorAll("button").forEach(btn => btn.classList.remove("active"));
+        this._getElementByRef(buttonRef)?.classList.add("active");
     }
 }
 
