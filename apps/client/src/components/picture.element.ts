@@ -19,6 +19,10 @@ const colors: Record<SwipeMode, string> = {
     [SwipeMode.HIGHRES_DONE]: "rgba(0, 0, 255, 0.25)"
 };
 
+const ICON_HIGHRES = "bi-aspect-ratio";
+const ICON_HIGHRES_COMPUTING = "bi-hourglass-split";
+const ICON_HIGHRES_DONE = "bi-badge-hd-fill";
+
 const ACTION_SWIPE_MARGIN = 0.2;
 
 export class PictureElement extends AbstractDTOElement<PictureDTO> {
@@ -71,7 +75,18 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         const img_sd: HTMLImageElement = this.querySelector(".card-img-top > img.sd") as HTMLImageElement;
         const img_hd: HTMLImageElement = this.querySelector(".card-img-top > img.hd") as HTMLImageElement;
         const containerDiv: HTMLDivElement = img_sd.parentElement! as HTMLDivElement; // Here we know that we have a parent element for sure due to the CSS selector
+        const button_sd = this._getElementByRef("sd")!;
+        const button_hd = this._getElementByRef("hd")!;
+        const button_both = this._getElementByRef("both")!;
 
+        if (this.data.attachmentId == null) {
+            button_sd.remove();
+            button_both.remove();
+        }
+        if (this.data.highresAttachmentId == null) {
+            button_hd.remove();
+            button_both.remove();
+        }
         // Use an observer to detect when the image is displayed on screen
         const observer = new IntersectionObserver(async (entries) => {
             if (entries.length > 0 && entries[0].target === containerDiv && entries[0].isIntersecting) {
@@ -186,30 +201,30 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         // -- Handle highres --
         const highresButton: HTMLButtonElement = this.querySelector("*[ref='highres']") as HTMLButtonElement;
         const highresIcon: HTMLSpanElement = highresButton.querySelector("i") as HTMLElement;
-        highresIcon.classList.remove("bi-star", "bi-star-fill", "bi-star-half");
+        highresIcon.classList.remove(ICON_HIGHRES, ICON_HIGHRES_COMPUTING, ICON_HIGHRES_DONE);
         switch (this.data.highres) {
             case HighresStatus.NONE:
-                highresIcon.classList.add("bi-star");
+                highresIcon.classList.add(ICON_HIGHRES);
                 highresButton.disabled = false;
                 break;
             case HighresStatus.PENDING:
-                highresIcon.classList.add("bi-star-half");
+                highresIcon.classList.add(ICON_HIGHRES_COMPUTING);
                 highresButton.disabled = false;
                 break;
             case HighresStatus.COMPUTING:
-                highresIcon.classList.add("bi-star-half");
+                highresIcon.classList.add(ICON_HIGHRES_COMPUTING);
                 highresButton.disabled = true;
                 break;
             case HighresStatus.DONE:
-                highresIcon.classList.add("bi-star-fill");
+                highresIcon.classList.add(ICON_HIGHRES_DONE);
                 highresButton.disabled = true;
                 break;
             case HighresStatus.ERROR:
-                highresIcon.classList.add("bi-star", "text-danger");
+                highresIcon.classList.add(ICON_HIGHRES_DONE, "text-danger");
                 highresButton.disabled = false;
                 break;
             case HighresStatus.DELETED:
-                highresIcon.classList.add("bi-star-fill", "text-muted");
+                highresIcon.classList.add(ICON_HIGHRES_DONE, "text-muted");
                 highresButton.disabled = false;
                 break;
         }
@@ -224,7 +239,7 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         // Toggle button active state
         this._getElementByRef("display")?.querySelectorAll("button").forEach(btn => btn.classList.remove("active"));
         this._getElementByRef(buttonRef)?.classList.add("active");
-        img_sd.style.opacity = buttonRef === "both" ? "0.3" : "";
+        img_sd.style.opacity = buttonRef === "both" ? "0.6" : "";
     }
 }
 
