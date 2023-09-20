@@ -65,8 +65,8 @@ export class Generator {
                     });
                     return true;
                 } catch (err) {
-                    await this._data.setPictureHighresStatus(picture.id, HighresStatus.ERROR);
                     console.error(err);
+                    await this._data.setPictureHighresStatus(picture.id, HighresStatus.ERROR);
                 }
             } else {
                 // Make sure we won't try again

@@ -24,7 +24,7 @@ export class Automatic1111 extends AbstractAPI {
     /** @inheritdoc */
     public override async txt2img(image: ImageDescription, highres: boolean): Promise<string> {
         // -- Set model --
-        this._setModel(this._options.model);
+        await this._setModel(this._options.model);
 
         // -- Generate image --
         const options: Txt2ImgOptions = {
