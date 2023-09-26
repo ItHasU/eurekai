@@ -16,7 +16,8 @@ export class SDXL extends Automatic1111 {
             apiURL,
             model,
             lowresTemplate: {
-                ...DEFAULT_PARAMETERS
+                ...DEFAULT_PARAMETERS,
+                steps: 15
             },
             highresTemplate: {
                 ...DEFAULT_PARAMETERS,

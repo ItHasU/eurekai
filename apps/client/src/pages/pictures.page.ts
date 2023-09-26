@@ -5,6 +5,7 @@ import { zipPictures } from "@eurekai/shared/src/utils";
 import { PromptElement } from "src/components/prompt.element";
 import { DataCache } from "@eurekai/shared/src/cache";
 import { showSelect } from "src/components/tools";
+import { Modal } from "bootstrap";
 
 function scrollToNextSibling(node: HTMLElement): void {
     const parent = node.parentElement;
@@ -28,6 +29,10 @@ export class PicturesPage extends AbstractPageElement {
     protected readonly _picturesDiv: HTMLDivElement;
     protected readonly _picturesFilterSelect: HTMLSelectElement;
     protected readonly _zipButton: HTMLButtonElement;
+    protected readonly _positiveInput: HTMLInputElement;
+    protected readonly _negativeInput: HTMLInputElement;
+    protected readonly _bufferSizeInput: HTMLInputElement;
+    protected readonly _promptModal: Modal;
 
     constructor(cache: DataCache) {
         super(require("./pictures.page.html").default, cache);
@@ -37,7 +42,13 @@ export class PicturesPage extends AbstractPageElement {
         this._picturesFilterSelect = this.querySelector("#picturesFilterSelect") as HTMLSelectElement;
         this._zipButton = this.querySelector("#zipButton") as HTMLButtonElement;
 
-        // -- Bind callbacks --
+        this._positiveInput = this.querySelector("#positiveInput") as HTMLInputElement;
+        this._negativeInput = this.querySelector("#negativeInput") as HTMLInputElement;
+        this._bufferSizeInput = this.querySelector("#bufferSizeInput") as HTMLInputElement;
+        this._promptModal = new Modal(this.querySelector('#promptModal')!);
+
+        // -- Bind callbacks for buttons --
+        this._bindClickForRef("newPromptButton", this._onNewPromptClick.bind(this));
         this._picturesFilterSelect.addEventListener("change", this.refresh.bind(this, false));
         this._zipButton.addEventListener("click", this._onZipClick.bind(this));
     }
@@ -87,9 +98,62 @@ export class PicturesPage extends AbstractPageElement {
         // -- Clear --
         this._picturesDiv.innerHTML = "";
 
+        // -- Add prompt function --
+        const addPrompt = (prompt: PromptDTO): void => {
+            const promptItem = new PromptElement(prompt, {
+                pictures: pictures.filter(p => p.promptId === prompt.id),
+                start: async () => {
+                    await this._cache.withData(async (data) => {
+                        await data.setPromptActive(prompt.id, true);
+                        prompt.active = true;
+                    });
+                    promptItem.refresh();
+                    // Won't refresh pictures, but we don't care
+                },
+                stop: async () => {
+                    await this._cache.withData(async (data) => {
+                        await data.setPromptActive(prompt.id, false);
+                        prompt.active = false;
+                    });
+                    promptItem.refresh();
+                    // Won't refresh pictures, but we don't care
+                },
+                delete: async () => {
+                    await this._cache.withData(async (data) => {
+                        await data.movePrompt(prompt.id, null);
+                    });
+                    promptItem.remove();
+                },
+                move: async () => {
+                    await this._cache.withData(async (data) => {
+                        const projects = await data.getProjects();
+                        const selectedProject = await showSelect<ProjectDTO>(projects, {
+                            valueKey: "id",
+                            displayString: "name",
+                            selected: projects.find(p => p.id === prompt.projectId)
+                        });
+                        if (selectedProject != null && selectedProject.id != prompt.projectId) {
+                            await data.movePrompt(prompt.id, selectedProject.id);
+                            promptItem.remove();
+                        }
+                    });
+                },
+                clone: async () => {
+                    // TODO: Fill the dialog and show it
+                    this._positiveInput.value = prompt.prompt;
+                    this._negativeInput.value = prompt.negative_prompt ?? "";
+                    this._bufferSizeInput.value = "" + prompt.bufferSize;
+                    this._promptModal.show();
+                }
+            });
+            promptItem.classList.add("col-12");
+            promptItem.refresh();
+            this._picturesDiv.appendChild(promptItem);
+        }
+
         // -- Fill the pictures --
         const picturesDiv = this.querySelector("#picturesDiv") as HTMLDivElement;
-        let previousPromptId: number | null = null;
+        const displayedPromptIds: Set<number> = new Set();
         for (const picture of pictures) {
             if (!filter(picture)) {
                 continue;
@@ -97,7 +161,8 @@ export class PicturesPage extends AbstractPageElement {
             const prompt = promptsMap[picture.promptId];
 
             // -- Handle line breaks after each prompt --
-            if (previousPromptId !== picture.promptId) {
+            if (!displayedPromptIds.has(picture.promptId)) {
+                displayedPromptIds.add(picture.promptId);
                 // Add a line break
                 const div = document.createElement("div");
                 div.classList.add("w-100");
@@ -105,58 +170,9 @@ export class PicturesPage extends AbstractPageElement {
 
                 // Add the prompt
                 if (prompt) {
-                    const promptItem = new PromptElement(prompt, {
-                        pictures: pictures.filter(p => p.promptId === prompt.id),
-                        start: async () => {
-                            await this._cache.withData(async (data) => {
-                                await data.setPromptActive(picture.promptId, true);
-                                prompt.active = true;
-                            });
-                            promptItem.refresh();
-                            // Won't refresh pictures, but we don't care
-                        },
-                        stop: async () => {
-                            await this._cache.withData(async (data) => {
-                                await data.setPromptActive(picture.promptId, false);
-                                prompt.active = false;
-                            });
-                            promptItem.refresh();
-                            // Won't refresh pictures, but we don't care
-                        },
-                        delete: async () => {
-                            await this._cache.withData(async (data) => {
-                                await data.movePrompt(picture.promptId, null);
-                            });
-                            promptItem.remove();
-                        },
-                        move: async () => {
-                            await this._cache.withData(async (data) => {
-                                const projects = await data.getProjects();
-                                const selectedProject = await showSelect<ProjectDTO>(projects, {
-                                    valueKey: "id",
-                                    displayString: "name",
-                                    selected: projects.find(p => p.id === prompt.projectId)
-                                });
-                                if (selectedProject != null && selectedProject.id != prompt.projectId) {
-                                    await data.movePrompt(prompt.id, selectedProject.id);
-                                    item.remove();
-                                }
-                            });
-                        },
-                        clone: async () => {
-                            // TODO: Fill the dialog and show it
-                            // this._positiveInput.value = prompt.prompt;
-                            // this._negativeInput.value = prompt.negative_prompt ?? "";
-                            // this._bufferSizeInput.value = "" + prompt.bufferSize;
-                            // this._targetAcceptedInput.value = "" + prompt.acceptedTarget;
-                        }
-                    });
-                    promptItem.classList.add("col-12");
-                    promptItem.refresh();
-                    this._picturesDiv.appendChild(promptItem);
+                    addPrompt(prompt);
                 }
             }
-            previousPromptId = picture.promptId;
 
             // -- Add the picture --
             const item = new PictureElement(picture, {
@@ -232,6 +248,15 @@ export class PicturesPage extends AbstractPageElement {
             picturesDiv.appendChild(item);
             item.refresh();
         }
+
+        for (const prompt of prompts) {
+            if (displayedPromptIds.has(prompt.id) || !prompt.active) {
+                continue;
+            } else {
+                addPrompt(prompt);
+            }
+        }
+
         picturesDiv.scrollTo(0, 0);
     }
 
@@ -283,6 +308,27 @@ export class PicturesPage extends AbstractPageElement {
         }
     }
 
+    protected async _onNewPromptClick(): Promise<void> {
+        const positivePrompt = this._positiveInput.value;
+        const negativePrompt = this._negativeInput.value;
+        const bufferSize = +this._bufferSizeInput.value;
+        const acceptedTarget = 0;
+        const projectId = this._cache.getSelectedProjectId();
+        if (projectId != null) {
+            await this._cache.withData(async (data) => {
+                await data.addPrompt({
+                    projectId: projectId,
+                    prompt: positivePrompt,
+                    negative_prompt: negativePrompt,
+                    active: true,
+                    bufferSize,
+                    acceptedTarget
+                });
+            });
+            await this.refresh();
+        }
+        this._promptModal.hide();
+    }
 }
 
 customElements.define("pictures-page", PicturesPage);

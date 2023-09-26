@@ -9,6 +9,7 @@ async function main(): Promise<void> {
     const apiURL = getEnvString("API_URL");
 
     const db = new DatabaseWrapper("eurekai.db");
+    // db.registerModel("BTW 1.5", new SDXL(apiURL, "betterThanWords_v15.safetensors [edb7b152b1]", "sd_xl_refiner_1.0_0.9vae.safetensors [8d0ce6c016]"));
     db.registerModel("SDXL 1.0", new SDXL(apiURL, "sd_xl_base_1.0_0.9vae.safetensors [e6bb9ea85b]", "sd_xl_refiner_1.0_0.9vae.safetensors [8d0ce6c016]"));
     db.registerModel("Deliberate 2", new SD(apiURL, "deliberate_v2.safetensors [9aba26abdf]"));
     db.registerModel("Dream Shaper 8", new SD(apiURL, "dreamshaper_8.safetensors [879db523c3]"));
