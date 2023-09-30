@@ -9,6 +9,7 @@
     "w": "webpack --watch"
   },
   "devDependencies": {
+    "@dagda/build": "*",
     "@eurekai/shared": "*",
     "@types/better-sqlite3": "^7.6.4",
     "@types/express": "^4.17.17",

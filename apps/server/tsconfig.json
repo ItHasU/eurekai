@@ -1,5 +1,5 @@
 {
-    "extends": "../../utils/build/tsconfig-server.json",
+    "extends": "@dagda/build/tsconfig-server.json",
     "compilerOptions": {
         "baseUrl": ".",
         "outDir": "./.tsc-build/",

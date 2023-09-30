@@ -1,1 +1,1 @@
-module.exports = require("../../utils/bundle/webpack-client.config")(__dirname);
+module.exports = require("@dagda/build/webpack-client.config")(__dirname);

@@ -9,6 +9,7 @@
     "w": "webpack --watch"
   },
   "devDependencies": {
+    "@dagda/build": "*",
     "@eurekai/shared": "*",
     "@types/bootstrap": "^5.2.6"
   },

@@ -12,5 +12,6 @@
     "jszip": "^3.10.1"
   },
   "devDependencies": {
+    "@dagda/build": "*"
   }
 }
