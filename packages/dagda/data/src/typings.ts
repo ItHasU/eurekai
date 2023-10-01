@@ -4,18 +4,20 @@
 import { Text } from "./impl/jsTypes";
 
 /** Can be used either as a Named type or as V. If you use it as V, Named typing will be lost. */
-type Named<T extends string, V> = V & { __type: T, __value: V };
+export type Named<T extends string, V> = V & { __type: T, __value: V };
 /** Can only be used as its Named type */
-type StrictNamed<T extends string, V> = { __type: T, __value: V };
+export type StrictNamed<T extends string, V> = { __type: T, __value: V };
 /** Get the value type (V) of a [Strict]Named type */
-type ValueOfNamed<NT> = NT extends { __value: infer V } ? V : never;
+export type ValueOfNamed<NT> = NT extends { __value: infer V } ? V : never;
 /** Get the type name (T extends string) of a [Strict]Named type */
-type TypeOfNamed<NT> = NT extends { __type: infer T extends string } ? T : never;
+export type TypeOfNamed<NT> = NT extends { __type: infer T extends string } ? T : never;
 
 export class NamedTyping<Name extends string, JSType, DBType = JSType> {
+    private _name!: Name;
+
     constructor(public readonly options: {
-        dbToJSON: DBType extends JSType ? never /* Can directly be converted */ : (v: DBType) => JSType,
-        jsonToDB: JSType extends DBType ? never /* Can directly be converted */ : (v: JSType) => DBType
+        dbToJSON: DBType extends JSType ? undefined /* Can directly be converted */ : (v: DBType) => JSType,
+        jsonToDB: JSType extends DBType ? undefined /* Can directly be converted */ : (v: JSType) => DBType
     }) { }
 }
 
