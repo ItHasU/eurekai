@@ -54,10 +54,9 @@ class App {
         // -- Bind pages --
         this._pageDiv = document.getElementById("pageDiv") as HTMLDivElement;
         this._bindPage("projectsButton", ProjectsPage);
-        this._bindPage("picturesButton", PicturesPage);
         this._bindPage("settingsButton", SettingsPage);
 
-        this._setPage(ProjectsPage);
+        this.setPage(ProjectsPage);
 
         // -- Auto-lock on inactivity --
         // Wait for next frame animation and if delta is > to 5 seconds, lock
@@ -74,13 +73,13 @@ class App {
     protected _bindPage(buttonId: string, pageConstructor: PageConstructor): void {
         const button = document.getElementById(buttonId);
         if (button) {
-            button.addEventListener("click", this._setPage.bind(this, pageConstructor));
+            button.addEventListener("click", this.setPage.bind(this, pageConstructor));
         } else {
             console.error(`Button ${buttonId} not found, cannot bind page`);
         }
     }
 
-    protected _setPage(pageConstructor: PageConstructor): void {
+    public setPage(pageConstructor: PageConstructor): void {
         // -- Empty page --
         this._pageDiv.innerHTML = "";
         // -- Create page --
@@ -137,4 +136,5 @@ class App {
     }
 }
 
-const APP: App = new App();
+/** Singleton of the App */
+export const APP: App = new App();

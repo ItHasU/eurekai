@@ -1,6 +1,8 @@
 import { BooleanEnum, ProjectWithStats } from "@eurekai/shared/src/types";
 import { AbstractDTOElement } from "./abstract.dto.element";
 import { DataCache } from "@eurekai/shared/src/cache";
+import { APP } from "src";
+import { PicturesPage } from "src/pages/pictures.page";
 
 export class ProjectElement extends AbstractDTOElement<ProjectWithStats> {
 
@@ -15,6 +17,7 @@ export class ProjectElement extends AbstractDTOElement<ProjectWithStats> {
 
         this.addEventListener("click", () => {
             this._cache.setSelectedProjectId(project.id);
+            APP.setPage(PicturesPage);
         });
     }
 

@@ -5,7 +5,6 @@ import { zipPictures } from "@eurekai/shared/src/utils";
 import { PromptElement } from "src/components/prompt.element";
 import { DataCache } from "@eurekai/shared/src/cache";
 import { showSelect } from "src/components/tools";
-import { Modal } from "bootstrap";
 
 function scrollToNextSibling(node: HTMLElement): void {
     const parent = node.parentElement;
@@ -69,9 +68,14 @@ export class PicturesPage extends AbstractPageElement {
             promptsMap[prompt.id] = prompt;
         }
 
+        let hasPendingPicture = false;
         const pictures = [...picturesRaw];
         pictures.sort((p1, p2) => {
             let res = 0;
+
+            if (p1.computed === ComputationStatus.PENDING || p2.computed === ComputationStatus.PENDING) {
+                hasPendingPicture = true;
+            }
 
             if (res === 0) {
                 const prompt1 = promptsMap[p1.promptId];
@@ -95,6 +99,11 @@ export class PicturesPage extends AbstractPageElement {
 
             return res;
         });
+
+        // -- Auto switch to accepted --
+        if (!hasPendingPicture && this._picturesFilterSelect.value === "done") {
+            this._picturesFilterSelect.value = "accept";
+        }
 
         // -- Get the filter --
         let filter: (picture: PictureDTO) => boolean = this._getFilter();
