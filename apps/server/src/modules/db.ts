@@ -114,6 +114,11 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     protected _models: Map<string, AbstractAPI> = new Map();
     protected _selectedModel: string | null = null;
 
+    public clearModels(): void {
+        this._models.clear();
+        this._selectedModel = null;
+    }
+
     public registerModel(title: string, api: AbstractAPI): void {
         this._models.set(title, api);
         if (this._selectedModel == null) {
