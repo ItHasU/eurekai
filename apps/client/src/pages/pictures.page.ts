@@ -28,11 +28,10 @@ export class PicturesPage extends AbstractPageElement {
 
     protected readonly _picturesDiv: HTMLDivElement;
     protected readonly _picturesFilterSelect: HTMLSelectElement;
-    protected readonly _zipButton: HTMLButtonElement;
     protected readonly _positiveInput: HTMLInputElement;
     protected readonly _negativeInput: HTMLInputElement;
     protected readonly _bufferSizeInput: HTMLInputElement;
-    protected readonly _promptModal: Modal;
+    protected readonly _promptCard: HTMLDivElement;
 
     constructor(cache: DataCache) {
         super(require("./pictures.page.html").default, cache);
@@ -40,17 +39,18 @@ export class PicturesPage extends AbstractPageElement {
         // -- Get components --
         this._picturesDiv = this.querySelector("#picturesDiv") as HTMLDivElement;
         this._picturesFilterSelect = this.querySelector("#picturesFilterSelect") as HTMLSelectElement;
-        this._zipButton = this.querySelector("#zipButton") as HTMLButtonElement;
 
+        this._promptCard = this.querySelector("#promptCard") as HTMLDivElement;
         this._positiveInput = this.querySelector("#positiveInput") as HTMLInputElement;
         this._negativeInput = this.querySelector("#negativeInput") as HTMLInputElement;
         this._bufferSizeInput = this.querySelector("#bufferSizeInput") as HTMLInputElement;
-        this._promptModal = new Modal(this.querySelector('#promptModal')!);
 
         // -- Bind callbacks for buttons --
+        this._bindClickForRef("addPromptButton", this._openPromptPanel.bind(this));
+        this._bindClickForRef("closePromptButton", this._closePromptPanel.bind(this));
         this._bindClickForRef("newPromptButton", this._onNewPromptClick.bind(this));
+        this._bindClickForRef("zipButton", this._onZipClick.bind(this));
         this._picturesFilterSelect.addEventListener("change", this.refresh.bind(this, false));
-        this._zipButton.addEventListener("click", this._onZipClick.bind(this));
     }
 
     /** @inheritdoc */
@@ -59,6 +59,10 @@ export class PicturesPage extends AbstractPageElement {
         const picturesRaw = await this._cache.getPictures();
         const preferredSeeds = await this._cache.getSeeds();
         const project = await this._cache.getSelectedProject();
+
+        if (prompts.length === 0) {
+            this._openPromptPanel();
+        }
 
         const promptsMap: { [id: number]: PromptDTO } = {};
         for (const prompt of prompts) {
@@ -138,13 +142,7 @@ export class PicturesPage extends AbstractPageElement {
                         }
                     });
                 },
-                clone: async () => {
-                    // TODO: Fill the dialog and show it
-                    this._positiveInput.value = prompt.prompt;
-                    this._negativeInput.value = prompt.negative_prompt ?? "";
-                    this._bufferSizeInput.value = "" + prompt.bufferSize;
-                    this._promptModal.show();
-                }
+                clone: this._openPromptPanel.bind(this, prompt)
             });
             promptItem.classList.add("col-12");
             promptItem.refresh();
@@ -308,6 +306,20 @@ export class PicturesPage extends AbstractPageElement {
         }
     }
 
+    protected _openPromptPanel(prompt?: PromptDTO): void {
+        // -- Set all fields to passed prompt --
+        this._positiveInput.value = prompt?.prompt ?? "";
+        this._negativeInput.value = prompt?.negative_prompt ?? "";
+        this._bufferSizeInput.value = "" + (prompt?.acceptedTarget ?? 10);
+
+        // -- Display the panel --
+        this._promptCard.classList.remove("d-none");
+    }
+
+    protected _closePromptPanel(): void {
+        this._promptCard.classList.add("d-none");
+    }
+
     protected async _onNewPromptClick(): Promise<void> {
         const positivePrompt = this._positiveInput.value;
         const negativePrompt = this._negativeInput.value;
@@ -327,7 +339,7 @@ export class PicturesPage extends AbstractPageElement {
             });
             await this.refresh();
         }
-        this._promptModal.hide();
+        this._promptCard.classList.add("d-none");
     }
 }
 
