@@ -19,9 +19,9 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> {
         clone?: () => void
     }) {
         super(data, require("./prompt.element.html").default);
-        this.rejectedCount = _options.pictures.filter(p => p.computed === ComputationStatus.REJECTED && p.promptId === this.data.id).length;
-        this.pendingCount = _options.pictures.filter(p => p.computed === ComputationStatus.DONE && p.promptId === this.data.id).length;
-        this.acceptedCount = _options.pictures.filter(p => p.computed === ComputationStatus.ACCEPTED && p.promptId === this.data.id).length;
+        this.rejectedCount = _options.pictures.filter(p => p.status === ComputationStatus.REJECTED && p.promptId === this.data.id).length;
+        this.pendingCount = _options.pictures.filter(p => p.status === ComputationStatus.DONE && p.promptId === this.data.id).length;
+        this.acceptedCount = _options.pictures.filter(p => p.status === ComputationStatus.ACCEPTED && p.promptId === this.data.id).length;
         const total = this.rejectedCount + this.pendingCount + this.acceptedCount;
         this.rejectedPercent = this.rejectedCount / total * 100;
         this.pendingPercent = this.pendingCount / total * 100;

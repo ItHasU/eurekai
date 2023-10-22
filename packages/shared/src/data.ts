@@ -1,8 +1,22 @@
 import { BooleanEnum, ComputationStatus, PictureDTO, ProjectDTO, ProjectWithStats, PromptDTO } from "./types";
 
+interface SDResolution {
+    title: string;
+    width: number;
+    height: number;
+}
+
+interface SDStyle {
+    title: string;
+    prompt: string;
+    negative: string;
+}
+
 /** Stable Diffusion model information */
-export interface SDModels {
-    title: string
+export interface SDModel {
+    title: string;
+    resolutions: SDResolution[];
+    styles: SDStyle[];
 }
 
 export enum NotificationKind {
@@ -22,7 +36,7 @@ export abstract class AbstractDataWrapper {
     //#region SD Models
 
     /** Get a list of models */
-    public abstract getModels(): Promise<SDModels[]>;
+    public abstract getModels(): Promise<SDModel[]>;
 
     /** Get selected model (by title) */
     public abstract getModel(): Promise<string | null>;

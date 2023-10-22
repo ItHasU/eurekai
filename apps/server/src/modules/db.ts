@@ -1,12 +1,11 @@
-import { AttachmentDTO, BooleanEnum, HighresStatus, ProjectWithStats, Txt2ImgOptions } from "@eurekai/shared/src/types";
-import { ProjectDTO, Tables, TableName, t, PromptDTO, PictureDTO, ComputationStatus } from "@eurekai/shared/src/types";
-import { AbstractDataWrapper, Notification, SDModels } from "@eurekai/shared/src/data";
+import { AttachmentDTO, BooleanEnum, ProjectWithStats, Txt2ImgOptions, eq, set } from "@eurekai/shared/src/types";
+import { ProjectDTO, Tables, TableName, f, t, PromptDTO, PictureDTO, ComputationStatus } from "@eurekai/shared/src/types";
+import { AbstractDataWrapper, Notification, SDModel } from "@eurekai/shared/src/data";
 import sqlite from "better-sqlite3";
 import { AbstractAPI } from "./diffusers/abstract.api";
 
 export interface PendingPrompt extends PromptDTO {
     pendingPictureCount: number;
-    acceptedPictureCount: number;
 }
 
 const DEFAULT_PARAMETERS: Txt2ImgOptions = {
@@ -64,14 +63,11 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         });
         await this._initTable("pictures", {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
-            "projectId": "INTEGER",
             "promptId": "INTEGER",
             "seed": "INTEGER DEFAULT -1",
-            "options": "TEXT", // JSON
-            "createdAt": "DATE",
-            "computed": "INTEGER",
-            "highres": "INTEGER DEFAULT 0",
+            "status": "INTEGER",
             "attachmentId": "INTEGER NULL",
+            "highresStatus": "INTEGER DEFAULT 0",
             "highresAttachmentId": "INTEGER NULL"
         });
         await this._initTable("attachments", {
@@ -93,17 +89,17 @@ export class DatabaseWrapper extends AbstractDataWrapper {
 
     public override fixHighres(): Promise<void> {
         return this._run(`
-            UPDATE ${t("pictures")} SET highres = ${HighresStatus.ERROR}, highresAttachmentId = NULL WHERE id IN (
-                SELECT pictures.id FROM pictures 
-                    LEFT JOIN attachments ON pictures.highresAttachmentId=attachments.id 
-                    WHERE pictures.highresAttachmentId IS NOT NULL AND attachments.id IS NULL
+            UPDATE ${t("pictures")} SET ${set("pictures", "highresStatus", ComputationStatus.ERROR, false)}, ${set("pictures", "highresAttachmentId", undefined, false)} = NULL WHERE id IN (
+                SELECT ${f("pictures", "id")} FROM ${t("pictures")}
+                    LEFT JOIN ${t("attachments")} ON ${f("pictures", "highresAttachmentId")}=${f("attachments", "id")}
+                    WHERE ${f("pictures", "highresAttachmentId")} IS NOT NULL AND ${f("attachments", "id")} IS NULL
             )`);
     }
 
     /** Fix pictures marked as computing on startup */
     public async fixComputingAtStart(): Promise<void> {
-        await this._run(`UPDATE ${t("pictures")} SET computed = ${ComputationStatus.ERROR} WHERE computed = ${ComputationStatus.COMPUTING}`);
-        await this._run(`UPDATE ${t("pictures")} SET highres = ${HighresStatus.ERROR} WHERE highres = ${HighresStatus.COMPUTING}`);
+        await this._run(`UPDATE ${t("pictures")} SET ${set("pictures", "status", ComputationStatus.ERROR, false)} WHERE ${eq("pictures", "status", ComputationStatus.COMPUTING, false)}`);
+        await this._run(`UPDATE ${t("pictures")} SET ${set("pictures", "highresStatus", ComputationStatus.ERROR, false)} WHERE ${eq("pictures", "highresStatus", ComputationStatus.COMPUTING, false)}`);
     }
 
     //#endregion
@@ -125,10 +121,12 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         }
     }
 
-    public async getModels(): Promise<SDModels[]> {
+    public async getModels(): Promise<SDModel[]> {
         return [...this._models.values()].map(api => {
-            const fakeModel: SDModels = {
-                title: api.getTitle()
+            const fakeModel: SDModel = {
+                title: api.getTitle(),
+                resolutions: [],
+                styles: []
             };
             return fakeModel;
         });
@@ -165,21 +163,27 @@ export class DatabaseWrapper extends AbstractDataWrapper {
 
     /** @inheritdoc */
     public override async getProject(id: number): Promise<ProjectDTO | null> {
-        return this._get<ProjectDTO>(`SELECT * FROM ${t("projects")} WHERE id = ?`, [id]);
+        return this._get<ProjectDTO>(`SELECT * FROM ${t("projects")} WHERE ${f("projects", "id")} = ?`, [id]);
     }
 
     /** @inheritdoc */
     public override getProjectsWithStats(): Promise<ProjectWithStats[]> {
+        const picturesWith = <P extends keyof PictureDTO>(property: P, value: PictureDTO[P], quoted: number extends PictureDTO[P] ? false : true): string => {
+            return `(SELECT COUNT(${f("pictures", "id")}) 
+                        FROM ${t("prompts")} 
+                        JOIN ${t("pictures")} ON ${f("pictures", "promptId")} = ${f("prompts", "id")} 
+                        WHERE ${eq("pictures", property, value, quoted)} AND ${f("prompts", "projectId")} = ${f("projects", "id")})`;
+        }
         const query = `
             SELECT
                 ${t("projects")}.*,
                 (SELECT COUNT(id) FROM prompts WHERE projectId = projects.id) prompts,
                 (SELECT COUNT(id) FROM prompts WHERE projectId = projects.id AND active=1) activePrompts,
-                (SELECT COUNT(id) FROM pictures WHERE computed=${ComputationStatus.DONE} AND projectId = projects.id) doneCount,
-                (SELECT COUNT(id) FROM pictures WHERE computed=${ComputationStatus.ACCEPTED} AND projectId = projects.id) acceptedCount,
-                (SELECT COUNT(id) FROM pictures WHERE computed=${ComputationStatus.REJECTED} AND projectId = projects.id) rejectedCount,
-                (SELECT COUNT(id) FROM pictures WHERE highres=${HighresStatus.DONE} AND projectId = projects.id) highresCount,
-                (SELECT COUNT(id) FROM pictures WHERE highres>=${HighresStatus.PENDING} AND highres<=${HighresStatus.COMPUTING} AND projectId = projects.id) highresPendingCount
+                ${picturesWith("status", ComputationStatus.DONE, false)} doneCount,
+                ${picturesWith("status", ComputationStatus.ACCEPTED, false)} acceptedCount,
+                ${picturesWith("status", ComputationStatus.REJECTED, false)} rejectedCount,
+                ${picturesWith("highresStatus", ComputationStatus.DONE, false)} highresCount,
+                ${picturesWith("highresStatus", ComputationStatus.COMPUTING, false)} highresPendingCount
             FROM ${t("projects")}`;
         return this._all<ProjectWithStats>(query, undefined);
     }
@@ -197,7 +201,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     /** @inheritdoc */
     public override async deleteProject(projectId: number): Promise<void> {
         // -- Delete project's pictures --
-        await this._run(`DELETE FROM ${t("pictures")} WHERE projectId = ?`, [projectId]);
+        await this._run(`DELETE FROM ${t("pictures")} WHERE ${f("pictures", "promptId")} IN (SELECT ${f("prompts", "id")} FROM ${t("prompts")} WHERE ${f("prompts", "projectId")} = ?)`, [projectId]);
         // -- Delete project's prompts --
         await this._run(`DELETE FROM ${t("prompts")} WHERE projectId = ?`, [projectId]);
         // -- Delete the project --
@@ -206,13 +210,13 @@ export class DatabaseWrapper extends AbstractDataWrapper {
 
     /** @inheritdoc */
     public override async setProjectFeaturedImage(projectId: number, attachmentId: number | null): Promise<void> {
-        await this._run(`UPDATE ${t("projects")} SET featuredAttachmentId = ? WHERE id = ?`, [attachmentId, projectId]);
+        await this._run(`UPDATE ${t("projects")} SET ${f("projects", "featuredAttachmentId")} = ? WHERE id = ?`, [attachmentId, projectId]);
     }
 
     /** @inheritdoc */
     public override async cleanProject(id: number): Promise<void> {
         // Stop all prompts
-        await this._run(`UPDATE ${t("prompts")} SET active=false WHERE projectId=?;`, [id]);
+        await this._run(`UPDATE ${t("prompts")} SET ${f("prompts", "active")}=false WHERE ${f("prompts", "projectId")} = ?;`, [id]);
         // Remove all rejected pictures
         await this._run(`DELETE FROM ${t("pictures")} WHERE projectId=? AND computed=${ComputationStatus.REJECTED};`, [id]);
     }
@@ -220,7 +224,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     /** @inheritdoc */
     public override async setProjectPinned(projectId: number, pinned: boolean): Promise<void> {
         // Stop all prompts
-        await this._run(`UPDATE ${t("projects")} SET pinned=${pinned ? 1 : 0} WHERE id=?;`, [projectId]);
+        await this._run(`UPDATE ${t("projects")} SET ${set("projects", "pinned", pinned ? BooleanEnum.TRUE : BooleanEnum.FALSE, false)} WHERE ${f("projects", "id")}=?;`, [projectId]);
     }
 
     /** Clean attachments that are not referenced anymore */
@@ -252,13 +256,12 @@ export class DatabaseWrapper extends AbstractDataWrapper {
 
     /** Get a list of active prompts with statistics on related pictures */
     public async getPendingPrompts(): Promise<PendingPrompt[]> {
-        return this._all<PendingPrompt>(`SELECT p.*, COUNT(DISTINCT pic.id) AS pendingPictureCount, COUNT(DISTINCT pic2.id) AS acceptedPictureCount
-            FROM ${t("prompts")} AS p 
-            LEFT JOIN ${t("pictures")} AS pic ON p.id = pic.promptId AND pic.computed <= ${ComputationStatus.DONE}
-            LEFT JOIN ${t("pictures")} AS pic2 ON pic2.promptId = p.id AND pic2.computed = ${ComputationStatus.ACCEPTED}
-            WHERE p.active = 1
-            GROUP BY p.id
-            HAVING (p.bufferSize = 0 OR pendingPictureCount < p.bufferSize) AND (p.acceptedTarget = 0 OR acceptedPictureCount < p.acceptedTarget)
+        return this._all<PendingPrompt>(`SELECT ${t("prompts")}.*, COUNT(DISTINCT ${f("pictures", "id")}) AS pendingPictureCount
+            FROM ${t("prompts")}
+            LEFT JOIN ${t("pictures")} ON ${f("pictures", "promptId")} = ${f("prompts", "id")} AND ${f("pictures", "status")} <= ${ComputationStatus.DONE}
+            WHERE ${eq("prompts", "active", true, true)}
+            GROUP BY ${f("prompts", "id")}
+            HAVING (${eq("prompts", "bufferSize", 0, false)} OR pendingPictureCount < ${f("prompts", "bufferSize")})
             ORDER BY pendingPictureCount`);
     }
 
@@ -372,32 +375,21 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         }
 
         seed = seed ?? (Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
-        const picture: Omit<PictureDTO, "id" | "computed"> = {
-            projectId: prompt.projectId,
+        const picture: Omit<PictureDTO, "id" | "status"> = {
             promptId: prompt.id,
             seed,
-            createdAt: new Date().getTime(),
-            highres: HighresStatus.NONE,
-            options: {
-                ...DEFAULT_PARAMETERS,
-                prompt: prompt.prompt,
-                negative_prompt: prompt.negative_prompt,
-                seed
-            }
+            highresStatus: ComputationStatus.NONE
         };
         return this.addPicture(picture);
     }
 
     /** Save a picture in pending state */
-    public async addPicture(entry: Omit<PictureDTO, "id" | "computed" | "attachmentId">): Promise<PictureDTO> {
+    public async addPicture(entry: Omit<PictureDTO, "id" | "status" | "attachmentId">): Promise<PictureDTO> {
         const id = await this._insert(
-            `INSERT INTO ${t("pictures")} (projectId, promptId, seed, options, createdAt, computed, attachmentId) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO ${t("pictures")} (promptId, seed, status, attachmentId) VALUES (?, ?, ?, ?, ?)`,
             [
-                entry.projectId,
                 entry.promptId,
                 entry.seed,
-                JSON.stringify(entry.options),
-                entry.createdAt,
                 ComputationStatus.PENDING,
                 null
             ]
@@ -405,7 +397,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         return {
             ...entry,
             id,
-            computed: ComputationStatus.PENDING
+            status: ComputationStatus.PENDING
         };
     }
 
@@ -424,7 +416,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         const attachmentId = await this.addAttachment(data);
 
         // Update picture
-        return this._run(`UPDATE ${t("pictures")} SET highresAttachmentId = ?, highres = ? WHERE id = ?`, [attachmentId, HighresStatus.DONE, id]);
+        return this._run(`UPDATE ${t("pictures")} SET highresAttachmentId = ?, highres = ? WHERE id = ?`, [attachmentId, ComputationStatus.DONE, id]);
     }
 
     /** @inheritdoc */
@@ -433,14 +425,14 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     }
 
     public override setPictureHighres(id: number, highres: boolean): Promise<void> {
-        return this._run(`UPDATE ${t("pictures")} SET highres = ? WHERE id = ? AND (highres = ? OR highres > ${HighresStatus.DONE})`, [
-            highres ? HighresStatus.PENDING : HighresStatus.NONE, // Status to assign
+        return this._run(`UPDATE ${t("pictures")} SET highres = ? WHERE id = ? AND (highres = ? OR highres > ${ComputationStatus.DONE})`, [
+            highres ? ComputationStatus.PENDING : ComputationStatus.NONE, // Status to assign
             id,
-            highres ? HighresStatus.NONE : HighresStatus.PENDING // Only toggle state if computation is not started yet
+            highres ? ComputationStatus.NONE : ComputationStatus.PENDING // Only toggle state if computation is not started yet
         ]);
     }
 
-    public setPictureHighresStatus(id: number, status: HighresStatus): Promise<void> {
+    public setPictureHighresStatus(id: number, status: ComputationStatus): Promise<void> {
         return this._run(`UPDATE ${t("pictures")} SET highres = ? WHERE id = ?`, [
             status, // Status to assign
             id
@@ -448,7 +440,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     }
 
     public getPicturesHighresPending(): Promise<PictureDTO[]> {
-        return this._all<PictureDTO>(`SELECT * FROM ${t("pictures")} WHERE highres = ?`, [HighresStatus.PENDING]).then(function (rows) {
+        return this._all<PictureDTO>(`SELECT * FROM ${t("pictures")} WHERE ${f("pictures", "highresStatus")} = ?`, [ComputationStatus.PENDING]).then(function (rows) {
             return rows.map((row: any) => {
                 row.options = JSON.parse(row.options);
                 return row;
@@ -457,7 +449,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     }
 
     public override async deletePictureHighres(id: number): Promise<void> {
-        await this._run(`UPDATE ${t("pictures")} SET highres = ${HighresStatus.DELETED} WHERE id = ? AND highres >= ${HighresStatus.DONE}`, [id]);
+        await this._run(`UPDATE ${t("pictures")} SET highres = ${ComputationStatus.REJECTED} WHERE id = ? AND highres >= ${ComputationStatus.DONE}`, [id]);
     }
 
     //#endregion
@@ -511,6 +503,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             const rows = this._db.prepare(query).all(...params) as Row[];
             return Promise.resolve(rows);
         } catch (e) {
+            console.log(query, params);
             return Promise.reject(e);
         }
     }
@@ -520,6 +513,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             const row = this._db.prepare(query).get(...params) as Row | undefined;
             return Promise.resolve(row ?? null);
         } catch (e) {
+            console.log(query, params);
             return Promise.reject(e);
         }
     }
@@ -538,6 +532,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             this._db.prepare(query).run(...params);
             return Promise.resolve();
         } catch (e) {
+            console.log(query, params);
             return Promise.reject(e);
         }
     }

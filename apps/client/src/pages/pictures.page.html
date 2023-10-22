@@ -31,38 +31,7 @@
                     <button ref="closePromptButton" type="button" class="btn-close float-end" aria-label="Close"></button>
                 </div>
                 <div class="card-body">
-                    <!-- Prompts -->
-                    <div class="row">
-                        <div class="col-md">
-                            <label for="positiveInput" class="form-label">Prompt</label>
-                            <textarea id="positiveInput" class="form-control" rows="3"></textarea>
-                        </div>
-                        <div class="col-md">
-                            <label for="negativeInput" class="form-label">Negative prompt</label>
-                            <textarea id="negativeInput" class="form-control" rows="3"></textarea>
-                        </div>
-                    </div>
-                    <div class="row mt-2">
-                        <div class="col-md">
-                            <label for="bufferSizeInput" class="form-label">Buffer of images to evaluate</label>
-                            <input id="bufferSizeInput" class="form-control" type="number" min="0" value="10"
-                                placeholder="0 = no limit"></input>
-                        </div>
-                        <div class="col-md">
-                            <div class="form-text">
-                                The program will stop generating new images until this limit of images to
-                                evaluate is reach (0 = no limit).
-                                Once an image is evaluated, it will be replaced by a new one.
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row mt-2">
-                        <div class="col-md">
-                            <button type="button" ref="newPromptButton" class="btn btn-primary form-control">
-                                <i class="bi bi-stack"></i>&nbsp;Add prompt
-                            </button>
-                        </div>
-                    </div>
+                    
                 </div>
             </div>
         </div>

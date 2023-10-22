@@ -1,4 +1,4 @@
-import { ComputationStatus, HighresStatus } from "@eurekai/shared/src/types";
+import { ComputationStatus } from "@eurekai/shared/src/types";
 import { DatabaseWrapper } from "./db";
 import { NotificationKind } from "@eurekai/shared/src/data";
 
@@ -22,19 +22,24 @@ export class Generator {
             // -- Get the prompt with the less pictures --
             let firstPrompt = prompts[0];
             if (firstPrompt) {
-                console.log(`Selected #${firstPrompt.orderIndex}, ${firstPrompt.pendingPictureCount}/${firstPrompt.bufferSize} pending, ${firstPrompt.acceptedPictureCount}/${firstPrompt.acceptedTarget} accepted`);
+                console.log(`Selected #${firstPrompt.orderIndex}, ${firstPrompt.pendingPictureCount}/${firstPrompt.bufferSize} pending`);
 
                 // -- Check if there is a preferred seed pending --
                 const preferredSeed = await this._data.getSeedPending(firstPrompt.id);
-
                 const picture = await this._data.createPictureFromPrompt(firstPrompt, preferredSeed ?? undefined);
                 try {
-                    const image = await this._data.getSelectedDiffuser().txt2img({ ...picture.options }, false);
+                    const image = await this._data.getSelectedDiffuser().txt2img({
+                        prompt: firstPrompt.prompt,
+                        negative_prompt: firstPrompt.negative_prompt,
+                        width: firstPrompt.width,
+                        height: firstPrompt.height,
+                        seed: picture.seed
+                    }, false);
                     console.debug(`Lowres image received`);
                     await this._data.setPictureData(picture.id, image);
                     this._data.pushNotification({
                         kind: NotificationKind.IMAGE_NEW,
-                        projectId: picture.projectId,
+                        projectId: firstPrompt.projectId,
                         message: `New image for #${firstPrompt.orderIndex}`
                     });
                 } catch (err) {
@@ -50,27 +55,28 @@ export class Generator {
         if (highresPictures.length > 0) {
             console.debug(`${highresPictures.length} highres picture(s) pending`);
             const picture = highresPictures[0];
-            const project = await this._data.getProject(picture.projectId);
-            if (project != null) {
-                console.debug(`Requesting a new highres image...`);
-                try {
-                    await this._data.setPictureHighresStatus(picture.id, HighresStatus.COMPUTING);
-                    const image = await this._data.getSelectedDiffuser().txt2img({ ...picture.options }, true);
-                    console.debug(`Highres image received`);
-                    await this._data.setPictureHighresData(picture.id, image);
-                    this._data.pushNotification({
-                        kind: NotificationKind.IMAGE_NEW_HIGHRES,
-                        projectId: picture.projectId,
-                        message: `New highres image`
-                    });
-                    return true;
-                } catch (err) {
-                    console.error(err);
-                    await this._data.setPictureHighresStatus(picture.id, HighresStatus.ERROR);
-                }
-            } else {
-                // Make sure we won't try again
-                await this._data.setPictureHighresStatus(picture.id, HighresStatus.ERROR);
+            const prompt = await this._data.getPrompt(picture.promptId);
+            console.debug(`Requesting a new highres image...`);
+            try {
+                await this._data.setPictureHighresStatus(picture.id, ComputationStatus.COMPUTING);
+                const image = await this._data.getSelectedDiffuser().txt2img({
+                    prompt: prompt.prompt,
+                    negative_prompt: prompt.negative_prompt,
+                    width: prompt.width,
+                    height: prompt.height,
+                    seed: picture.seed
+                }, true);
+                console.debug(`Highres image received`);
+                await this._data.setPictureHighresData(picture.id, image);
+                this._data.pushNotification({
+                    kind: NotificationKind.IMAGE_NEW_HIGHRES,
+                    projectId: prompt.projectId,
+                    message: `New highres image`
+                });
+                return true;
+            } catch (err) {
+                console.error(err);
+                await this._data.setPictureHighresStatus(picture.id, ComputationStatus.ERROR);
             }
             return true;
         }

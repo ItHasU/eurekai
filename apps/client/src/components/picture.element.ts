@@ -1,4 +1,4 @@
-import { ComputationStatus, HighresStatus, PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
+import { ComputationStatus, PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { AbstractDTOElement } from "./abstract.dto.element";
 
 enum SwipeMode {
@@ -47,15 +47,15 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
     }
 
     public get isWaitingEvaluation(): boolean {
-        return this.data.computed >= ComputationStatus.DONE;
+        return this.data.status >= ComputationStatus.DONE;
     }
 
     public get isAccepted(): boolean {
-        return this.data.computed == ComputationStatus.ACCEPTED;
+        return this.data.status == ComputationStatus.ACCEPTED;
     }
 
     public get isRejected(): boolean {
-        return this.data.computed >= ComputationStatus.REJECTED;
+        return this.data.status >= ComputationStatus.REJECTED;
     }
 
     public override refresh(): void {
@@ -202,28 +202,28 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         const highresButton: HTMLButtonElement = this.querySelector("*[ref='highres']") as HTMLButtonElement;
         const highresIcon: HTMLSpanElement = highresButton.querySelector("i") as HTMLElement;
         highresIcon.classList.remove(ICON_HIGHRES, ICON_HIGHRES_COMPUTING, ICON_HIGHRES_DONE);
-        switch (this.data.highres) {
-            case HighresStatus.NONE:
+        switch (this.data.highresStatus) {
+            case ComputationStatus.NONE:
                 highresIcon.classList.add(ICON_HIGHRES);
                 highresButton.disabled = false;
                 break;
-            case HighresStatus.PENDING:
+            case ComputationStatus.PENDING:
                 highresIcon.classList.add(ICON_HIGHRES_COMPUTING);
                 highresButton.disabled = false;
                 break;
-            case HighresStatus.COMPUTING:
+            case ComputationStatus.COMPUTING:
                 highresIcon.classList.add(ICON_HIGHRES_COMPUTING);
                 highresButton.disabled = true;
                 break;
-            case HighresStatus.DONE:
+            case ComputationStatus.DONE:
                 highresIcon.classList.add(ICON_HIGHRES_DONE);
                 highresButton.disabled = true;
                 break;
-            case HighresStatus.ERROR:
+            case ComputationStatus.ERROR:
                 highresIcon.classList.add(ICON_HIGHRES_DONE, "text-danger");
                 highresButton.disabled = false;
                 break;
-            case HighresStatus.DELETED:
+            case ComputationStatus.REJECTED:
                 highresIcon.classList.add(ICON_HIGHRES_DONE, "text-muted");
                 highresButton.disabled = false;
                 break;

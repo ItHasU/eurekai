@@ -1,4 +1,4 @@
-import { BooleanEnum, ComputationStatus, HighresStatus, PictureDTO, ProjectDTO, PromptDTO } from "@eurekai/shared/src/types";
+import { BooleanEnum, ComputationStatus, PictureDTO, ProjectDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { AbstractPageElement } from "./abstract.page.element";
 import { PictureElement } from "src/components/picture.element";
 import { zipPictures } from "@eurekai/shared/src/utils";
@@ -73,7 +73,7 @@ export class PicturesPage extends AbstractPageElement {
         pictures.sort((p1, p2) => {
             let res = 0;
 
-            if (p1.computed === ComputationStatus.PENDING || p2.computed === ComputationStatus.PENDING) {
+            if (p1.status === ComputationStatus.PENDING || p2.status === ComputationStatus.PENDING) {
                 hasPendingPicture = true;
             }
 
@@ -86,11 +86,11 @@ export class PicturesPage extends AbstractPageElement {
             }
 
             if (res === 0) {
-                res = p1.createdAt - p2.createdAt;
+                res = p1.id - p2.id;
             }
 
             if (res === 0) {
-                res = p1.computed - p2.computed;
+                res = p1.status - p2.status;
             }
 
             if (res === 0) {
@@ -184,12 +184,12 @@ export class PicturesPage extends AbstractPageElement {
             // -- Add the picture --
             const item = new PictureElement(picture, {
                 prompt,
-                isPreferredSeed: preferredSeeds.has(picture.options.seed),
+                isPreferredSeed: preferredSeeds.has(picture.seed),
                 isLockable: project?.lockable === BooleanEnum.TRUE,
                 accept: async () => {
                     await this._cache.withData(async (data) => {
                         await data.setPictureStatus(picture.id, ComputationStatus.ACCEPTED);
-                        picture.computed = ComputationStatus.ACCEPTED;
+                        picture.status = ComputationStatus.ACCEPTED;
                     });
                     item.refresh();
                     scrollToNextSibling(item);
@@ -197,7 +197,7 @@ export class PicturesPage extends AbstractPageElement {
                 reject: async () => {
                     await this._cache.withData(async (data) => {
                         await data.setPictureStatus(picture.id, ComputationStatus.REJECTED);
-                        picture.computed = ComputationStatus.REJECTED;
+                        picture.status = ComputationStatus.REJECTED;
                     });
                     item.refresh();
                     scrollToNextSibling(item);
@@ -218,26 +218,26 @@ export class PicturesPage extends AbstractPageElement {
                 },
                 toggleSeed: async () => {
                     await this._cache.withData(async (data) => {
-                        await data.setSeedPreferred(picture.projectId, picture.options.seed, !item._options.isPreferredSeed);
+                        await data.setSeedPreferred(prompt.projectId, picture.seed, !item._options.isPreferredSeed);
                         item._options.isPreferredSeed = !item._options.isPreferredSeed;
                     });
                     item.refresh();
                 },
                 toggleHighres: async () => {
                     await this._cache.withData(async (data) => {
-                        switch (picture.highres) {
-                            case HighresStatus.DELETED:
-                            case HighresStatus.ERROR:
-                            case HighresStatus.NONE:
+                        switch (picture.highresStatus) {
+                            case ComputationStatus.REJECTED:
+                            case ComputationStatus.ERROR:
+                            case ComputationStatus.NONE:
                                 await data.setPictureHighres(picture.id, true);
-                                picture.highres = HighresStatus.PENDING;
+                                picture.highresStatus = ComputationStatus.PENDING;
                                 break;
-                            case HighresStatus.PENDING:
+                            case ComputationStatus.PENDING:
                                 await data.setPictureHighres(picture.id, false);
-                                picture.highres = HighresStatus.NONE;
+                                picture.highresStatus = ComputationStatus.NONE;
                                 break;
-                            case HighresStatus.COMPUTING:
-                            case HighresStatus.DONE:
+                            case ComputationStatus.COMPUTING:
+                            case ComputationStatus.DONE:
                                 // No way to cancel from there
                                 break;
                         }
@@ -246,7 +246,7 @@ export class PicturesPage extends AbstractPageElement {
                 },
                 setAsFeatured: async () => {
                     await this._cache.withData(async (data) => {
-                        await data.setProjectFeaturedImage(picture.projectId, picture.attachmentId ?? null);
+                        await data.setProjectFeaturedImage(prompt.projectId, picture.attachmentId ?? null);
                     });
                 },
                 fetch: this._cache.data.getAttachment.bind(this._cache.data)
@@ -272,13 +272,13 @@ export class PicturesPage extends AbstractPageElement {
         const filterIndex = this._picturesFilterSelect.value;
         switch (filterIndex) {
             case "done":
-                filter = function (picture) { return picture.computed === ComputationStatus.DONE; }
+                filter = function (picture) { return picture.status === ComputationStatus.DONE; }
                 break;
             case "accept":
-                filter = function (picture) { return picture.computed === ComputationStatus.ACCEPTED; }
+                filter = function (picture) { return picture.status === ComputationStatus.ACCEPTED; }
                 break;
             case "reject":
-                filter = function (picture) { return picture.computed === ComputationStatus.REJECTED; }
+                filter = function (picture) { return picture.status === ComputationStatus.REJECTED; }
                 break;
             default:
                 console.error(`Invalid value : ${filterIndex}`)
@@ -319,7 +319,7 @@ export class PicturesPage extends AbstractPageElement {
         // -- Set all fields to passed prompt --
         this._positiveInput.value = prompt?.prompt ?? "";
         this._negativeInput.value = prompt?.negative_prompt ?? "";
-        this._bufferSizeInput.value = "" + (prompt?.acceptedTarget ?? 10);
+        this._bufferSizeInput.value = "" + (prompt?.bufferSize ?? 10);
 
         // -- Display the panel --
         this._promptCard.classList.remove("d-none");
@@ -337,14 +337,14 @@ export class PicturesPage extends AbstractPageElement {
         const projectId = this._cache.getSelectedProjectId();
         if (projectId != null) {
             await this._cache.withData(async (data) => {
-                await data.addPrompt({
-                    projectId: projectId,
-                    prompt: positivePrompt,
-                    negative_prompt: negativePrompt,
-                    active: true,
-                    bufferSize,
-                    acceptedTarget
-                });
+                // FIXME
+                // await data.addPrompt({
+                //     projectId: projectId,
+                //     prompt: positivePrompt,
+                //     negative_prompt: negativePrompt,
+                //     active: true,
+                //     bufferSize,
+                // });
             });
             await this.refresh();
         }

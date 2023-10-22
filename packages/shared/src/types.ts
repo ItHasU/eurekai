@@ -57,6 +57,15 @@ export type TableName = keyof Tables;
 export function t(tableName: TableName): string {
     return tableName;
 }
+export function f<TableName extends keyof Tables>(table: TableName, field: keyof Tables[TableName]): string {
+    return `"${table}"."${field as string}"`;
+}
+export function eq<TableName extends keyof Tables, P extends keyof Tables[TableName]>(table: TableName, field: P, value: Tables[TableName][P], quoted: number extends Tables[TableName][P] ? false : true) {
+    return `"${table}"."${field as string}" = ${quoted ? "'" : ""}${new String(value ?? null).toString()}${quoted ? "'" : ""}`;
+}
+export function set<TableName extends keyof Tables, P extends keyof Tables[TableName]>(table: TableName, field: P, value: Tables[TableName][P], quoted: number extends Tables[TableName][P] ? false : true) {
+    return `"${field as string}" = ${quoted ? "'" : ""}${new String(value ?? null).toString()}${quoted ? "'" : ""}`;
+}
 
 /** 
  * A project gather prompts with a common theme
@@ -164,10 +173,10 @@ export interface PictureDTO {
     id: number;
     /** id field of a prompt */
     promptId: number;
-    
+
     /** seed used to generate the image */
     seed: number;
-    
+
     /** Is low resolution image computed */
     status: ComputationStatus;
     /** id field of the attachment (filled once computed) */

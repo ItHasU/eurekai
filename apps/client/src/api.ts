@@ -1,4 +1,4 @@
-import { AbstractDataWrapper, Notification, SDModels } from "@eurekai/shared/src/data";
+import { AbstractDataWrapper, Notification, SDModel } from "@eurekai/shared/src/data";
 import { ProjectDTO, PromptDTO, PictureDTO, ComputationStatus, ProjectWithStats, BooleanEnum } from "@eurekai/shared/src/types";
 
 export type NotificationCabllback = (api: API, notification: Notification) => void;
@@ -15,8 +15,8 @@ export class API extends AbstractDataWrapper {
 
     //#region SD Models
 
-    public override getModels(): Promise<SDModels[]> {
-        return this._apiCall<SDModels[]>("getModels");
+    public override getModels(): Promise<SDModel[]> {
+        return this._apiCall<SDModel[]>("getModels");
     }
 
     public override getModel(): Promise<string | null> {
