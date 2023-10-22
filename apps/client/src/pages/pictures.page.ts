@@ -51,16 +51,19 @@ export class PicturesPage extends AbstractPageElement {
 
     /** @inheritdoc */
     protected override async _refresh(): Promise<void> {
-        return;
+        // -- Clear --
+        this._picturesDiv.innerHTML = "";
 
+        // -- Fetch prompts --
         const prompts = await this._cache.getPrompts();
+        if (prompts.length === 0) {
+            this._openPromptPanel();
+            return;
+        }
+
         const picturesRaw = await this._cache.getPictures();
         const preferredSeeds = await this._cache.getSeeds();
         const project = await this._cache.getSelectedProject();
-
-        if (prompts.length === 0) {
-            this._openPromptPanel();
-        }
 
         const promptsMap: { [id: number]: PromptDTO } = {};
         for (const prompt of prompts) {
@@ -106,9 +109,6 @@ export class PicturesPage extends AbstractPageElement {
 
         // -- Get the filter --
         let filter: (picture: PictureDTO) => boolean = this._getFilter();
-
-        // -- Clear --
-        this._picturesDiv.innerHTML = "";
 
         // -- Add prompt function --
         const addPrompt = (prompt: PromptDTO): void => {

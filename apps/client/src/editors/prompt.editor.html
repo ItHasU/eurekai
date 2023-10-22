@@ -1,3 +1,30 @@
+<div class="row mt-2">
+    <div class="col-md">
+        <label for="modelSelect" class="form-label">Model</label>
+        <select id="modelSelect" class="form-control">
+            <option value="0">Deliberate 2.2</option>
+        </select>
+    </div>
+    <div class="col-md">
+        <label for="widthInput" class="form-label">Size</label>
+        <div class="input-group">
+            <input type="number" id="widthInput" class="form-control" min="1" value="512">
+            <span class="input-group-text">x</span>
+            <input type="number" id="heightInput" class="form-control" min="1" value="512">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                aria-expanded="false"></button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="#">Action</a></li>
+                <li><a class="dropdown-item" href="#">Another action</a></li>
+                <li><a class="dropdown-item" href="#">Something else here</a></li>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+                <li><a class="dropdown-item" href="#">Separated link</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
 <div class="row">
     <div class="col-md">
         <label for="positiveInput" class="form-label">Prompt</label>
@@ -6,16 +33,6 @@
     <div class="col-md">
         <label for="negativeInput" class="form-label">Negative prompt</label>
         <textarea id="negativeInput" class="form-control" rows="3"></textarea>
-    </div>
-</div>
-<div class="row mt-2">
-    <div class="col-md">
-        <label for="widthInput" class="form-label">Width</label>
-        <input type="number" id="widthInput" class="form-control">
-    </div>
-    <div class="col-md">
-        <label for="heightInput" class="form-label">Height</label>
-        <input type="number" id="heightInput" class="form-control">
     </div>
 </div>
 <div class="row mt-2">
