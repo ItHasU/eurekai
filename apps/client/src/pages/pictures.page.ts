@@ -5,6 +5,7 @@ import { zipPictures } from "@eurekai/shared/src/utils";
 import { PromptElement } from "src/components/prompt.element";
 import { DataCache } from "@eurekai/shared/src/cache";
 import { showSelect } from "src/components/tools";
+import { PromptEditor } from "src/editors/prompt.editor";
 
 function scrollToNextSibling(node: HTMLElement): void {
     const parent = node.parentElement;
@@ -27,10 +28,8 @@ export class PicturesPage extends AbstractPageElement {
 
     protected readonly _picturesDiv: HTMLDivElement;
     protected readonly _picturesFilterSelect: HTMLSelectElement;
-    protected readonly _positiveInput: HTMLInputElement;
-    protected readonly _negativeInput: HTMLInputElement;
-    protected readonly _bufferSizeInput: HTMLInputElement;
     protected readonly _promptCard: HTMLDivElement;
+    protected readonly _promptEditor: PromptEditor;
 
     constructor(cache: DataCache) {
         super(require("./pictures.page.html").default, cache);
@@ -40,9 +39,7 @@ export class PicturesPage extends AbstractPageElement {
         this._picturesFilterSelect = this.querySelector("#picturesFilterSelect") as HTMLSelectElement;
 
         this._promptCard = this.querySelector("#promptCard") as HTMLDivElement;
-        this._positiveInput = this.querySelector("#positiveInput") as HTMLInputElement;
-        this._negativeInput = this.querySelector("#negativeInput") as HTMLInputElement;
-        this._bufferSizeInput = this.querySelector("#bufferSizeInput") as HTMLInputElement;
+        this._promptEditor = this.querySelector("#promptEditor") as PromptEditor;
 
         // -- Bind callbacks for buttons --
         this._bindClickForRef("addPromptButton", this._openPromptPanel.bind(this));
@@ -54,6 +51,8 @@ export class PicturesPage extends AbstractPageElement {
 
     /** @inheritdoc */
     protected override async _refresh(): Promise<void> {
+        return;
+
         const prompts = await this._cache.getPrompts();
         const picturesRaw = await this._cache.getPictures();
         const preferredSeeds = await this._cache.getSeeds();
@@ -316,11 +315,8 @@ export class PicturesPage extends AbstractPageElement {
     }
 
     protected _openPromptPanel(prompt?: PromptDTO): void {
-        // -- Set all fields to passed prompt --
-        this._positiveInput.value = prompt?.prompt ?? "";
-        this._negativeInput.value = prompt?.negative_prompt ?? "";
-        this._bufferSizeInput.value = "" + (prompt?.bufferSize ?? 10);
-
+        // -- Set fields --
+        this._promptEditor.setPrompt(prompt);
         // -- Display the panel --
         this._promptCard.classList.remove("d-none");
     }
@@ -330,21 +326,15 @@ export class PicturesPage extends AbstractPageElement {
     }
 
     protected async _onNewPromptClick(): Promise<void> {
-        const positivePrompt = this._positiveInput.value;
-        const negativePrompt = this._negativeInput.value;
-        const bufferSize = +this._bufferSizeInput.value;
-        const acceptedTarget = 0;
+        const prompt = this._promptEditor.getPrompt();
         const projectId = this._cache.getSelectedProjectId();
         if (projectId != null) {
             await this._cache.withData(async (data) => {
-                // FIXME
-                // await data.addPrompt({
-                //     projectId: projectId,
-                //     prompt: positivePrompt,
-                //     negative_prompt: negativePrompt,
-                //     active: true,
-                //     bufferSize,
-                // });
+                await data.addPrompt({
+                    ...prompt,
+                    projectId: projectId,
+                    active: true,
+                });
             });
             await this.refresh();
         }

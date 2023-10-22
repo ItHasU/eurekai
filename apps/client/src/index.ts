@@ -2,19 +2,31 @@ import "bootstrap/dist/css/bootstrap.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "bootstrap";
 
-import "./pages/projects.page";
-
 import { API } from "./api";
 import { ProjectsPage } from "./pages/projects.page";
-import { PicturesPage } from "./pages/pictures.page";
 import { DataCache } from "@eurekai/shared/src/cache";
 import { AbstractPageElement } from "./pages/abstract.page.element";
 import { SettingsPage } from "./pages/settings.page";
 import { Notification, NotificationKind } from "@eurekai/shared/src/data";
+import { PromptEditor } from "./editors/prompt.editor";
+import { PicturesPage } from "./pages/pictures.page";
+import { PromptElement } from "./components/prompt.element";
+import { PictureElement } from "./components/picture.element";
 
 interface PageConstructor {
     new(cache: DataCache): AbstractPageElement;
 }
+
+// -- Make sure components are loaded --
+ProjectsPage;
+PicturesPage;
+
+PromptElement;
+PromptElement;
+PictureElement;
+
+PromptEditor;
+
 
 class App {
     protected readonly _api: API = new API();

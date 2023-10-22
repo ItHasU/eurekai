@@ -1,4 +1,3 @@
-import * as Handlebars from "handlebars";
 import { DataCache } from "@eurekai/shared/src/cache";
 
 /**
@@ -10,8 +9,6 @@ import { DataCache } from "@eurekai/shared/src/cache";
  */
 export abstract class AbstractPageElement extends HTMLElement {
 
-    protected readonly _template: Handlebars.TemplateDelegate;
-
     /** Real implementation of the refresh method. Wrapped in refresh() function to handle errors. */
     protected abstract _refresh(): Promise<void>;
 
@@ -21,11 +18,7 @@ export abstract class AbstractPageElement extends HTMLElement {
     constructor(template: string, protected _cache: DataCache) {
         super();
         // Load template
-        this._template = Handlebars.compile(template);
-            let content: string = this._template(this, {
-                allowProtoPropertiesByDefault: true
-            });
-            this.innerHTML = content;
+        this.innerHTML = template;
     }
 
     /** 
