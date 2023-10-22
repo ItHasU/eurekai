@@ -12,7 +12,7 @@ const DEFAULT_PARAMETERS: GenerateImageOptions = {
 export class SDXL extends Automatic1111 {
 
     constructor(apiURL: string, model: string, refiner: string) {
-        super({
+        super(`SDXL ${model} + ${refiner}`, {
             apiURL,
             model,
             lowresTemplate: {

@@ -25,10 +25,15 @@ export interface ModelOptions {
     highresTemplate: GenerateImageOptions;
 }
 
-export class Automatic1111 extends AbstractAPI {
+export abstract class Automatic1111 extends AbstractAPI {
 
-    constructor(protected readonly _options: ModelOptions) {
+    constructor(protected _title: string, protected readonly _options: ModelOptions) {
         super();
+    }
+
+    /** @inheritdoc */
+    public override getTitle(): string {
+        return this._title;
     }
 
     //#region Image generation

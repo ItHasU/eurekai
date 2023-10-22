@@ -12,7 +12,7 @@ const DEFAULT_PARAMETERS: GenerateImageOptions = {
 export class SD extends Automatic1111 {
 
     constructor(apiURL: string, model: string) {
-        super({
+        super(`SD ${model}`, {
             apiURL,
             model,
             lowresTemplate: {

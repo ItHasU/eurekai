@@ -42,9 +42,6 @@ export class DatabaseWrapper extends AbstractDataWrapper {
         await this._initTable("projects", {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
             "name": "TEXT",
-            "width": "INTEGER DEFAULT 512",
-            "height": "INTEGER DEFAULT 512",
-            "scale": "INTEGER DEFAULT 2",
             "featuredAttachmentId": "INTEGER NULL",
             "lockable": "INTEGER DEFAULT FALSE", // FALSE = 0
             "pinned": "INTEGER DEFAULT FALSE"    // FALSE = 0
@@ -54,10 +51,12 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             "projectId": "INTEGER",
             "orderIndex": "INTEGER",
             "active": "BOOLEAN",
+            "width": "INTEGER DEFAULT 512",
+            "height": "INTEGER DEFAULT 512",
+            "model": "TEXT",
             "prompt": "TEXT",
             "negative_prompt": "TEXT NULL",
             "bufferSize": "INTEGER",
-            "acceptedTarget": "INTEGER"
         });
         await this._initTable("seeds", {
             "projectId": "INTEGER",
@@ -127,9 +126,9 @@ export class DatabaseWrapper extends AbstractDataWrapper {
     }
 
     public async getModels(): Promise<SDModels[]> {
-        return [...this._models.keys()].map(key => {
+        return [...this._models.values()].map(api => {
             const fakeModel: SDModels = {
-                title: key
+                title: api.getTitle()
             };
             return fakeModel;
         });
@@ -274,8 +273,7 @@ export class DatabaseWrapper extends AbstractDataWrapper {
                 entry.active ? 1 : 0,
                 entry.prompt,
                 entry.negative_prompt ?? null,
-                entry.bufferSize,
-                entry.acceptedTarget
+                entry.bufferSize
             ]);
     }
 
@@ -382,8 +380,6 @@ export class DatabaseWrapper extends AbstractDataWrapper {
             highres: HighresStatus.NONE,
             options: {
                 ...DEFAULT_PARAMETERS,
-                width: project.width,
-                height: project.height,
                 prompt: prompt.prompt,
                 negative_prompt: prompt.negative_prompt,
                 seed

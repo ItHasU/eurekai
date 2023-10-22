@@ -10,6 +10,12 @@ export interface ImageDescription {
 /** Abstract API to connect to an image generator */
 export abstract class AbstractAPI {
 
+    /** 
+     * Get title of the model. 
+     * Must be unique so it can be reused later.
+     */
+    public abstract getTitle(): string;
+
     /** Generate an image */
     public abstract txt2img(options: ImageDescription, highres: boolean): Promise<string>;
 

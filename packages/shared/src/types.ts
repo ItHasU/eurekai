@@ -38,11 +38,13 @@ export interface Txt2ImgOptions {
 
 //#region Database ------------------------------------------------------------
 
+/** Numeric true/false */
 export enum BooleanEnum {
     FALSE = 0,
     TRUE = 1
 }
 
+/** The list of tables and their related type */
 export type Tables = {
     "projects": ProjectDTO;
     "prompts": PromptDTO;
@@ -56,21 +58,27 @@ export function t(tableName: TableName): string {
     return tableName;
 }
 
+/** 
+ * A project gather prompts with a common theme
+ * Projects are displayed on the front page of the app.
+ */
 export interface ProjectDTO {
     id: number;
+    /** Name input by the user */
     name: string;
-    width: number;
-    height: number;
-    /** Highres scale */
-    scale: number;
     /** Featured image */
     featuredAttachmentId?: number;
-    /** Do pictures need to be blurred by default */
+    /** 
+     * When enabled, if application is not unlocked :
+     * - project will be hidden on the front page,
+     * - pictures will be blurred.
+     */
     lockable: BooleanEnum;
-    /** Pinned */
+    /** Pinned projects appear first of the front page */
     pinned: BooleanEnum;
 }
 
+/** An extended version of the project with properties computed directly from the database */
 export interface ProjectWithStats extends ProjectDTO {
     /** Count of prompts */
     prompts: number;
@@ -88,48 +96,36 @@ export interface ProjectWithStats extends ProjectDTO {
     highresPendingCount: number;
 }
 
+/** State of computation of images */
 export enum ComputationStatus {
-    PENDING = 1,
+    /**
+     * Not started, not requested yet
+     * (Specific for high resolution images) 
+     */
+    NONE = 0,
+
+    /** Waiting for computation */
+    PENDING,
+    /** Request sent the the generator */
     COMPUTING,
+    /** Response received from the generator */
     DONE,
+    /** Error received from the generator */
     ERROR,
 
+    /**
+     * Accepted by the user
+     * (Only accessible if image was previously DONE)
+     */
     ACCEPTED,
+    /**
+     * Rejected by the user
+     * (Only accessible if image was previously DONE)
+     */
     REJECTED
 }
 
-export enum HighresStatus {
-    NONE = 0,
-    PENDING,
-    COMPUTING,
-    DONE,
-    ERROR,
-    DELETED
-}
-
-export interface PictureDTO {
-    /** id of the picture */
-    id: number;
-    /** id field of a project */
-    projectId: number;
-    /** id field of a prompt */
-    promptId: number;
-    /** seed used to generate the image */
-    seed: number;
-    /** Options that were used to generate the picture */
-    options: Txt2ImgOptions;
-    /** Creation timestamp */
-    createdAt: number;
-    /** Is picture computed */
-    computed: ComputationStatus;
-    /** Is highres computed */
-    highres: HighresStatus;
-    /** id field of the attachment (filled once computed) */
-    attachmentId?: number;
-    /** id field of the highres attachment (filled once computed) */
-    highresAttachmentId?: number;
-}
-
+/** The prompt contains all the necessary information to generate an image (except the seed) */
 export interface PromptDTO {
     /** id of the prompt */
     id: number;
@@ -139,16 +135,51 @@ export interface PromptDTO {
     orderIndex: number;
     /** Is the prompt active for generation */
     active: boolean;
+
+    /** Width */
+    width: number;
+    /** Height */
+    height: number;
+    /** Model */
+    model: string;
+
     /** Positive prompt for the image */
     prompt: string;
     /** Negative prompt for the image */
     negative_prompt?: string;
     /** Maximum count of images to evaluate (0 = no limit) */
     bufferSize: number;
-    /** Target count of accepted images for this prompt */
-    acceptedTarget: number;
 }
 
+/** 
+ * A picture is an instance of a prompt based on a random seed.
+ * It can have two attachments linked
+ * - one quick low resolution image,
+ * - one slow high resolution image.
+ * The second one is supposed to contain more details or have an higher resolution.
+ * Due to the nature of image generation, low and high resolution images can be accepted / rejected separately.
+ */
+export interface PictureDTO {
+    /** id of the picture */
+    id: number;
+    /** id field of a prompt */
+    promptId: number;
+    
+    /** seed used to generate the image */
+    seed: number;
+    
+    /** Is low resolution image computed */
+    status: ComputationStatus;
+    /** id field of the attachment (filled once computed) */
+    attachmentId?: number;
+
+    /** Is high resolution image computed */
+    highresStatus: ComputationStatus;
+    /** id field of the highres attachment (filled once computed) */
+    highresAttachmentId?: number;
+}
+
+/** Store preferred seeds */
 export interface SeedDTO {
     /** id of the project */
     projectId: number;
@@ -156,6 +187,7 @@ export interface SeedDTO {
     seed: number;
 }
 
+/** A blob containing the data */
 export interface AttachmentDTO {
     /** id of the attachement */
     id: number;
