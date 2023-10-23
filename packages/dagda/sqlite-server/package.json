@@ -1,0 +1,14 @@
+{
+    "name": "@dagda/sqlite-server",
+    "version": "1.0.0",
+    "description": "SQLite implementation of the SQL connector",
+    "author": "Matthieu Aubry",
+    "license": "ISC",
+    "scripts": {},
+    "dependencies": {
+        "@dagda/sql-shared": "*"
+    },
+    "devDependencies": {
+        "@dagda/build": "*"
+    }
+}
