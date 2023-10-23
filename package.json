@@ -23,6 +23,7 @@
   "workspaces": [
     "packages/*",
     "packages/dagda/*",
-    "apps/*"
+    "apps/*",
+    "others/*"
   ]
 }

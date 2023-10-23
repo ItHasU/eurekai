@@ -21,6 +21,24 @@
             ],
             "program": "${workspaceFolder}/apps/server/dist/main.js",
             "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Test sql",
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/**",
+                "!**/node_modules/**"
+            ],
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/**/*.js",
+                "!**/node_modules/**"
+            ],
+            "program": "${workspaceFolder}/others/test-sql/dist/main.js",
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }

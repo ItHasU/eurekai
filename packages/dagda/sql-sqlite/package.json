@@ -1,5 +1,5 @@
 {
-    "name": "@dagda/sqlite-server",
+    "name": "@dagda/sql-sqlite",
     "version": "1.0.0",
     "description": "SQLite implementation of the SQL connector",
     "author": "Matthieu Aubry",
@@ -9,6 +9,7 @@
         "@dagda/sql-shared": "*"
     },
     "devDependencies": {
-        "@dagda/build": "*"
+        "@dagda/build": "*",
+        "@types/better-sqlite3": "^7.6.6"
     }
 }

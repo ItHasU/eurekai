@@ -1,0 +1,17 @@
+{
+  "name": "test-sql",
+  "version": "1.0.0",
+  "description": "Shared code between client and server",
+  "author": "Matthieu Aubry",
+  "license": "ISC",
+  "scripts": {
+    "build": "webpack",
+    "w": "webpack --watch"
+  },
+  "devDependencies": {
+    "@dagda/build": "*",
+    "@dagda/sql-shared": "*"
+  },
+  "dependencies": {
+  }
+}

@@ -34,6 +34,17 @@
 			"problemMatcher": [
 				"$tsc"
 			],
-		}
+		},
+		{
+			"label": "Watch test-sql",
+			"detail": "webpack - others/test-sql",
+			"type": "npm",
+			"script": "w",
+			"path": "others/test-sql",
+			"group": "build",
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
 	]
 }

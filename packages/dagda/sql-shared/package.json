@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "Common interface to SQL database",
     "author": "Matthieu Aubry",
-    "license": "ISC",
+    "license": "CC BY 4.0",
     "scripts": {},
     "dependencies": {},
     "devDependencies": {
