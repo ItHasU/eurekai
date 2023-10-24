@@ -1,17 +1,21 @@
-import { SQLCache } from "./sql.cache";
+import { SQLCache, SQLCacheHandler } from "./sql.cache";
+import { OperationType, SQLTransaction } from "./sql.transaction";
 import { SQLConnector, TablesDefinition } from "./sql.types";
+
 
 /** 
  * Utility class allowing to fetch data and store them in a cache.
  * The cache can then be accessed through synchronous methods.
  */
-export class SQLHandler<Tables extends TablesDefinition> {
+export class SQLHandler<Tables extends TablesDefinition> implements SQLCacheHandler<Tables> {
 
     /** 
      * Is cache dirty
      * If true, the cache will be erased on next get.
      */
     protected _cacheDirty: boolean = false;
+
+    protected _nextId: number = 0;
 
     /** Les caches de chaque table */
     protected readonly _caches: { [TableName in keyof Tables]?: SQLCache<Tables[TableName]> } = {};
@@ -20,6 +24,10 @@ export class SQLHandler<Tables extends TablesDefinition> {
 
     //#region Cache -----------------------------------------------------------
 
+    public getNextId(): number {
+        return --this._nextId;
+    }
+
     public markCacheDirty(): void {
         this._cacheDirty = true;
     }
@@ -27,11 +35,11 @@ export class SQLHandler<Tables extends TablesDefinition> {
     /** Load the full table */
     public async loadTable(tableName: (keyof Tables)): Promise<void> {
         const items = await this._connector.getItems(tableName);
-        this._getCache(tableName).setItems(items);
+        this.getCache(tableName).setItems(items);
     }
 
     /** Get or build an empty cache */
-    protected _getCache<TableName extends keyof Tables>(tableName: TableName): SQLCache<Tables[TableName]> {
+    public getCache<TableName extends keyof Tables>(tableName: TableName): SQLCache<Tables[TableName]> {
         let cache: SQLCache<Tables[TableName]> | undefined = this._caches[tableName];
         if (cache == null) {
             this._caches[tableName] = cache = new SQLCache();
@@ -41,6 +49,29 @@ export class SQLHandler<Tables extends TablesDefinition> {
 
     //#endregion
 
+    //#region Transactions ----------------------------------------------------
+
+    /** 
+     * Submit the transaction to the connector.
+     * Once the result is received, the cache is updated
+     */
+    public async submit(transaction: SQLTransaction<Tables>): Promise<void> {
+        const result = await this._connector.submit(transaction);
+        for (const op of transaction.operations) {
+            switch (op.type) {
+                case OperationType.INSERT:
+                    const tmpId = op.options.item.id;
+                    if (tmpId < 0) {
+                        op.options.item.id = result.updatedIds[tmpId];
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    //#endregion
 
     //#region Get item(s) from the cache --------------------------------------
 
@@ -50,7 +81,7 @@ export class SQLHandler<Tables extends TablesDefinition> {
     */
     public getById<TableName extends keyof Tables>(tableName: TableName, id: number): Tables[TableName] | undefined {
         // -- First, search in the cache --
-        return this._getCache(tableName).getById(id);
+        return this.getCache(tableName).getById(id);
     }
 
     /** 
@@ -61,24 +92,12 @@ export class SQLHandler<Tables extends TablesDefinition> {
      * If this is not the case, the cache is replaced.
      */
     public getItems<TableName extends keyof Tables>(tableName: TableName): Tables[TableName][] {
-        return this._getCache(tableName).getItems();
+        return this.getCache(tableName).getItems();
     }
 
     //#endregion
 
 
-    /** Insert an item in the database */
-    public async insert<TableName extends keyof Tables, DTO extends Tables[TableName]>(table: TableName, dto: DTO): Promise<DTO> {
-        return { ...dto, id: -1 } as DTO;
-    }
-
-    public async update<TableName extends keyof Tables, DTO extends Tables[TableName]>(table: TableName, dto: DTO, values: Partial<Omit<DTO, "id">>): Promise<void> {
-        return;
-    }
-
-    public async delete<TableName extends keyof Tables>(table: TableName, id: number): Promise<void> {
-        return;
-    }
 
     //#region Abstract services -----------------------------------------------
 

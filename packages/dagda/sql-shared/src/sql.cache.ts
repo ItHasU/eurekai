@@ -1,4 +1,4 @@
-import { BaseDTO } from "./sql.types";
+import { BaseDTO, TablesDefinition } from "./sql.types";
 
 export class SQLCache<DTO extends BaseDTO> {
     /** Filter applied to the data (null means no data loaded) */
@@ -28,4 +28,13 @@ export class SQLCache<DTO extends BaseDTO> {
         this._items.set(item.id, item);
     }
 
+}
+
+export interface SQLCacheHandler<Tables extends TablesDefinition> {
+    
+    /** Get a new id for the next DTO created */
+    getNextId(): BaseDTO["id"];
+
+    /** Get or build an empty cache */
+    getCache<TableName extends keyof Tables>(tableName: TableName): SQLCache<Tables[TableName]>
 }
