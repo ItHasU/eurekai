@@ -65,27 +65,24 @@ async function main() {
     await handler.loadTable("groups");
 
     const t0 = new SQLTransaction<TestTables>(handler);
-    try {
-        t0.insert("groups", {
-            id: 0,
-            name: "Avengers"
-        })
-    } finally {
-        await handler.submit(t0);
-    }
+    t0.insert("groups", {
+        id: 0,
+        name: "Avengers"
+    })
     const groups = handler.getItems("groups");
     console.log(JSON.stringify(groups));
 
+    await handler.submit(t0);
+
+    console.log(JSON.stringify(groups));
+
     const t1 = new SQLTransaction<TestTables>(handler);
-    try {
-        t1.insert("users", {
-            id: 0,
-            name: "Tony stark",
-            groupId: groups[0].id
-        });
-    } finally {
-        await handler.submit(t1);
-    }
+    t1.insert("users", {
+        id: 0,
+        name: "Tony stark",
+        groupId: groups[0].id
+    });
+    await handler.submit(t1);
 
     const users = handler.getItems("users");
     console.log(JSON.stringify(users));
