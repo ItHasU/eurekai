@@ -8,13 +8,13 @@ export interface BaseDTO {
 
 export type TablesDefinition = Record<string, BaseDTO>;
 
-export interface SQLConnector<Tables extends TablesDefinition> {
+export abstract class SQLConnector<Tables extends TablesDefinition> {
 
-    getById<TableName extends keyof Tables>(tableName: TableName, id: number): Promise<Tables[TableName] | undefined>;
+    public abstract getById<TableName extends keyof Tables>(tableName: TableName, id: number): Promise<Tables[TableName] | undefined>;
 
-    getItems<TableName extends keyof Tables>(tableName: TableName): Promise<Tables[TableName][]>;
+    public abstract getItems<TableName extends keyof Tables>(tableName: TableName): Promise<Tables[TableName][]>;
 
-    submit(transaction: SQLTransaction<Tables>): Promise<TransactionResult>;
+    public abstract submit(transaction: SQLTransaction<Tables>): Promise<TransactionResult>;
 }
 
 export interface TransactionResult {

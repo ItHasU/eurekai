@@ -62,7 +62,11 @@ export class SQLHandler<Tables extends TablesDefinition> implements SQLCacheHand
                 case OperationType.INSERT:
                     const tmpId = op.options.item.id;
                     if (tmpId < 0) {
-                        op.options.item.id = result.updatedIds[tmpId];
+                        const item = this.getCache(op.options.table).getById(tmpId);
+                        if (item) {
+                            item.id = result.updatedIds[tmpId];
+                        }
+                        console.log(`H : ${tmpId} => ${result.updatedIds[tmpId]}`);
                     }
                     break;
                 default:
@@ -94,12 +98,6 @@ export class SQLHandler<Tables extends TablesDefinition> implements SQLCacheHand
     public getItems<TableName extends keyof Tables>(tableName: TableName): Tables[TableName][] {
         return this.getCache(tableName).getItems();
     }
-
-    //#endregion
-
-
-
-    //#region Abstract services -----------------------------------------------
 
     //#endregion
 }

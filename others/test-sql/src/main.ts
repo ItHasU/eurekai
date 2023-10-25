@@ -10,7 +10,7 @@ type TestTables = {
 
 interface UserDTO extends BaseDTO {
     name: string;
-    groupId: number;
+    groupId: number | null;
 }
 
 interface GroupDTO extends BaseDTO {
@@ -70,11 +70,8 @@ async function main() {
         name: "Avengers"
     })
     const groups = handler.getItems("groups");
-    console.log(JSON.stringify(groups));
 
     await handler.submit(t0);
-
-    console.log(JSON.stringify(groups));
 
     const t1 = new SQLTransaction<TestTables>(handler);
     t1.insert("users", {
@@ -85,7 +82,12 @@ async function main() {
     await handler.submit(t1);
 
     const users = handler.getItems("users");
-    console.log(JSON.stringify(users));
+
+    const t2 = new SQLTransaction<TestTables>(handler);
+    t2.update("users", users[0], { groupId: null });
+    t2.delete("groups", groups[0].id);
+
+    await handler.submit(t2);
 
     // console.log("Reading data...")
     // const ironman = handler.getById("users", 1);

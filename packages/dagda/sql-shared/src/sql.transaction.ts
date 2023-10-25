@@ -1,8 +1,10 @@
 import { SQLCacheHandler } from "./sql.cache";
-import { TablesDefinition } from "./sql.types";
+import { BaseDTO, TablesDefinition } from "./sql.types";
 
 export enum OperationType {
     INSERT = 1,
+    UPDATE,
+    DELETE
 }
 
 export interface InsertOptions<TableName, DTO> {
@@ -10,11 +12,23 @@ export interface InsertOptions<TableName, DTO> {
     item: DTO;
 }
 
-export interface Operation<Tables extends TablesDefinition, OT extends OperationType, TableName extends keyof Tables> {
-    type: OT;
-    options: OperationType.INSERT extends OT ? InsertOptions<TableName, Tables[TableName]>
-    : never;
+export interface UpdateOptions<TableName> {
+    table: TableName;
+    id: BaseDTO["id"];
+    values: Record<string, unknown | null>;
 }
+
+export interface DeleteOptions<TableName> {
+    table: TableName;
+    id: BaseDTO["id"];
+}
+
+export type BaseOperation<OT extends OperationType, Options> = { type: OT, options: Options };
+
+export type Operation<Tables extends TablesDefinition, TableName extends keyof Tables> =
+    BaseOperation<OperationType.INSERT, InsertOptions<TableName, Tables[TableName]>>
+    | BaseOperation<OperationType.UPDATE, UpdateOptions<TableName>>
+    | BaseOperation<OperationType.DELETE, DeleteOptions<TableName>>;
 
 /**
  * This class will contain a set of operations that will be performed in a transaction.
@@ -24,7 +38,7 @@ export interface Operation<Tables extends TablesDefinition, OT extends Operation
 export class SQLTransaction<Tables extends TablesDefinition> {
 
     /** List of operations performed */
-    public readonly operations: Operation<Tables, OperationType, keyof Tables>[] = [];
+    public readonly operations: Operation<Tables, keyof Tables>[] = [];
 
     constructor(protected _cacheHandler: SQLCacheHandler<Tables>) { }
 
@@ -42,16 +56,44 @@ export class SQLTransaction<Tables extends TablesDefinition> {
             type: OperationType.INSERT,
             options: {
                 table,
-                item
+                item: {
+                    ...item // Clone the item because if an update occurred later we don't want to set the property yet
+                }
             }
         });
     }
 
-    public async update<TableName extends keyof Tables, DTO extends Tables[TableName]>(table: TableName, dto: DTO, values: Partial<Omit<DTO, "id">>): Promise<void> {
-        return;
+    public async update<TableName extends keyof Tables, DTO extends Tables[TableName]>(table: TableName, item: DTO, values: Partial<Omit<DTO, "id">>): Promise<void> {
+        // -- Perform the action on the cache --
+        const valuesToUpdate: Record<string, unknown | null> = {}
+        for (const k in values) {
+            const f = k as keyof Partial<Omit<DTO, "id">>;
+            item[f] = values[f]!; // We don't care if the value is undefined or not
+            valuesToUpdate[k] = values[f] ?? null;
+        }
+
+        // -- Store the operation --
+        this.operations.push({
+            type: OperationType.UPDATE,
+            options: {
+                table,
+                id: item.id,
+                values: valuesToUpdate
+            }
+        });
     }
 
     public async delete<TableName extends keyof Tables>(table: TableName, id: number): Promise<void> {
-        return;
+        // -- Perform the action on the cache --
+        const cache = this._cacheHandler.getCache(table).delete(id)
+
+        // -- Store the operation --
+        this.operations.push({
+            type: OperationType.DELETE,
+            options: {
+                table,
+                id: id
+            }
+        });
     }
 }

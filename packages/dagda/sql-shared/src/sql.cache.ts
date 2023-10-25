@@ -28,6 +28,10 @@ export class SQLCache<DTO extends BaseDTO> {
         this._items.set(item.id, item);
     }
 
+    public delete(id: BaseDTO["id"]): void {
+        this._items.delete(id);
+    }
+
 }
 
 export interface SQLCacheHandler<Tables extends TablesDefinition> {
