@@ -10,8 +10,10 @@
   },
   "devDependencies": {
     "@dagda/build": "*",
-    "@dagda/sql-shared": "*"
+    "@dagda/sql-shared": "*",
+    "@dagda/sql-sqlite": "*"
   },
   "dependencies": {
+    "better-sqlite3": "9.0.0"
   }
 }

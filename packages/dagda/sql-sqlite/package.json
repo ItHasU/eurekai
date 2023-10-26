@@ -6,7 +6,8 @@
     "license": "ISC",
     "scripts": {},
     "dependencies": {
-        "@dagda/sql-shared": "*"
+        "@dagda/sql-shared": "*",
+        "better-sqlite3": "9.0.0"
     },
     "devDependencies": {
         "@dagda/build": "*",

@@ -1,7 +1,7 @@
-import { SQLDummyConnector } from "@dagda/sql-shared/src/sql.dummy.connector";
 import { SQLHandler } from "@dagda/sql-shared/src/sql.handler";
 import { SQLTransaction } from "@dagda/sql-shared/src/sql.transaction";
 import { BaseDTO } from "@dagda/sql-shared/src/sql.types"
+import { SQLiteConnector } from "./sqlite.connector";
 
 type TestTables = {
     users: UserDTO,
@@ -17,49 +17,20 @@ interface GroupDTO extends BaseDTO {
     name: string;
 }
 
-const connector = new SQLDummyConnector<TestTables>({
-    users: [],
-    groups: []
-});
-
-// {
-//     "users": [
-//         {
-//             id: 1,
-//             name: "Tony stark",
-//             groupId: 1
-//         },
-//         {
-//             id: 2,
-//             name: "Captain America",
-//             groupId: 1
-//         },
-//         {
-//             id: 3,
-//             name: "Superman",
-//             groupId: 2
-//         },
-//         {
-//             id: 4,
-//             name: "Batman",
-//             groupId: 2
-//         }
-//     ],
-//     "groups": [
-//         {
-//             id: 1,
-//             name: "Avengers"
-//         },
-//         {
-//             id: 2,
-//             name: "Justice League"
-//         }
-//     ]
-// }
+const connector = new SQLiteConnector<TestTables>("./test.db");
 
 const handler = new SQLHandler<TestTables>(connector);
 
 async function main() {
+    console.log("Creating tables...");
+    await connector.initTable("users", {
+        groupId: "INTEGER",
+        name: "TEXT"
+    });
+    await connector.initTable("groups", {
+        name: "TEXT"
+    });
+
     console.log("Loading...");
     await handler.loadTable("users");
     await handler.loadTable("groups");
