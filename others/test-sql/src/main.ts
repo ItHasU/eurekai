@@ -46,27 +46,24 @@ async function main() {
     await handler.loadTable("groups");
 
     const t0 = new SQLTransaction<TestTables>(handler);
-    t0.insert("groups", {
+    const group: GroupDTO = {
         id: 0,
         name: "Avengers"
-    })
-    const groups = handler.getItems("groups");
-    t0.insert("users", {
+    };
+    t0.insert("groups", group);
+
+    const user: UserDTO = {
         id: 0,
         name: "Tony stark",
-        groupId: groups[0].id
-    });
+        groupId: group.id // Here we use the temporary id, it will be updated by submit()
+    };
+    t0.insert("users", user);
+
+    t0.update("users", user, { groupId: null });
+    t0.delete("groups", group.id);
+    t0.delete("users", user.id);
 
     await handler.submit(t0);
-
-    const users = handler.getItems("users");
-
-    const t2 = new SQLTransaction<TestTables>(handler);
-    t2.update("users", users[0], { groupId: null });
-    t2.delete("groups", groups[0].id);
-
-    await handler.submit(t2);
-
 }
 
 main().catch(e => console.error(e));

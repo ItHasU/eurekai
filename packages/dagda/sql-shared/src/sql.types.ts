@@ -27,18 +27,31 @@ export abstract class SQLConnector<Tables extends TablesDefinition> {
         for (const key in foreignKeys) {
             if (foreignKeys[key]) {
                 const temporaryId = item[key as keyof Tables[TableName]] as BaseDTO["id"];
-                if (temporaryId == null || temporaryId >= 0) {
+                if (temporaryId == null) {
                     continue;
                 }
-                const newId = result.updatedIds[temporaryId];
-                if (newId == null) {
-                    throw new Error(`Failed to update ${table as string}.${item.id}.${key}=${temporaryId}`);
-                } else {
-                    item[key as keyof Tables[TableName]] = newId as Tables[TableName][keyof Tables[TableName]];
-                }
+                const newId = this._getUpdatedId(result, temporaryId);
+                item[key as keyof Tables[TableName]] = newId as Tables[TableName][keyof Tables[TableName]];
             }
         }
     }
+
+    /** 
+     * Get id updated after insert. If id is positive, it is returned as-is.
+     * @throws If id is negative and cannot be updated
+     */
+    protected _getUpdatedId(result: TransactionResult, id: BaseDTO["id"]): BaseDTO["id"] {
+        if (id >= 0) {
+            return id;
+        } else {
+            const newId = result.updatedIds[id] ?? id;
+            if (newId == null) {
+                throw new Error(`Failed to update ${id}`);
+            }
+            return result.updatedIds[id] ?? id;
+        }
+    }
+
 }
 
 export interface TransactionResult {
