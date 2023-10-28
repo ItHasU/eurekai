@@ -1,13 +1,13 @@
 import { OperationType, SQLTransaction } from "./sql.transaction";
-import { SQLConnector, TablesDefinition, TransactionResult } from "./sql.types";
+import { ForeignKeys, SQLConnector, TablesDefinition, TransactionResult } from "./sql.types";
 
 /** A fake SQL connector to test the app */
 export class SQLDummyConnector<Tables extends TablesDefinition> extends SQLConnector<Tables>{
 
     protected _lastId: number = 0;
 
-    constructor(private _data: { [TableName in keyof Tables]: Tables[TableName][] }) {
-        super();
+    constructor(foreignKeys: ForeignKeys<Tables>, private _data: { [TableName in keyof Tables]: Tables[TableName][] }) {
+        super(foreignKeys);
     }
 
     public serialize(): string {

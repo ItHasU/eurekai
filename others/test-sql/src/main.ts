@@ -1,6 +1,6 @@
 import { SQLHandler } from "@dagda/sql-shared/src/sql.handler";
 import { SQLTransaction } from "@dagda/sql-shared/src/sql.transaction";
-import { BaseDTO } from "@dagda/sql-shared/src/sql.types"
+import { BaseDTO, ForeignKeys } from "@dagda/sql-shared/src/sql.types"
 import { SQLiteConnector } from "./sqlite.connector";
 
 type TestTables = {
@@ -17,7 +17,17 @@ interface GroupDTO extends BaseDTO {
     name: string;
 }
 
-const connector = new SQLiteConnector<TestTables>("./test.db");
+const APP_FOREIGN_KEYS: ForeignKeys<TestTables> = {
+    users: {
+        name: false,
+        groupId: true
+    },
+    groups: {
+        name: false
+    }
+};
+
+const connector = new SQLiteConnector<TestTables>(APP_FOREIGN_KEYS, "./test.db");
 
 const handler = new SQLHandler<TestTables>(connector);
 
@@ -41,16 +51,13 @@ async function main() {
         name: "Avengers"
     })
     const groups = handler.getItems("groups");
-
-    await handler.submit(t0);
-
-    const t1 = new SQLTransaction<TestTables>(handler);
-    t1.insert("users", {
+    t0.insert("users", {
         id: 0,
         name: "Tony stark",
         groupId: groups[0].id
     });
-    await handler.submit(t1);
+
+    await handler.submit(t0);
 
     const users = handler.getItems("users");
 
@@ -60,10 +67,6 @@ async function main() {
 
     await handler.submit(t2);
 
-    // console.log("Reading data...")
-    // const ironman = handler.getById("users", 1);
-    // const group = handler.getById("groups", ironman!.groupId);
-    // console.log(ironman, group);
 }
 
 main().catch(e => console.error(e));

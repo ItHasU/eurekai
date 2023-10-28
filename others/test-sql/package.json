@@ -1,7 +1,7 @@
 {
   "name": "test-sql",
   "version": "1.0.0",
-  "description": "Shared code between client and server",
+  "description": "An application to demonstrate the use of SQLite connection",
   "author": "Matthieu Aubry",
   "license": "ISC",
   "scripts": {

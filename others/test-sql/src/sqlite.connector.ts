@@ -1,24 +1,25 @@
 import { OperationType, SQLTransaction } from "@dagda/sql-shared/src/sql.transaction";
-import { SQLConnector, BaseDTO, TablesDefinition, TransactionResult } from "@dagda/sql-shared/src/sql.types";
+import { SQLConnector, BaseDTO, TablesDefinition, TransactionResult, ForeignKeys } from "@dagda/sql-shared/src/sql.types";
 import sqlite from "better-sqlite3";
 
 type SQLValue = number | string | null;
 
-export class SQLiteConnector<Tables extends TablesDefinition> implements SQLConnector<Tables> {
+export class SQLiteConnector<Tables extends TablesDefinition> extends SQLConnector<Tables> {
     /** The database */
     protected _db: sqlite.Database;
 
-    constructor(filename: string) {
+    constructor(foreignKeys: ForeignKeys<Tables>, filename: string) {
+        super(foreignKeys);
         this._db = new sqlite(filename);
     }
 
     //#region General management ----------------------------------------------
 
-    public getItems<TableName extends keyof Tables>(tableName: TableName): Promise<Tables[TableName][]> {
+    public override getItems<TableName extends keyof Tables>(tableName: TableName): Promise<Tables[TableName][]> {
         return this._all<Tables[TableName]>(`SELECT * FROM ${tableName as string}`);
     }
 
-    public async submit(transaction: SQLTransaction<Tables>): Promise<TransactionResult> {
+    public override async submit(transaction: SQLTransaction<Tables>): Promise<TransactionResult> {
         const result: TransactionResult = {
             updatedIds: {}
         }
@@ -26,6 +27,7 @@ export class SQLiteConnector<Tables extends TablesDefinition> implements SQLConn
         for (const operation of transaction.operations) {
             switch (operation.type) {
                 case OperationType.INSERT: {
+                    this._updateForeignKeys(result, operation.options.table, operation.options.item);
                     const columnNames = [];
                     const values: SQLValue[] = [];
                     for (const key in operation.options.item) {
@@ -42,6 +44,7 @@ export class SQLiteConnector<Tables extends TablesDefinition> implements SQLConn
                     break;
                 }
                 case OperationType.UPDATE: {
+                    this._updateForeignKeys(result, operation.options.table, operation.options.values as any);
                     const columnNames = [];
                     const values: SQLValue[] = [];
                     for (const key in operation.options.values) {
