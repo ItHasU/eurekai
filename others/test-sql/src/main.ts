@@ -30,6 +30,9 @@ const APP_FOREIGN_KEYS: ForeignKeys<TestTables> = {
 const connector = new SQLiteConnector<TestTables>(APP_FOREIGN_KEYS, "./test.db");
 
 const handler = new SQLHandler<TestTables>(connector);
+handler.on("state", (event) => {
+    console.log(`State: ${event.data.downloading ? "DL" : "-"}${event.data.uploading ? "UL" : "-"}`);
+})
 
 async function main() {
     console.log("Creating tables...");

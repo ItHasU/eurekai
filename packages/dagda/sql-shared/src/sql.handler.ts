@@ -1,13 +1,28 @@
 import { SQLCache, SQLCacheHandler } from "./sql.cache";
 import { OperationType, SQLTransaction } from "./sql.transaction";
 import { SQLConnector, TablesDefinition } from "./sql.types";
+import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "@dagda/tools/src/events.tools";
 
+type SQLEvents = {
+    "state": {
+        /** 
+         * Is the handler currently loading data ?
+         * (ex: during loadTable()) 
+         */
+        downloading: boolean,
+        /**
+         * Is the handler currently sending data ?
+         * (ex: during submit())
+         */
+        uploading: boolean
+    }
+}
 
 /** 
  * Utility class allowing to fetch data and store them in a cache.
  * The cache can then be accessed through synchronous methods.
  */
-export class SQLHandler<Tables extends TablesDefinition> implements SQLCacheHandler<Tables> {
+export class SQLHandler<Tables extends TablesDefinition> implements SQLCacheHandler<Tables>, EventHandler<SQLEvents> {
 
     /** 
      * Is cache dirty
@@ -22,6 +37,34 @@ export class SQLHandler<Tables extends TablesDefinition> implements SQLCacheHand
 
     constructor(protected _connector: SQLConnector<Tables>) { }
 
+    //#region Events ----------------------------------------------------------
+
+    protected readonly _eventHandlerData: EventHandlerData<SQLEvents> = {};
+
+    protected _state: SQLEvents["state"] = {
+        downloading: false,
+        uploading: false
+    };
+
+    /** @inheritdoc */
+    public on<EventName extends keyof SQLEvents>(eventName: EventName, listener: EventListener<SQLEvents[EventName]>): void {
+        // Call default implementation
+        EventHandlerImpl.on(this._eventHandlerData, eventName, listener);
+    }
+
+    /** Utility method update the current state and fire an event */
+    protected _fireStateChanged(update: Partial<SQLEvents["state"]>): void {
+        this._state = {
+            // Keep previous state
+            ...this._state,
+            // Override with new values
+            ...update
+        };
+        EventHandlerImpl.fire(this._eventHandlerData, "state", this._state);
+    }
+
+    //#endregion
+
     //#region Cache -----------------------------------------------------------
 
     public getNextId(): number {
@@ -34,8 +77,10 @@ export class SQLHandler<Tables extends TablesDefinition> implements SQLCacheHand
 
     /** Load the full table */
     public async loadTable(tableName: (keyof Tables)): Promise<void> {
+        this._fireStateChanged({ downloading: true });
         const items = await this._connector.getItems(tableName);
         this.getCache(tableName).setItems(items);
+        this._fireStateChanged({ downloading: false });
     }
 
     /** Get or build an empty cache */
@@ -56,7 +101,10 @@ export class SQLHandler<Tables extends TablesDefinition> implements SQLCacheHand
      * Once the result is received, the cache is updated
      */
     public async submit(transaction: SQLTransaction<Tables>): Promise<void> {
+        this._fireStateChanged({ uploading: true });
+        // -- Call submit on the connector --
         const result = await this._connector.submit(transaction);
+        // -- Once done, update local DTO --
         for (const op of transaction.operations) {
             switch (op.type) {
                 case OperationType.INSERT:
@@ -64,15 +112,18 @@ export class SQLHandler<Tables extends TablesDefinition> implements SQLCacheHand
                     if (tmpId < 0) {
                         const item = this.getCache(op.options.table).getById(tmpId);
                         if (item) {
+                            // Update the id
                             item.id = result.updatedIds[tmpId];
+                            // Make sure the item is registered
+                            this.getCache(op.options.table).insert(item);
                         }
-                        console.log(`H : ${tmpId} => ${result.updatedIds[tmpId]}`);
                     }
                     break;
                 default:
                     break;
             }
         }
+        this._fireStateChanged({ uploading: false });
     }
 
     //#endregion
@@ -100,4 +151,5 @@ export class SQLHandler<Tables extends TablesDefinition> implements SQLCacheHand
     }
 
     //#endregion
+
 }
