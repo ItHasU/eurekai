@@ -1,7 +1,7 @@
 import { SQLHandler } from "@dagda/sql-shared/src/sql.handler";
 import { SQLTransaction } from "@dagda/sql-shared/src/sql.transaction";
 import { BaseDTO, ForeignKeys } from "@dagda/sql-shared/src/sql.types"
-import { SQLiteConnector } from "./sqlite.connector";
+import { SQLiteConnector } from "@dagda/sql-sqlite/src/sqlite.connector";
 
 type TestTables = {
     users: UserDTO,
