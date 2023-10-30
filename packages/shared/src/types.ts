@@ -1,3 +1,5 @@
+import { ForeignKeys } from "@dagda/sql-shared/src/sql.types";
+
 //#region TXT2IMG -------------------------------------------------------------
 
 export type SamplingMethod =
@@ -52,6 +54,41 @@ export type Tables = {
     "pictures": PictureDTO;
     "attachments": AttachmentDTO;
 };
+
+export const APP_FOREIGN_KEYS: ForeignKeys<Tables> = {
+    projects: {
+        lockable: false,
+        name: false,
+        pinned: false,
+        featuredAttachmentId: true
+    },
+    prompts: {
+        projectId: true,
+        orderIndex: false,
+        active: false,
+        bufferSize: false,
+        height: false,
+        width: false,
+        model: false,
+        prompt: false,
+        negative_prompt: false
+    },
+    pictures: {
+        promptId: true,
+        seed: false,
+        status: false,
+        attachmentId: true,
+        highresStatus: false,
+        highresAttachmentId: true
+    },
+    seeds: {
+        projectId: true,
+        seed: false
+    },
+    attachments: {
+        data: false
+    }
+}
 
 export type TableName = keyof Tables;
 export function t(tableName: TableName): string {
@@ -190,6 +227,7 @@ export interface PictureDTO {
 
 /** Store preferred seeds */
 export interface SeedDTO {
+    id: number;
     /** id of the project */
     projectId: number;
     /** the seed */

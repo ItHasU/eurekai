@@ -1,4 +1,4 @@
-import { SQLTransaction } from "./sql.transaction";
+import { SQLOperation, SQLTransaction, SQLTransactionData } from "./sql.transaction";
 
 /** The minimal fields for an item */
 export interface BaseDTO {
@@ -16,13 +16,13 @@ export abstract class SQLConnector<Tables extends TablesDefinition> {
 
     public abstract getItems<TableName extends keyof Tables>(tableName: TableName): Promise<Tables[TableName][]>;
 
-    public abstract submit(transaction: SQLTransaction<Tables>): Promise<TransactionResult>;
+    public abstract submit(transaction: SQLTransactionData<Tables>): Promise<SQLTransactionResult>;
 
     /** 
      * Update item's foreign keys to new uids.
      * @throws If id cannot be updated.
      */
-    protected _updateForeignKeys<TableName extends keyof Tables>(result: TransactionResult, table: TableName, item: Tables[TableName]): void {
+    protected _updateForeignKeys<TableName extends keyof Tables>(result: SQLTransactionResult, table: TableName, item: Tables[TableName]): void {
         const foreignKeys = this._foreignKeys[table];
         for (const key in foreignKeys) {
             if (foreignKeys[key]) {
@@ -40,7 +40,7 @@ export abstract class SQLConnector<Tables extends TablesDefinition> {
      * Get id updated after insert. If id is positive, it is returned as-is.
      * @throws If id is negative and cannot be updated
      */
-    protected _getUpdatedId(result: TransactionResult, id: BaseDTO["id"]): BaseDTO["id"] {
+    protected _getUpdatedId(result: SQLTransactionResult, id: BaseDTO["id"]): BaseDTO["id"] {
         if (id >= 0) {
             return id;
         } else {
@@ -54,6 +54,6 @@ export abstract class SQLConnector<Tables extends TablesDefinition> {
 
 }
 
-export interface TransactionResult {
+export interface SQLTransactionResult {
     updatedIds: { [temporaryId: number]: number };
 }

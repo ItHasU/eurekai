@@ -25,10 +25,16 @@ export interface DeleteOptions<TableName> {
 
 export type BaseOperation<OT extends OperationType, Options> = { type: OT, options: Options };
 
-export type Operation<Tables extends TablesDefinition, TableName extends keyof Tables> =
+export type SQLOperation<Tables extends TablesDefinition, TableName extends keyof Tables> =
     BaseOperation<OperationType.INSERT, InsertOptions<TableName, Tables[TableName]>>
     | BaseOperation<OperationType.UPDATE, UpdateOptions<TableName>>
     | BaseOperation<OperationType.DELETE, DeleteOptions<TableName>>;
+
+export type SQLTransactionData<Tables extends TablesDefinition> = SQLOperation<Tables, keyof Tables>[];
+
+export interface SQLTransactionResult {
+    updatedIds: { [temporaryId: number]: number };
+}
 
 /**
  * This class will contain a set of operations that will be performed in a transaction.
@@ -38,7 +44,7 @@ export type Operation<Tables extends TablesDefinition, TableName extends keyof T
 export class SQLTransaction<Tables extends TablesDefinition> {
 
     /** List of operations performed */
-    public readonly operations: Operation<Tables, keyof Tables>[] = [];
+    public readonly operations: SQLOperation<Tables, keyof Tables>[] = [];
 
     constructor(protected _cacheHandler: SQLCacheHandler<Tables>) { }
 

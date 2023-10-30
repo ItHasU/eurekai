@@ -2,12 +2,15 @@ import express from "express";
 import { resolve } from "node:path";
 import { buildRoutes } from "./routes";
 import { DatabaseWrapper } from "./db";
+import { registerAPI_SQLConnectorProxy } from "@dagda/sql-proxy-server/src/index"
+import { Tables } from "@eurekai/shared/src/types";
+import { SQLConnector } from "@dagda/sql-shared/src/sql.types";
 
 export class AppServer {
     public readonly app: express.Express;
 
     constructor(options: {
-        data: DatabaseWrapper,
+        connector: SQLConnector<Tables>,
         port: number
     }) {
         // -- Create app --
@@ -18,8 +21,9 @@ export class AppServer {
         // Static files
         const path: string = resolve("./apps/client/dist");
         this.app.use(express.static(path));
-        // API
-        this.app.use("/api", buildRoutes(options.data));
+        // SQL Connector
+        registerAPI_SQLConnectorProxy(this.app, null as any);
+
         // -- Listen --
         this.app.listen(options.port);
         console.log(`Server started, connect to http://localhost:${options.port}/`);

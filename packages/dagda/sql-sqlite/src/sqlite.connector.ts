@@ -1,5 +1,5 @@
-import { OperationType, SQLTransaction } from "@dagda/sql-shared/src/sql.transaction";
-import { SQLConnector, BaseDTO, TablesDefinition, TransactionResult, ForeignKeys } from "@dagda/sql-shared/src/sql.types";
+import { OperationType, SQLTransaction, SQLTransactionData } from "@dagda/sql-shared/src/sql.transaction";
+import { SQLConnector, BaseDTO, TablesDefinition, SQLTransactionResult, ForeignKeys } from "@dagda/sql-shared/src/sql.types";
 import sqlite from "better-sqlite3";
 
 type SQLValue = number | string | null;
@@ -19,13 +19,13 @@ export class SQLiteConnector<Tables extends TablesDefinition> extends SQLConnect
         return this._all<Tables[TableName]>(`SELECT * FROM ${tableName as string}`);
     }
 
-    public override async submit(transaction: SQLTransaction<Tables>): Promise<TransactionResult> {
-        const result: TransactionResult = {
+    public override async submit(transactionData: SQLTransactionData<Tables>): Promise<SQLTransactionResult> {
+        const result: SQLTransactionResult = {
             updatedIds: {}
         }
         try {
             await this._run("BEGIN");
-            for (const operation of transaction.operations) {
+            for (const operation of transactionData) {
                 switch (operation.type) {
                     case OperationType.INSERT: {
                         this._updateForeignKeys(result, operation.options.table, operation.options.item);

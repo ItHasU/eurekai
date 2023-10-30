@@ -1,5 +1,5 @@
 {
-    "extends": "@dagda/build/tsconfig-server.json",
+    "extends": "@dagda/build/tsconfig-client.json",
     "compilerOptions": {
         "baseUrl": ".",
         "outDir": "./.tsc-build/",
@@ -8,8 +8,5 @@
         "./src/**/*.ts"
     ],
     "references": [
-        {
-            "path": "../sql-shared"
-        }
     ]
 }

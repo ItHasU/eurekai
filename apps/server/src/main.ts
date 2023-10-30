@@ -1,20 +1,18 @@
+import { APP_FOREIGN_KEYS, Tables } from "@eurekai/shared/src/types";
 import { getEnvNumber, getEnvString } from "./modules/config";
 import { DatabaseWrapper } from "./modules/db";
 import { registerAllModels } from "./modules/diffusers/impl/automatic1111.tools";
 import { Generator } from "./modules/generator";
 import { AppServer } from "./modules/server";
+import {SQLiteConnector } from "@dagda/sql-sqlite/src/sqlite.connector";
 
 async function main(): Promise<void> {
     const apiURL = getEnvString("API_URL");
 
-    const db = new DatabaseWrapper("eurekai.db");
-    await registerAllModels(db, apiURL);
-
-    await db.initIfNeeded();
-    await db.fixComputingAtStart();
+    const connector = new SQLiteConnector<Tables>(APP_FOREIGN_KEYS, "./test.db");
 
     new AppServer({
-        data: db,
+        connector,
         port: getEnvNumber("PORT")
     });
 

@@ -9,7 +9,13 @@
     ],
     "references": [
         {
-            "path": "../sql-shared"
+            "path": "../../sql-shared"
+        },
+        {
+            "path": "../shared"
+        },
+        {
+            "path": "../../api/server"
         }
     ]
 }

@@ -1,5 +1,5 @@
-import { OperationType, SQLTransaction } from "./sql.transaction";
-import { ForeignKeys, SQLConnector, TablesDefinition, TransactionResult } from "./sql.types";
+import { OperationType, SQLTransactionData } from "./sql.transaction";
+import { ForeignKeys, SQLConnector, TablesDefinition, SQLTransactionResult } from "./sql.types";
 
 /** A fake SQL connector to test the app */
 export class SQLDummyConnector<Tables extends TablesDefinition> extends SQLConnector<Tables>{
@@ -33,12 +33,12 @@ export class SQLDummyConnector<Tables extends TablesDefinition> extends SQLConne
         return Promise.resolve(this._data[tableName] ?? []);
     }
 
-    public submit(transaction: SQLTransaction<Tables>): Promise<TransactionResult> {
+    public submit(data: SQLTransactionData<Tables>): Promise<SQLTransactionResult> {
         // Create new ids for inserted items
-        const result: TransactionResult = {
+        const result: SQLTransactionResult = {
             updatedIds: {}
         };
-        for (const operation of transaction.operations) {
+        for (const operation of data) {
             switch (operation.type) {
                 case OperationType.INSERT: {
                     const previousId = operation.options.item.id;

@@ -10,6 +10,15 @@
     "references": [
         {
             "path": "../../packages/shared"
+        },
+        {
+            "path": "../../packages/dagda/sql-shared"
+        },
+        {
+            "path": "../../packages/dagda/sql-proxy/server"
+        },
+        {
+            "path": "../../packages/dagda/sql-sqlite"
         }
     ]
 }

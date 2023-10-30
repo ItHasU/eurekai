@@ -1,0 +1,13 @@
+{
+    "name": "@dagda/api-client",
+    "version": "1.0.0",
+    "description": "Browser implementation of the SQLConnector",
+    "author": "Matthieu Aubry",
+    "license": "ISC",
+    "scripts": {},
+    "dependencies": {
+    },
+    "devDependencies": {
+        "@dagda/build": "*"
+    }
+}

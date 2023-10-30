@@ -103,7 +103,7 @@ export class SQLHandler<Tables extends TablesDefinition> implements SQLCacheHand
     public async submit(transaction: SQLTransaction<Tables>): Promise<void> {
         this._fireStateChanged({ uploading: true });
         // -- Call submit on the connector --
-        const result = await this._connector.submit(transaction);
+        const result = await this._connector.submit(transaction.operations);
         // -- Once done, update local DTO --
         for (const op of transaction.operations) {
             switch (op.type) {
