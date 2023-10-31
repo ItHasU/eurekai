@@ -12,7 +12,7 @@
             "path": "../../packages/shared"
         },
         {
-            "path": "../../packages/dagda/client"
+            "path": "../../dagda/client"
         }
     ]
 }
