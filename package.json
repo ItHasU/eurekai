@@ -5,8 +5,8 @@
   "author": "Matthieu Aubry",
   "license": "ISC",
   "scripts": {
-    "clean": "rimraf -g **/dist **/.tsc-build",
-    "clean-all": "rimraf -g **/dist **/.tsc-build **/node_modules"
+    "clean": "rimraf -g packages/apps/*/dist **/.tsc-build",
+    "clean-all": "rimraf -g packages/apps/*/dist **/.tsc-build **/node_modules"
   },
   "devDependencies": {
     "css-loader": "^6.7.3",
