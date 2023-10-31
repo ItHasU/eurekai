@@ -1,5 +1,5 @@
-import { registerAPI_SQLConnectorProxy } from "@dagda/sql-proxy-server/src/index";
-import { SQLConnector } from "@dagda/sql-shared/src/sql.types";
+import { registerAPI_SQLConnectorProxy } from "@dagda/server/sql/proxy.connector";
+import { SQLConnector } from "@dagda/shared/sql/types";
 import { Tables } from "@eurekai/shared/src/types";
 import express from "express";
 import { resolve } from "node:path";

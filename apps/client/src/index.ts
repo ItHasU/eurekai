@@ -2,17 +2,18 @@ import "bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "bootstrap/dist/css/bootstrap.css";
 
+import { SQLClientConnector } from "@dagda/client/sql/client.connector";
+import { SQLHandler } from "@dagda/shared/sql/handler";
+import { APP_FOREIGN_KEYS, Tables } from "@eurekai/shared/src/types";
+import { PromptEditor } from "./editors/prompt.editor";
+import { AbstractPageElement, DataProvider } from "./pages/abstract.page.element";
+import { ProjectsPage } from "./pages/projects.page";
+
 // import { Notification, NotificationKind } from "@eurekai/shared/src/data";
 // import { PictureElement } from "./components/picture.element";
 // import { PromptElement } from "./components/prompt.element";
-import { PromptEditor } from "./editors/prompt.editor";
-import { AbstractPageElement, DataProvider } from "./pages/abstract.page.element";
 // import { PicturesPage } from "./pages/pictures.page";
-import { SQLHandler } from "@dagda/sql-shared/src/sql.handler";
-import { APP_FOREIGN_KEYS, Tables } from "@eurekai/shared/src/types";
-import { ProjectsPage } from "./pages/projects.page";
 // import { SettingsPage } from "./pages/settings.page";
-import { SQLClientConnector } from "@dagda/sql-proxy-client/src/client.connector";
 
 interface PageConstructor {
     new(data: DataProvider): AbstractPageElement;

@@ -1,4 +1,4 @@
-import { ForeignKeys } from "@dagda/sql-shared/src/sql.types";
+import { ForeignKeys } from "@dagda/shared/sql/types";
 
 //#region TXT2IMG -------------------------------------------------------------
 

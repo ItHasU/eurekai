@@ -1,0 +1,17 @@
+{
+    "name": "@dagda/server",
+    "version": "1.0.0",
+    "description": "Server part of the tools",
+    "author": "Matthieu Aubry",
+    "license": "ISC",
+    "scripts": {},
+    "dependencies": {
+        "better-sqlite3": "9.0.0"
+    },
+    "devDependencies": {
+        "@dagda/build": "*",
+        "@dagda/shared": "*",
+        "@types/express": "4.17.17",
+        "@types/better-sqlite3": "7.6.6"
+    }
+}

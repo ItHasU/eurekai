@@ -1,5 +1,5 @@
-import { SQLHandler } from "@dagda/sql-shared/src/sql.handler";
-import { SQLTransaction } from "@dagda/sql-shared/src/sql.transaction";
+import { SQLHandler } from "@dagda/shared/sql/handler";
+import { SQLTransaction } from "@dagda/shared/sql/transaction";
 import { Tables } from "@eurekai/shared/src/types";
 
 export interface DataProvider {

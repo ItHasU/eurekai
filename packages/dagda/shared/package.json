@@ -1,0 +1,12 @@
+{
+    "name": "@dagda/shared",
+    "version": "1.0.0",
+    "description": "Stuff that goes both on client and server side of the app",
+    "author": "Matthieu Aubry",
+    "license": "CC BY 4.0",
+    "scripts": {},
+    "dependencies": {},
+    "devDependencies": {
+        "@dagda/build": "*"
+    }
+}

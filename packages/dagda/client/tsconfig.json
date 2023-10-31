@@ -5,14 +5,11 @@
         "outDir": "./.tsc-build/",
     },
     "include": [
-        "./src/**/*.ts"
+        "./**/*.ts"
     ],
     "references": [
         {
-            "path": "../../packages/shared"
-        },
-        {
-            "path": "../../packages/dagda/client"
+            "path": "../shared"
         }
     ]
 }

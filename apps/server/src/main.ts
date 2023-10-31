@@ -1,4 +1,4 @@
-import { SQLiteConnector } from "@dagda/sql-sqlite/src/sqlite.connector";
+import { SQLiteConnector } from "@dagda/server/sql/sqlite.connector";
 import { APP_FOREIGN_KEYS, Tables } from "@eurekai/shared/src/types";
 import { getEnvNumber, getEnvString } from "./modules/config";
 import { AppServer } from "./modules/server";
