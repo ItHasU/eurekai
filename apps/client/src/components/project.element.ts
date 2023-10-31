@@ -4,9 +4,10 @@ import { AbstractDTOElement } from "./abstract.dto.element";
 export class ProjectElement extends AbstractDTOElement<ProjectDTO> {
 
     constructor(project: ProjectDTO, protected _options: {
-        clean: () => void;
         pin: () => void;
         unpin: () => void;
+        lock: () => void;
+        unlock: () => void;
     }) {
         super(project, require("./project.element.html").default);
         this.classList.add("list-group-item", "list-group-item-action");
@@ -25,28 +26,29 @@ export class ProjectElement extends AbstractDTOElement<ProjectDTO> {
         } else {
             this._getElementByRef("unpin")?.parentElement?.classList.add("d-none");
         }
-        this.querySelector('.dropdown button')?.addEventListener('click', function (event) {
-            event.stopPropagation();
-        });
+        if (this.data.lockable === BooleanEnum.TRUE) {
+            this._getElementByRef("lock")?.parentElement?.classList.add("d-none");
+        } else {
+            this._getElementByRef("unlock")?.parentElement?.classList.add("d-none");
+        }
+        // this.querySelector('.dropdown button')?.addEventListener('click', function (event) {
+        //     event.stopPropagation();
+        // });
 
         if (this.data.featuredAttachmentId != null) {
             (<HTMLImageElement>this.querySelector("[ref='featured']")!).src = `/api/attachment/${this.data.featuredAttachmentId}`;
         }
-        this._bindClick("clean", (evt) => {
-            evt.stopPropagation();
-
-            this._options.clean();
-            this.refresh();
-        });
         this._bindClick("pin", (evt) => {
-            evt.stopPropagation();
-
             this._options.pin();
         });
         this._bindClick("unpin", (evt) => {
-            evt.stopPropagation();
-
             this._options.unpin();
+        });
+        this._bindClick("lock", (evt) => {
+            this._options.lock();
+        });
+        this._bindClick("unlock", (evt) => {
+            this._options.unlock();
         });
     }
 

@@ -32,8 +32,11 @@ export function buildAPIRouter<Methods extends BaseMethods>(api: Methods): Route
     return router;
 }
 
-/** Simply register an API on the application */
+/** 
+ * Simply register an API on the application 
+ * url MUST start with a /
+ */
 export function registerAPI<Methods extends BaseMethods>(app: Application, url: string, api: Methods): void {
     console.log(`Registered /${url}/[${Object.keys(api).join(", ")}]`);
-    app.use(`/${url}/`, buildAPIRouter(api));
+    app.use(url, buildAPIRouter(api));
 }

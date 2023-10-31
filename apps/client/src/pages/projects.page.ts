@@ -28,9 +28,7 @@ export class ProjectsPage extends AbstractPageElement {
         // Bind click on add project
         this._bindClickForRef("projectNewButton", async () => {
             const name = this._nameInput.value;
-            const width = +this._widthInput.value;
-            const height = +this._heightInput.value;
-            if (name && width && height) {
+            if (name) {
                 try {
                     const tr = this._newTransaction();
                     tr.insert("projects", {
@@ -65,19 +63,30 @@ export class ProjectsPage extends AbstractPageElement {
 
         // Render projects
         for (const project of projects) {
-            const projectId = project.id;
             const element = new ProjectElement(project, {
-                clean: () => {
-                },
                 pin: () => {
                     const tr = this._newTransaction();
                     tr.update("projects", project, { pinned: BooleanEnum.TRUE });
                     this._submit(tr);
+                    this.refresh();
                 },
                 unpin: () => {
                     const tr = this._newTransaction();
                     tr.update("projects", project, { pinned: BooleanEnum.FALSE });
                     this._submit(tr);
+                    this.refresh();
+                },
+                lock: () => {
+                    const tr = this._newTransaction();
+                    tr.update("projects", project, { lockable: BooleanEnum.TRUE });
+                    this._submit(tr);
+                    this.refresh();
+                },
+                unlock: () => {
+                    const tr = this._newTransaction();
+                    tr.update("projects", project, { lockable: BooleanEnum.FALSE });
+                    this._submit(tr);
+                    this.refresh();
                 }
             });
             element.addEventListener("click", () => {
