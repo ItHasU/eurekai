@@ -10,6 +10,7 @@
   },
   "devDependencies": {
     "@dagda/build": "*",
+    "@dagda/sql-proxy-client": "*",
     "@eurekai/shared": "*",
     "@types/bootstrap": "^5.2.6"
   },

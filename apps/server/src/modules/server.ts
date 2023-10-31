@@ -1,10 +1,8 @@
+import { registerAPI_SQLConnectorProxy } from "@dagda/sql-proxy-server/src/index";
+import { SQLConnector } from "@dagda/sql-shared/src/sql.types";
+import { Tables } from "@eurekai/shared/src/types";
 import express from "express";
 import { resolve } from "node:path";
-import { buildRoutes } from "./routes";
-import { DatabaseWrapper } from "./db";
-import { registerAPI_SQLConnectorProxy } from "@dagda/sql-proxy-server/src/index"
-import { Tables } from "@eurekai/shared/src/types";
-import { SQLConnector } from "@dagda/sql-shared/src/sql.types";
 
 export class AppServer {
     public readonly app: express.Express;
@@ -22,7 +20,7 @@ export class AppServer {
         const path: string = resolve("./apps/client/dist");
         this.app.use(express.static(path));
         // SQL Connector
-        registerAPI_SQLConnectorProxy(this.app, null as any);
+        registerAPI_SQLConnectorProxy(this.app, options.connector);
 
         // -- Listen --
         this.app.listen(options.port);

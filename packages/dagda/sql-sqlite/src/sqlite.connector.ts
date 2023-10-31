@@ -1,5 +1,5 @@
-import { OperationType, SQLTransaction, SQLTransactionData } from "@dagda/sql-shared/src/sql.transaction";
-import { SQLConnector, BaseDTO, TablesDefinition, SQLTransactionResult, ForeignKeys } from "@dagda/sql-shared/src/sql.types";
+import { OperationType, SQLTransactionData } from "@dagda/sql-shared/src/sql.transaction";
+import { ForeignKeys, SQLConnector, SQLTransactionResult, TablesDefinition } from "@dagda/sql-shared/src/sql.types";
 import sqlite from "better-sqlite3";
 
 type SQLValue = number | string | null;
@@ -85,8 +85,8 @@ export class SQLiteConnector<Tables extends TablesDefinition> extends SQLConnect
         tableName: TN,
         fieldTypes: { [fields in keyof Required<Omit<T, "id">>]: string }): Promise<void> {
         const fieldTypesFull: { [fields in keyof Required<T>]: string } = {
-            ...fieldTypes,
-            "id": "INTEGER PRIMARY KEY AUTOINCREMENT"
+            "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+            ...fieldTypes
         } as { [fields in keyof Required<T>]: string };
         await this._createTableIfNeeded(tableName, fieldTypesFull);
         for (const fieldName in fieldTypesFull) {

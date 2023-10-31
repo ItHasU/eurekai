@@ -1,7 +1,7 @@
+import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "@dagda/tools/src/events.tools";
 import { SQLCache, SQLCacheHandler } from "./sql.cache";
 import { OperationType, SQLTransaction } from "./sql.transaction";
 import { SQLConnector, TablesDefinition } from "./sql.types";
-import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "@dagda/tools/src/events.tools";
 
 type SQLEvents = {
     "state": {

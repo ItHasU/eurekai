@@ -1,7 +1,6 @@
-import { AbstractPageElement } from "./abstract.page.element";
-import { DataCache } from "@eurekai/shared/src/cache";
-import { ProjectElement } from "../components/project.element";
 import { BooleanEnum } from "@eurekai/shared/src/types";
+import { ProjectElement } from "../components/project.element";
+import { AbstractPageElement, DataProvider } from "./abstract.page.element";
 
 const BORDER_CLASSES = ["border-primary", "border-2"];
 
@@ -15,8 +14,8 @@ export class ProjectsPage extends AbstractPageElement {
     protected readonly _projectsActiveDiv: HTMLDivElement;
     protected readonly _projectsArchivedDiv: HTMLDivElement;
 
-    constructor(cache: DataCache) {
-        super(require("./projects.page.html").default, cache);
+    constructor(dataProvider: DataProvider) {
+        super(require("./projects.page.html").default, dataProvider);
 
         // -- Get components --
         this._nameInput = this.querySelector("#projectNameInput") as HTMLInputElement;
@@ -33,10 +32,14 @@ export class ProjectsPage extends AbstractPageElement {
             const height = +this._heightInput.value;
             if (name && width && height) {
                 try {
-                    await this._cache.withData(async (data) => {
-                        const newProjectId = await data.addProject(name, width, height);
-                        console.debug(`Project ${newProjectId} created ${width} x ${height} px`);
+                    const tr = this._newTransaction();
+                    tr.insert("projects", {
+                        id: 0,
+                        lockable: BooleanEnum.FALSE,
+                        name,
+                        pinned: BooleanEnum.FALSE
                     });
+                    this._submit(tr);
                 } catch (err) {
                     console.error(err);
                 } finally {
@@ -48,8 +51,10 @@ export class ProjectsPage extends AbstractPageElement {
 
     /** @inheritdoc */
     public override async _refresh(): Promise<void> {
-        // -- Fech projects --
-        const projects = [...await this._cache.getProjects()];
+        await this._data.getSQLHandler().loadTable("projects");
+
+        // -- Fetch projects --
+        const projects = this._data.getSQLHandler().getItems("projects");
         projects.sort((a, b) => -(a.id - b.id));
 
         // -- Render projects --
@@ -61,34 +66,23 @@ export class ProjectsPage extends AbstractPageElement {
         // Render projects
         for (const project of projects) {
             const projectId = project.id;
-            const element = new ProjectElement(this._cache, project, {
+            const element = new ProjectElement(project, {
                 clean: () => {
-                    this._cache.withData(async (data) => {
-                        await data.cleanProject(projectId);
-                    }).finally(() => {
-                        this._cache.markDirty();
-                    });
                 },
                 pin: () => {
-                    this._cache.withData(async (data) => {
-                        await data.setProjectPinned(projectId, true);
-                    }).finally(() => {
-                        this._cache.markDirty();
-                        this.refresh();
-                    });
+                    const tr = this._newTransaction();
+                    tr.update("projects", project, { pinned: BooleanEnum.TRUE });
+                    this._submit(tr);
                 },
                 unpin: () => {
-                    this._cache.withData(async (data) => {
-                        await data.setProjectPinned(projectId, false);
-                    }).finally(() => {
-                        this._cache.markDirty();
-                        this.refresh();
-                    });
+                    const tr = this._newTransaction();
+                    tr.update("projects", project, { pinned: BooleanEnum.FALSE });
+                    this._submit(tr);
                 }
             });
             element.addEventListener("click", () => {
                 console.debug(`Project ${project.id} selected`);
-                this._cache.setSelectedProjectId(project.id);
+                // this._cache.setSelectedProjectId(project.id);
                 // Remove border from all projects
                 this.querySelectorAll(".card")?.forEach((card) => {
                     card.classList.remove(...BORDER_CLASSES);
@@ -97,15 +91,15 @@ export class ProjectsPage extends AbstractPageElement {
             });
             if (project.pinned === BooleanEnum.TRUE) {
                 this._projectsPinnedDiv.appendChild(element);
-            } else if (project.highresPendingCount > 0 || project.activePrompts > 0) {
-                this._projectsActiveDiv.appendChild(element);
+                // } else if (project.highresPendingCount > 0 || project.activePrompts > 0) {
+                //     this._projectsActiveDiv.appendChild(element);
             } else {
                 this._projectsArchivedDiv.appendChild(element);
             }
             element.refresh();
-            if (projectId === this._cache.getSelectedProjectId()) {
-                element.querySelector(".card")?.classList.add(...BORDER_CLASSES);
-            }
+            // if (projectId === this._cache.getSelectedProjectId()) {
+            //     element.querySelector(".card")?.classList.add(...BORDER_CLASSES);
+            // }
         }
     }
 }

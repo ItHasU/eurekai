@@ -1,12 +1,9 @@
-import { BooleanEnum, ProjectWithStats } from "@eurekai/shared/src/types";
+import { BooleanEnum, ProjectDTO } from "@eurekai/shared/src/types";
 import { AbstractDTOElement } from "./abstract.dto.element";
-import { DataCache } from "@eurekai/shared/src/cache";
-import { APP } from "src";
-import { PicturesPage } from "src/pages/pictures.page";
 
-export class ProjectElement extends AbstractDTOElement<ProjectWithStats> {
+export class ProjectElement extends AbstractDTOElement<ProjectDTO> {
 
-    constructor(protected readonly _cache: DataCache, project: ProjectWithStats, protected _options: {
+    constructor(project: ProjectDTO, protected _options: {
         clean: () => void;
         pin: () => void;
         unpin: () => void;
@@ -16,8 +13,8 @@ export class ProjectElement extends AbstractDTOElement<ProjectWithStats> {
         this.classList.toggle("lockable", project.lockable === BooleanEnum.TRUE);
 
         this.addEventListener("click", () => {
-            this._cache.setSelectedProjectId(project.id);
-            APP.setPage(PicturesPage);
+            // this._cache.setSelectedProjectId(project.id);
+            // APP.setPage(PicturesPage);
         });
     }
 
@@ -39,7 +36,6 @@ export class ProjectElement extends AbstractDTOElement<ProjectWithStats> {
             evt.stopPropagation();
 
             this._options.clean();
-            this.data.rejectedCount = 0;
             this.refresh();
         });
         this._bindClick("pin", (evt) => {

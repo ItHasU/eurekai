@@ -1,36 +1,38 @@
-import "bootstrap/dist/css/bootstrap.css";
-import "bootstrap-icons/font/bootstrap-icons.css";
 import "bootstrap";
+import "bootstrap-icons/font/bootstrap-icons.css";
+import "bootstrap/dist/css/bootstrap.css";
 
-import { API } from "./api";
-import { ProjectsPage } from "./pages/projects.page";
-import { DataCache } from "@eurekai/shared/src/cache";
-import { AbstractPageElement } from "./pages/abstract.page.element";
-import { SettingsPage } from "./pages/settings.page";
-import { Notification, NotificationKind } from "@eurekai/shared/src/data";
+// import { Notification, NotificationKind } from "@eurekai/shared/src/data";
+// import { PictureElement } from "./components/picture.element";
+// import { PromptElement } from "./components/prompt.element";
 import { PromptEditor } from "./editors/prompt.editor";
-import { PicturesPage } from "./pages/pictures.page";
-import { PromptElement } from "./components/prompt.element";
-import { PictureElement } from "./components/picture.element";
+import { AbstractPageElement, DataProvider } from "./pages/abstract.page.element";
+// import { PicturesPage } from "./pages/pictures.page";
+import { SQLHandler } from "@dagda/sql-shared/src/sql.handler";
+import { APP_FOREIGN_KEYS, Tables } from "@eurekai/shared/src/types";
+import { ProjectsPage } from "./pages/projects.page";
+// import { SettingsPage } from "./pages/settings.page";
+import { SQLClientConnector } from "@dagda/sql-proxy-client/src/client.connector";
 
 interface PageConstructor {
-    new(cache: DataCache): AbstractPageElement;
+    new(data: DataProvider): AbstractPageElement;
 }
 
 // -- Make sure components are loaded --
 ProjectsPage;
-PicturesPage;
+// PicturesPage;
 
-PromptElement;
-PromptElement;
-PictureElement;
+// PromptElement;
+// PromptElement;
+// PictureElement;
 
 PromptEditor;
 
 
-class App {
-    protected readonly _api: API = new API();
-    protected readonly _cache: DataCache = new DataCache(this._api);
+class App implements DataProvider {
+
+    protected _sqlConnector: SQLClientConnector<Tables>;
+    protected _sqlHandler: SQLHandler<Tables>;
 
     protected readonly _pageDiv: HTMLDivElement;
     protected _currentPage: AbstractPageElement | null = null;
@@ -38,21 +40,16 @@ class App {
     protected _lastRefreshed: DOMHighResTimeStamp | null = null;
 
     constructor() {
-        // -- Bind notifications --
-        this._api.notificationCallback = (api: API, notification: Notification) => {
-            this._cache.pushNotification(notification);
-        };
-        this._cache.notificationCallback = (data: DataCache, notifications: Notification[]) => {
-            this._refreshNotificationsCount(notifications);
-        };
+        this._sqlConnector = new SQLClientConnector<Tables>(APP_FOREIGN_KEYS);
+        this._sqlHandler = new SQLHandler(this._sqlConnector);
 
         // -- Bind refresh button --
         const refreshButton = document.getElementById("refreshButton");
         if (refreshButton) {
             refreshButton.addEventListener("click", async () => {
                 console.debug("Refresh button clicked");
-                this._cache.clearNotifications();
-                this._cache.markDirty();
+                // this._cache.clearNotifications();
+                this._sqlHandler.markCacheDirty();
                 if (this._currentPage) {
                     await this._currentPage.refresh();
                 }
@@ -66,7 +63,7 @@ class App {
         // -- Bind pages --
         this._pageDiv = document.getElementById("pageDiv") as HTMLDivElement;
         this._bindPage("projectsButton", ProjectsPage);
-        this._bindPage("settingsButton", SettingsPage);
+        // this._bindPage("settingsButton", SettingsPage);
 
         this.setPage(ProjectsPage);
 
@@ -82,6 +79,10 @@ class App {
         window.requestAnimationFrame(step);
     }
 
+    public getSQLHandler(): SQLHandler<Tables> {
+        return this._sqlHandler;
+    }
+
     protected _bindPage(buttonId: string, pageConstructor: PageConstructor): void {
         const button = document.getElementById(buttonId);
         if (button) {
@@ -95,7 +96,7 @@ class App {
         // -- Empty page --
         this._pageDiv.innerHTML = "";
         // -- Create page --
-        this._currentPage = new pageConstructor(this._cache);
+        this._currentPage = new pageConstructor(this);
         this._pageDiv.appendChild(this._currentPage);
         this._currentPage.refresh(); // Catched by the page
     }
@@ -104,48 +105,48 @@ class App {
         document.body.classList.toggle("locked", locked);
     }
 
-    protected _refreshNotificationsCount(notifications: Notification[]): void {
-        const notificationCountSpan = document.getElementById("notificationCountSpan");
-        if (notificationCountSpan == null) {
-            return;
-        }
+    // protected _refreshNotificationsCount(notifications: Notification[]): void {
+    //     const notificationCountSpan = document.getElementById("notificationCountSpan");
+    //     if (notificationCountSpan == null) {
+    //         return;
+    //     }
 
-        let newCount = 0;
-        let newHighresCount = 0;
-        let errorsCount = 0;
-        let unknownCount = 0;
-        for (const notification of notifications) {
-            switch (notification.kind) {
-                case NotificationKind.IMAGE_NEW:
-                    newCount++;
-                    break;
-                case NotificationKind.IMAGE_NEW_HIGHRES:
-                    newHighresCount++;
-                    break;
-                case NotificationKind.IMAGE_ERROR:
-                    errorsCount++;
-                    break;
-                default:
-                    unknownCount++;
-                    break;
-            }
-        }
+    //     let newCount = 0;
+    //     let newHighresCount = 0;
+    //     let errorsCount = 0;
+    //     let unknownCount = 0;
+    //     for (const notification of notifications) {
+    //         switch (notification.kind) {
+    //             case NotificationKind.IMAGE_NEW:
+    //                 newCount++;
+    //                 break;
+    //             case NotificationKind.IMAGE_NEW_HIGHRES:
+    //                 newHighresCount++;
+    //                 break;
+    //             case NotificationKind.IMAGE_ERROR:
+    //                 errorsCount++;
+    //                 break;
+    //             default:
+    //                 unknownCount++;
+    //                 break;
+    //         }
+    //     }
 
-        notificationCountSpan.classList.remove("bg-danger", "bg-secondary", "bg-success");
-        if (errorsCount > 0) {
-            notificationCountSpan.innerText = "" + errorsCount;
-            notificationCountSpan.classList.add("bg-primary");
-        } else if (newCount > 0 || newHighresCount > 0) {
-            notificationCountSpan.innerText = `${newCount}+${newHighresCount}`;
-            notificationCountSpan.classList.add("bg-success");
-        } else if (unknownCount > 0) {
-            notificationCountSpan.innerText = "" + unknownCount;
-            notificationCountSpan.classList.add("bg-secondary");
-        } else {
-            notificationCountSpan.innerText = "-";
-            notificationCountSpan.classList.add("bg-secondary");
-        }
-    }
+    //     notificationCountSpan.classList.remove("bg-danger", "bg-secondary", "bg-success");
+    //     if (errorsCount > 0) {
+    //         notificationCountSpan.innerText = "" + errorsCount;
+    //         notificationCountSpan.classList.add("bg-primary");
+    //     } else if (newCount > 0 || newHighresCount > 0) {
+    //         notificationCountSpan.innerText = `${newCount}+${newHighresCount}`;
+    //         notificationCountSpan.classList.add("bg-success");
+    //     } else if (unknownCount > 0) {
+    //         notificationCountSpan.innerText = "" + unknownCount;
+    //         notificationCountSpan.classList.add("bg-secondary");
+    //     } else {
+    //         notificationCountSpan.innerText = "-";
+    //         notificationCountSpan.classList.add("bg-secondary");
+    //     }
+    // }
 }
 
 /** Singleton of the App */

@@ -1,5 +1,5 @@
 {
-    "name": "@dagda/sql-client",
+    "name": "@dagda/sql-proxy-client",
     "version": "1.0.0",
     "description": "Browser implementation of the SQLConnector",
     "author": "Matthieu Aubry",
@@ -7,7 +7,8 @@
     "scripts": {},
     "dependencies": {
         "@dagda/sql-shared": "*",
-        "@dagda/sql-proxy-shared": "*"
+        "@dagda/sql-proxy-shared": "*",
+        "@dagda/api-client": "*"
     },
     "devDependencies": {
         "@dagda/build": "*"

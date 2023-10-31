@@ -1,4 +1,4 @@
-import { Router, Application } from "express";
+import { Application, Router } from "express";
 
 /** Base typing for a list of methods */
 type BaseMethods = { [MethodName: string]: (...args: any) => any };
@@ -34,5 +34,6 @@ export function buildAPIRouter<Methods extends BaseMethods>(api: Methods): Route
 
 /** Simply register an API on the application */
 export function registerAPI<Methods extends BaseMethods>(app: Application, url: string, api: Methods): void {
-    app.use(url, buildAPIRouter(api));
+    console.log(`Registered /${url}/[${Object.keys(api).join(", ")}]`);
+    app.use(`/${url}/`, buildAPIRouter(api));
 }
