@@ -88,9 +88,17 @@ export class SQLiteConnector<Tables extends TablesDefinition> extends SQLConnect
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
             ...fieldTypes
         } as { [fields in keyof Required<T>]: string };
-        await this._createTableIfNeeded(tableName, fieldTypesFull);
-        for (const fieldName in fieldTypesFull) {
-            this._createFieldIfNeeded(tableName, fieldName as keyof Required<T>, fieldTypesFull[fieldName]);
+        try {
+            this._run("BEGIN");
+            await this._createTableIfNeeded(tableName, fieldTypesFull);
+            for (const fieldName in fieldTypesFull) {
+                this._createFieldIfNeeded(tableName, fieldName as keyof Required<T>, fieldTypesFull[fieldName]);
+            }
+            this._run("COMMIT");
+        } catch (e) {
+            console.error(e);
+            this._run("ROLLBACK");
+            throw e;
         }
     }
 
