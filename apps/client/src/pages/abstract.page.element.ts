@@ -1,9 +1,9 @@
 import { SQLHandler } from "@dagda/shared/sql/handler";
 import { SQLTransaction } from "@dagda/shared/sql/transaction";
-import { Tables } from "@eurekai/shared/src/types";
+import { Filters, Tables } from "@eurekai/shared/src/types";
 
 export interface DataProvider {
-    getSQLHandler(): SQLHandler<Tables>
+    getSQLHandler(): SQLHandler<Tables, Filters>
 }
 
 /**

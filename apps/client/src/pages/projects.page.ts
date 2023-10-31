@@ -49,7 +49,9 @@ export class ProjectsPage extends AbstractPageElement {
 
     /** @inheritdoc */
     public override async _refresh(): Promise<void> {
-        await this._data.getSQLHandler().loadTable("projects");
+        await this._data.getSQLHandler().fetch([
+            { type: "projects", options: undefined }
+        ]);
 
         // -- Fetch projects --
         const projects = this._data.getSQLHandler().getItems("projects");

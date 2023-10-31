@@ -6,9 +6,6 @@ import { registerAPI } from "../api";
 
 export function registerAPI_SQLConnectorProxy<Tables extends TablesDefinition>(app: Application, connector: SQLConnector<Tables>): void {
     const api: SQLConnectorAPI<Tables> = {
-        getItems: <TableName extends keyof Tables>(tableName: TableName) => {
-            return connector.getItems(tableName);
-        },
         submit: (data: SQLTransactionData<Tables>) => {
             return connector.submit(data);
         }

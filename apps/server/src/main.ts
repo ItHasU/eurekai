@@ -6,7 +6,7 @@ import { AppServer } from "./modules/server";
 async function main(): Promise<void> {
     const apiURL = getEnvString("API_URL");
 
-    const connector = new SQLiteConnector<Tables>(APP_FOREIGN_KEYS, "./eurekai.db");
+    const connector = new SQLiteConnector<Tables>("./eurekai.db", APP_FOREIGN_KEYS);
     connector.initTable("projects", {
         "name": "TEXT",
         "featuredAttachmentId": "INTEGER NULL",

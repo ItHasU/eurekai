@@ -5,26 +5,24 @@ import sqlite from "better-sqlite3";
 type SQLValue = number | string | null;
 
 export class SQLiteConnector<Tables extends TablesDefinition> extends SQLConnector<Tables> {
-    /** The database */
+
     protected _db: sqlite.Database;
 
-    constructor(foreignKeys: ForeignKeys<Tables>, filename: string) {
+    constructor(filename: string, foreignKeys: ForeignKeys<Tables>) {
         super(foreignKeys);
         this._db = new sqlite(filename);
     }
 
-    //#region General management ----------------------------------------------
+    public get db(): sqlite.Database { return this._db; }
 
-    public override getItems<TableName extends keyof Tables>(tableName: TableName): Promise<Tables[TableName][]> {
-        return this._all<Tables[TableName]>(`SELECT * FROM ${tableName as string}`);
-    }
+    //#region General management ----------------------------------------------
 
     public override async submit(transactionData: SQLTransactionData<Tables>): Promise<SQLTransactionResult> {
         const result: SQLTransactionResult = {
             updatedIds: {}
         }
         try {
-            await this._run("BEGIN");
+            await this.run("BEGIN");
             for (const operation of transactionData) {
                 switch (operation.type) {
                     case OperationType.INSERT: {
@@ -40,7 +38,7 @@ export class SQLiteConnector<Tables extends TablesDefinition> extends SQLConnect
                             values.push(JSON.stringify(operation.options.item[key]));
                         }
                         const query = `INSERT INTO ${operation.options.table as string} (${columnNames.join(",")}) VALUES (${columnNames.map(_ => "?").join(",")})`;
-                        const newId = await this._insert(query, values);
+                        const newId = await this.insert(query, values);
                         result.updatedIds[operation.options.item.id] = newId;
                         break;
                     }
@@ -58,21 +56,21 @@ export class SQLiteConnector<Tables extends TablesDefinition> extends SQLConnect
                         }
                         values.push(this._getUpdatedId(result, operation.options.id));
                         const query = `UPDATE ${operation.options.table as string} SET ${columnNames.join(",")} WHERE id=?`;
-                        await this._run(query, values);
+                        await this.run(query, values);
                         break;
                     }
                     case OperationType.DELETE: {
                         const query = `DELETE FROM ${operation.options.table as string} WHERE id=?`;
-                        await this._run(query, [this._getUpdatedId(result, operation.options.id)]);
+                        await this.run(query, [this._getUpdatedId(result, operation.options.id)]);
                         break;
                     }
                     default:
                         throw new Error("Not implemented");
                 }
             }
-            await this._run("COMMIT");
+            await this.run("COMMIT");
         } catch (e) {
-            this._run("ROLLBACK");
+            this.run("ROLLBACK");
             throw e; // Forward the exception to notice the caller that there was an error
         }
 
@@ -89,30 +87,30 @@ export class SQLiteConnector<Tables extends TablesDefinition> extends SQLConnect
             ...fieldTypes
         } as { [fields in keyof Required<T>]: string };
         try {
-            this._run("BEGIN");
+            this.run("BEGIN");
             await this._createTableIfNeeded(tableName, fieldTypesFull);
             for (const fieldName in fieldTypesFull) {
                 this._createFieldIfNeeded(tableName, fieldName as keyof Required<T>, fieldTypesFull[fieldName]);
             }
-            this._run("COMMIT");
+            this.run("COMMIT");
         } catch (e) {
             console.error(e);
-            this._run("ROLLBACK");
+            this.run("ROLLBACK");
             throw e;
         }
     }
 
     protected _createTableIfNeeded<TN extends keyof Tables, T extends Tables[TN] = Tables[TN]>(tableName: TN, fieldTypes: { [fields in keyof Required<T>]: string }): Promise<void> {
-        return this._run(`CREATE TABLE IF NOT EXISTS ${tableName as string} (${Object.entries(fieldTypes).map(([fieldName, fieldType]) => `'${fieldName}' ${fieldType}`).join(", ")})`, undefined);
+        return this.run(`CREATE TABLE IF NOT EXISTS ${tableName as string} (${Object.entries(fieldTypes).map(([fieldName, fieldType]) => `'${fieldName}' ${fieldType}`).join(", ")})`, undefined);
     }
 
     /** @returns true if column was created */
     protected _createFieldIfNeeded<TN extends keyof Tables, T extends Tables[TN] = Tables[TN]>(tableName: TN, fieldName: keyof Required<T>, fieldType: string): Promise<boolean> {
-        return this._run(`ALTER TABLE ${tableName as string} ADD COLUMN ${fieldName as string} ${fieldType}`, undefined).catch(() => false).then(() => true);
+        return this.run(`ALTER TABLE ${tableName as string} ADD COLUMN ${fieldName as string} ${fieldType}`, undefined).catch(() => false).then(() => true);
     }
 
     /** Get rows */
-    protected _all<Row>(query: string, params: SQLValue[] = []): Promise<Row[]> {
+    public all<Row>(query: string, params: SQLValue[] = []): Promise<Row[]> {
         try {
             const rows = this._db.prepare(query).all(...params) as Row[];
             return Promise.resolve(rows);
@@ -122,7 +120,7 @@ export class SQLiteConnector<Tables extends TablesDefinition> extends SQLConnect
         }
     }
 
-    protected _get<Row>(query: string, params: SQLValue[] = []): Promise<Row | null> {
+    public get<Row>(query: string, params: SQLValue[] = []): Promise<Row | null> {
         try {
             const row = this._db.prepare(query).get(...params) as Row | undefined;
             return Promise.resolve(row ?? null);
@@ -132,16 +130,16 @@ export class SQLiteConnector<Tables extends TablesDefinition> extends SQLConnect
         }
     }
 
-    protected async _insert(query: string, params: SQLValue[] = []): Promise<number> {
+    public async insert(query: string, params: SQLValue[] = []): Promise<number> {
         try {
-            await this._run(query, params);
-            return (await this._get<{ id: number }>("SELECT last_insert_rowid() AS id", []))?.id ?? -1;
+            await this.run(query, params);
+            return (await this.get<{ id: number }>("SELECT last_insert_rowid() AS id", []))?.id ?? -1;
         } catch (e) {
             return Promise.reject(e);
         }
     }
 
-    protected _run(query: string, params: SQLValue[] = []): Promise<void> {
+    public run(query: string, params: SQLValue[] = []): Promise<void> {
         console.log(query, params);
         try {
             this._db.prepare(query).run(...params);

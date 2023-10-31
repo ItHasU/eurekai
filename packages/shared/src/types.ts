@@ -1,4 +1,4 @@
-import { ForeignKeys } from "@dagda/shared/sql/types";
+import { Fetcher, ForeignKeys } from "@dagda/shared/sql/types";
 
 //#region TXT2IMG -------------------------------------------------------------
 
@@ -88,6 +88,22 @@ export const APP_FOREIGN_KEYS: ForeignKeys<Tables> = {
     attachments: {
         data: false
     }
+}
+
+type BaseFilter<T extends string, Options> = {
+    type: T;
+    options: Options;
+}
+
+export type ProjectsFilter = BaseFilter<"projects", undefined>;
+export type ProjectFilter = BaseFilter<"project", { projectId: number }>;
+
+export type Filters = ProjectsFilter | ProjectFilter;
+
+export const FETCHER_URL = "/fetch";
+export type AppFetcher = Fetcher<Tables, Filters>;
+export type FetcherAPI = {
+    fetch: AppFetcher;
 }
 
 export type TableName = keyof Tables;

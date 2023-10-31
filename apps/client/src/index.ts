@@ -2,9 +2,11 @@ import "bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "bootstrap/dist/css/bootstrap.css";
 
+import { apiCall } from "@dagda/client/api";
 import { SQLClientConnector } from "@dagda/client/sql/client.connector";
 import { SQLHandler } from "@dagda/shared/sql/handler";
-import { APP_FOREIGN_KEYS, Tables } from "@eurekai/shared/src/types";
+import { Data, SQLFetcher } from "@dagda/shared/sql/types";
+import { APP_FOREIGN_KEYS, FETCHER_URL, FetcherAPI, Filters, ProjectFilter, Tables } from "@eurekai/shared/src/types";
 import { PromptEditor } from "./editors/prompt.editor";
 import { AbstractPageElement, DataProvider } from "./pages/abstract.page.element";
 import { ProjectsPage } from "./pages/projects.page";
@@ -33,7 +35,8 @@ PromptEditor;
 class App implements DataProvider {
 
     protected _sqlConnector: SQLClientConnector<Tables>;
-    protected _sqlHandler: SQLHandler<Tables>;
+    protected _sqlFetcher: SQLFetcher<Tables, Filters>;
+    protected _sqlHandler: SQLHandler<Tables, Filters>;
 
     protected readonly _pageDiv: HTMLDivElement;
     protected _currentPage: AbstractPageElement | null = null;
@@ -42,7 +45,11 @@ class App implements DataProvider {
 
     constructor() {
         this._sqlConnector = new SQLClientConnector<Tables>(APP_FOREIGN_KEYS);
-        this._sqlHandler = new SQLHandler(this._sqlConnector);
+        this._sqlFetcher = new SQLFetcher<Tables, Filters>({
+            fetch: this._fetch.bind(this),
+            equals: this._filterEquals.bind(this)
+        });
+        this._sqlHandler = new SQLHandler(this._sqlConnector, this._sqlFetcher);
 
         // -- Bind refresh button --
         const refreshButton = document.getElementById("refreshButton");
@@ -80,7 +87,7 @@ class App implements DataProvider {
         window.requestAnimationFrame(step);
     }
 
-    public getSQLHandler(): SQLHandler<Tables> {
+    public getSQLHandler(): SQLHandler<Tables, Filters> {
         return this._sqlHandler;
     }
 
@@ -148,6 +155,26 @@ class App implements DataProvider {
     //         notificationCountSpan.classList.add("bg-secondary");
     //     }
     // }
+
+    protected _filterEquals(newFilter: Filters, oldFilter: Filters): boolean {
+        if (newFilter.type !== oldFilter.type) {
+            return false;
+        } else {
+            switch (newFilter.type) {
+                case "projects":
+                    return true;
+                case "project":
+                    return newFilter.options.projectId === (oldFilter as ProjectFilter).options.projectId;
+                default:
+                    // Not implemented
+                    return false;
+            }
+        }
+    }
+
+    protected async _fetch(filter: Filters): Promise<Data<Tables>> {
+        return apiCall<FetcherAPI, "fetch">(FETCHER_URL, "fetch", filter);
+    }
 }
 
 /** Singleton of the App */

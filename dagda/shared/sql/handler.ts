@@ -1,7 +1,7 @@
 import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "../tools/events";
 import { SQLCache, SQLCacheHandler } from "./cache";
 import { OperationType, SQLTransaction } from "./transaction";
-import { SQLConnector, TablesDefinition } from "./types";
+import { SQLConnector, SQLFetcher, TablesDefinition } from "./types";
 
 type SQLEvents = {
     "state": {
@@ -19,23 +19,15 @@ type SQLEvents = {
 }
 
 /** 
- * Utility class allowing to fetch data and store them in a cache.
+ * Utility class allowing to fetch data, store them in a cache and submit modifications.
  * The cache can then be accessed through synchronous methods.
  */
-export class SQLHandler<Tables extends TablesDefinition> implements SQLCacheHandler<Tables>, EventHandler<SQLEvents> {
+export class SQLHandler<Tables extends TablesDefinition, Filter> implements SQLCacheHandler<Tables>, EventHandler<SQLEvents> {
 
-    /** 
-     * Is cache dirty
-     * If true, the cache will be erased on next get.
-     */
-    protected _cacheDirty: boolean = false;
-
+    /** Current state of the temporary id counter */
     protected _nextId: number = 0;
 
-    /** Les caches de chaque table */
-    protected readonly _caches: { [TableName in keyof Tables]?: SQLCache<Tables[TableName]> } = {};
-
-    constructor(protected _connector: SQLConnector<Tables>) { }
+    constructor(protected _connector: SQLConnector<Tables>, protected _fetcher: SQLFetcher<Tables, Filter>) { }
 
     //#region Events ----------------------------------------------------------
 
@@ -67,68 +59,25 @@ export class SQLHandler<Tables extends TablesDefinition> implements SQLCacheHand
 
     //#region Cache -----------------------------------------------------------
 
-    public getNextId(): number {
-        return --this._nextId;
-    }
-
+    /** Mark cache as dirty, will force reload on next fetch */
     public markCacheDirty(): void {
-        this._cacheDirty = true;
+        this._fetcher.markCacheDirty();
     }
 
-    /** Load the full table */
-    public async loadTable(tableName: (keyof Tables)): Promise<void> {
+    /** Fetch part of the data corresponding to the filter */
+    public async fetch(filters: Filter[]): Promise<void> {
         this._fireStateChanged({ downloading: true });
-        const items = await this._connector.getItems(tableName);
-        this.getCache(tableName).setItems(items);
-        this._fireStateChanged({ downloading: false });
+        try {
+            await this._fetcher.fetch(filters);
+        } finally {
+            this._fireStateChanged({ downloading: false });
+        }
     }
 
     /** Get or build an empty cache */
     public getCache<TableName extends keyof Tables>(tableName: TableName): SQLCache<Tables[TableName]> {
-        let cache: SQLCache<Tables[TableName]> | undefined = this._caches[tableName];
-        if (cache == null) {
-            this._caches[tableName] = cache = new SQLCache();
-        }
-        return cache;
+        return this._fetcher.getCache(tableName);
     }
-
-    //#endregion
-
-    //#region Transactions ----------------------------------------------------
-
-    /** 
-     * Submit the transaction to the connector.
-     * Once the result is received, the cache is updated
-     */
-    public async submit(transaction: SQLTransaction<Tables>): Promise<void> {
-        this._fireStateChanged({ uploading: true });
-        // -- Call submit on the connector --
-        const result = await this._connector.submit(transaction.operations);
-        // -- Once done, update local DTO --
-        for (const op of transaction.operations) {
-            switch (op.type) {
-                case OperationType.INSERT:
-                    const tmpId = op.options.item.id;
-                    if (tmpId < 0) {
-                        const item = this.getCache(op.options.table).getById(tmpId);
-                        if (item) {
-                            // Update the id
-                            item.id = result.updatedIds[tmpId];
-                            // Make sure the item is registered
-                            this.getCache(op.options.table).insert(item);
-                        }
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-        this._fireStateChanged({ uploading: false });
-    }
-
-    //#endregion
-
-    //#region Get item(s) from the cache --------------------------------------
 
     /** 
      * Get an item from cache or fetch from the server.
@@ -148,6 +97,47 @@ export class SQLHandler<Tables extends TablesDefinition> implements SQLCacheHand
      */
     public getItems<TableName extends keyof Tables>(tableName: TableName): Tables[TableName][] {
         return this.getCache(tableName).getItems();
+    }
+
+    //#endregion
+
+    //#region Transactions ----------------------------------------------------
+
+    public getNextId(): number {
+        return --this._nextId;
+    }
+
+    /** 
+     * Submit the transaction to the connector.
+     * Once the result is received, the cache is updated
+     */
+    public async submit(transaction: SQLTransaction<Tables>): Promise<void> {
+        this._fireStateChanged({ uploading: true });
+        try {
+            // -- Call submit on the connector --
+            const result = await this._connector.submit(transaction.operations);
+            // -- Once done, update local DTO --
+            for (const op of transaction.operations) {
+                switch (op.type) {
+                    case OperationType.INSERT:
+                        const tmpId = op.options.item.id;
+                        if (tmpId < 0) {
+                            const item = this.getCache(op.options.table).getById(tmpId);
+                            if (item) {
+                                // Update the id
+                                item.id = result.updatedIds[tmpId];
+                                // Make sure the item is registered
+                                this.getCache(op.options.table).insert(item);
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        } finally {
+            this._fireStateChanged({ uploading: false });
+        }
     }
 
     //#endregion
