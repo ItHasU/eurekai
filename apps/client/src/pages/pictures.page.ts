@@ -1,11 +1,8 @@
-import { BooleanEnum, ComputationStatus, PictureDTO, ProjectDTO, PromptDTO } from "@eurekai/shared/src/types";
-import { AbstractPageElement } from "./abstract.page.element";
+import { BooleanEnum, ComputationStatus, PictureDTO, PromptDTO, SeedDTO } from "@eurekai/shared/src/types";
 import { PictureElement } from "src/components/picture.element";
-import { zipPictures } from "@eurekai/shared/src/utils";
 import { PromptElement } from "src/components/prompt.element";
-import { DataCache } from "@eurekai/shared/src/cache";
-import { showSelect } from "src/components/tools";
 import { PromptEditor } from "src/editors/prompt.editor";
+import { AbstractPageElement, DataProvider } from "./abstract.page.element";
 
 function scrollToNextSibling(node: HTMLElement): void {
     const parent = node.parentElement;
@@ -31,8 +28,8 @@ export class PicturesPage extends AbstractPageElement {
     protected readonly _promptCard: HTMLDivElement;
     protected readonly _promptEditor: PromptEditor;
 
-    constructor(cache: DataCache) {
-        super(require("./pictures.page.html").default, cache);
+    constructor(data: DataProvider) {
+        super(require("./pictures.page.html").default, data);
 
         // -- Get components --
         this._picturesDiv = this.querySelector("#picturesDiv") as HTMLDivElement;
@@ -54,16 +51,29 @@ export class PicturesPage extends AbstractPageElement {
         // -- Clear --
         this._picturesDiv.innerHTML = "";
 
+        // -- Make sure cache is updated --
+        const projectId = this._data.getSelectedProject();
+        if (projectId == null) {
+            return;
+        }
+
+        await this._data.getSQLHandler().fetch([{
+            type: "project",
+            options: {
+                projectId
+            }
+        }]);
+
         // -- Fetch prompts --
-        const prompts = await this._cache.getPrompts();
+        const prompts = this._data.getSQLHandler().getCache("prompts").getItems();
         if (prompts.length === 0) {
             this._openPromptPanel();
             return;
         }
 
-        const picturesRaw = await this._cache.getPictures();
-        const preferredSeeds = await this._cache.getSeeds();
-        const project = await this._cache.getSelectedProject();
+        const picturesRaw = this._data.getSQLHandler().getCache("pictures").getItems();
+        const preferredSeeds: SeedDTO[] = [];//await this._cache.getSeeds();
+        const project = this._data.getSQLHandler().getCache("projects").getById(projectId)
 
         const promptsMap: { [id: number]: PromptDTO } = {};
         for (const prompt of prompts) {
@@ -115,40 +125,40 @@ export class PicturesPage extends AbstractPageElement {
             const promptItem = new PromptElement(prompt, {
                 pictures: pictures.filter(p => p.promptId === prompt.id),
                 start: async () => {
-                    await this._cache.withData(async (data) => {
-                        await data.setPromptActive(prompt.id, true);
-                        prompt.active = true;
-                    });
+                    // await this._cache.withData(async (data) => {
+                    //     await data.setPromptActive(prompt.id, true);
+                    //     prompt.active = true;
+                    // });
                     promptItem.refresh();
                     // Won't refresh pictures, but we don't care
                 },
                 stop: async () => {
-                    await this._cache.withData(async (data) => {
-                        await data.setPromptActive(prompt.id, false);
-                        prompt.active = false;
-                    });
+                    // await this._cache.withData(async (data) => {
+                    //     await data.setPromptActive(prompt.id, false);
+                    //     prompt.active = false;
+                    // });
                     promptItem.refresh();
                     // Won't refresh pictures, but we don't care
                 },
                 delete: async () => {
-                    await this._cache.withData(async (data) => {
-                        await data.movePrompt(prompt.id, null);
-                    });
+                    // await this._cache.withData(async (data) => {
+                    //     await data.movePrompt(prompt.id, null);
+                    // });
                     promptItem.remove();
                 },
                 move: async () => {
-                    await this._cache.withData(async (data) => {
-                        const projects = await data.getProjects();
-                        const selectedProject = await showSelect<ProjectDTO>(projects, {
-                            valueKey: "id",
-                            displayString: "name",
-                            selected: projects.find(p => p.id === prompt.projectId)
-                        });
-                        if (selectedProject != null && selectedProject.id != prompt.projectId) {
-                            await data.movePrompt(prompt.id, selectedProject.id);
-                            promptItem.remove();
-                        }
-                    });
+                    // await this._cache.withData(async (data) => {
+                    //     const projects = await data.getProjects();
+                    //     const selectedProject = await showSelect<ProjectDTO>(projects, {
+                    //         valueKey: "id",
+                    //         displayString: "name",
+                    //         selected: projects.find(p => p.id === prompt.projectId)
+                    //     });
+                    //     if (selectedProject != null && selectedProject.id != prompt.projectId) {
+                    //         await data.movePrompt(prompt.id, selectedProject.id);
+                    //         promptItem.remove();
+                    //     }
+                    // });
                 },
                 clone: this._openPromptPanel.bind(this, prompt)
             });
@@ -183,72 +193,72 @@ export class PicturesPage extends AbstractPageElement {
             // -- Add the picture --
             const item = new PictureElement(picture, {
                 prompt,
-                isPreferredSeed: preferredSeeds.has(picture.seed),
+                isPreferredSeed: false, // preferredSeeds.has(picture.seed),
                 isLockable: project?.lockable === BooleanEnum.TRUE,
                 accept: async () => {
-                    await this._cache.withData(async (data) => {
-                        await data.setPictureStatus(picture.id, ComputationStatus.ACCEPTED);
-                        picture.status = ComputationStatus.ACCEPTED;
-                    });
+                    // await this._cache.withData(async (data) => {
+                    //     await data.setPictureStatus(picture.id, ComputationStatus.ACCEPTED);
+                    //     picture.status = ComputationStatus.ACCEPTED;
+                    // });
                     item.refresh();
                     scrollToNextSibling(item);
                 },
                 reject: async () => {
-                    await this._cache.withData(async (data) => {
-                        await data.setPictureStatus(picture.id, ComputationStatus.REJECTED);
-                        picture.status = ComputationStatus.REJECTED;
-                    });
+                    // await this._cache.withData(async (data) => {
+                    //     await data.setPictureStatus(picture.id, ComputationStatus.REJECTED);
+                    //     picture.status = ComputationStatus.REJECTED;
+                    // });
                     item.refresh();
                     scrollToNextSibling(item);
                 },
                 start: async () => {
-                    await this._cache.withData(async (data) => {
-                        await data.setPromptActive(picture.promptId, true);
-                        if (prompt) { prompt.active = true; }
-                    });
+                    // await this._cache.withData(async (data) => {
+                    //     await data.setPromptActive(picture.promptId, true);
+                    //     if (prompt) { prompt.active = true; }
+                    // });
                     item.refresh();
                 },
                 stop: async () => {
-                    await this._cache.withData(async (data) => {
-                        await data.setPromptActive(picture.promptId, false);
-                        if (prompt) { prompt.active = false; }
-                    });
+                    // await this._cache.withData(async (data) => {
+                    //     await data.setPromptActive(picture.promptId, false);
+                    //     if (prompt) { prompt.active = false; }
+                    // });
                     item.refresh();
                 },
                 toggleSeed: async () => {
-                    await this._cache.withData(async (data) => {
-                        await data.setSeedPreferred(prompt.projectId, picture.seed, !item._options.isPreferredSeed);
-                        item._options.isPreferredSeed = !item._options.isPreferredSeed;
-                    });
+                    // await this._cache.withData(async (data) => {
+                    //     await data.setSeedPreferred(prompt.projectId, picture.seed, !item._options.isPreferredSeed);
+                    //     item._options.isPreferredSeed = !item._options.isPreferredSeed;
+                    // });
                     item.refresh();
                 },
                 toggleHighres: async () => {
-                    await this._cache.withData(async (data) => {
-                        switch (picture.highresStatus) {
-                            case ComputationStatus.REJECTED:
-                            case ComputationStatus.ERROR:
-                            case ComputationStatus.NONE:
-                                await data.setPictureHighres(picture.id, true);
-                                picture.highresStatus = ComputationStatus.PENDING;
-                                break;
-                            case ComputationStatus.PENDING:
-                                await data.setPictureHighres(picture.id, false);
-                                picture.highresStatus = ComputationStatus.NONE;
-                                break;
-                            case ComputationStatus.COMPUTING:
-                            case ComputationStatus.DONE:
-                                // No way to cancel from there
-                                break;
-                        }
-                    });
+                    // await this._cache.withData(async (data) => {
+                    //     switch (picture.highresStatus) {
+                    //         case ComputationStatus.REJECTED:
+                    //         case ComputationStatus.ERROR:
+                    //         case ComputationStatus.NONE:
+                    //             await data.setPictureHighres(picture.id, true);
+                    //             picture.highresStatus = ComputationStatus.PENDING;
+                    //             break;
+                    //         case ComputationStatus.PENDING:
+                    //             await data.setPictureHighres(picture.id, false);
+                    //             picture.highresStatus = ComputationStatus.NONE;
+                    //             break;
+                    //         case ComputationStatus.COMPUTING:
+                    //         case ComputationStatus.DONE:
+                    //             // No way to cancel from there
+                    //             break;
+                    //     }
+                    // });
                     item.refresh();
                 },
                 setAsFeatured: async () => {
-                    await this._cache.withData(async (data) => {
-                        await data.setProjectFeaturedImage(prompt.projectId, picture.attachmentId ?? null);
-                    });
+                    // await this._cache.withData(async (data) => {
+                    //     await data.setProjectFeaturedImage(prompt.projectId, picture.attachmentId ?? null);
+                    // });
                 },
-                fetch: this._cache.data.getAttachment.bind(this._cache.data)
+                fetch: () => Promise.resolve("") //this._cache.data.getAttachment.bind(this._cache.data)
             });
             item.classList.add("col-sm-12", "col-md-6", "col-lg-4");
             picturesDiv.appendChild(item);
@@ -292,26 +302,26 @@ export class PicturesPage extends AbstractPageElement {
     }
 
     protected async _onZipClick(): Promise<void> {
-        const projectId = this._cache.getSelectedProjectId();
-        if (!projectId) {
-            return;
-        }
-        try {
-            const zip = await zipPictures({
-                data: this._cache.data,
-                projectId,
-                filter: this._getFilter()
-            });
-            const blob = await zip.generateAsync({ type: "blob" });
-            const a: HTMLAnchorElement = document.createElement("a");
-            const url = window.URL.createObjectURL(blob);
-            a.href = url;
-            a.download = "pictures.zip";
-            a.click();
-            window.URL.revokeObjectURL(url);
-        } catch (e) {
-            console.error(e);
-        }
+        // const projectId = this._cache.getSelectedProjectId();
+        // if (!projectId) {
+        //     return;
+        // }
+        // try {
+        //     const zip = await zipPictures({
+        //         data: this._cache.data,
+        //         projectId,
+        //         filter: this._getFilter()
+        //     });
+        //     const blob = await zip.generateAsync({ type: "blob" });
+        //     const a: HTMLAnchorElement = document.createElement("a");
+        //     const url = window.URL.createObjectURL(blob);
+        //     a.href = url;
+        //     a.download = "pictures.zip";
+        //     a.click();
+        //     window.URL.revokeObjectURL(url);
+        // } catch (e) {
+        //     console.error(e);
+        // }
     }
 
     protected _openPromptPanel(prompt?: PromptDTO): void {
@@ -327,15 +337,15 @@ export class PicturesPage extends AbstractPageElement {
 
     protected async _onNewPromptClick(): Promise<void> {
         const prompt = this._promptEditor.getPrompt();
-        const projectId = this._cache.getSelectedProjectId();
+        const projectId = this._data.getSelectedProject();
         if (projectId != null) {
-            await this._cache.withData(async (data) => {
-                await data.addPrompt({
-                    ...prompt,
-                    projectId: projectId,
-                    active: true,
-                });
-            });
+            // await this._cache.withData(async (data) => {
+            //     await data.addPrompt({
+            //         ...prompt,
+            //         projectId: projectId,
+            //         active: true,
+            //     });
+            // });
             await this.refresh();
         }
         this._promptCard.classList.add("d-none");

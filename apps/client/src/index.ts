@@ -12,9 +12,9 @@ import { AbstractPageElement, DataProvider } from "./pages/abstract.page.element
 import { ProjectsPage } from "./pages/projects.page";
 
 // import { Notification, NotificationKind } from "@eurekai/shared/src/data";
-// import { PictureElement } from "./components/picture.element";
-// import { PromptElement } from "./components/prompt.element";
-// import { PicturesPage } from "./pages/pictures.page";
+import { PictureElement } from "./components/picture.element";
+import { PromptElement } from "./components/prompt.element";
+import { PicturesPage } from "./pages/pictures.page";
 // import { SettingsPage } from "./pages/settings.page";
 
 interface PageConstructor {
@@ -23,14 +23,12 @@ interface PageConstructor {
 
 // -- Make sure components are loaded --
 ProjectsPage;
-// PicturesPage;
+PicturesPage;
 
-// PromptElement;
-// PromptElement;
-// PictureElement;
+PromptElement;
+PictureElement;
 
 PromptEditor;
-
 
 class App implements DataProvider {
 
@@ -40,6 +38,7 @@ class App implements DataProvider {
 
     protected readonly _pageDiv: HTMLDivElement;
     protected _currentPage: AbstractPageElement | null = null;
+    protected _selectedProjectId: number | undefined = undefined;
 
     protected _lastRefreshed: DOMHighResTimeStamp | null = null;
 
@@ -87,9 +86,22 @@ class App implements DataProvider {
         window.requestAnimationFrame(step);
     }
 
+    //#region DataProvider ----------------------------------------------------
+
     public getSQLHandler(): SQLHandler<Tables, Filters> {
         return this._sqlHandler;
     }
+
+    public getSelectedProject(): number | undefined {
+        return this._selectedProjectId;
+    }
+
+    public setSelectedProject(projectId: number | undefined): void {
+        this._selectedProjectId = projectId;
+        this.setPage(PicturesPage);
+    }
+
+    //#endregion
 
     protected _bindPage(buttonId: string, pageConstructor: PageConstructor): void {
         const button = document.getElementById(buttonId);

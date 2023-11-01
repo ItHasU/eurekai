@@ -14,8 +14,8 @@ export class ProjectsPage extends AbstractPageElement {
     protected readonly _projectsActiveDiv: HTMLDivElement;
     protected readonly _projectsArchivedDiv: HTMLDivElement;
 
-    constructor(dataProvider: DataProvider) {
-        super(require("./projects.page.html").default, dataProvider);
+    constructor(data: DataProvider) {
+        super(require("./projects.page.html").default, data);
 
         // -- Get components --
         this._nameInput = this.querySelector("#projectNameInput") as HTMLInputElement;
@@ -93,7 +93,7 @@ export class ProjectsPage extends AbstractPageElement {
             });
             element.addEventListener("click", () => {
                 console.debug(`Project ${project.id} selected`);
-                // this._cache.setSelectedProjectId(project.id);
+                this._data.setSelectedProject(project.id);
                 // Remove border from all projects
                 this.querySelectorAll(".card")?.forEach((card) => {
                     card.classList.remove(...BORDER_CLASSES);

@@ -3,6 +3,8 @@ import { SQLTransaction } from "@dagda/shared/sql/transaction";
 import { Filters, Tables } from "@eurekai/shared/src/types";
 
 export interface DataProvider {
+    getSelectedProject(): number | undefined;
+    setSelectedProject(projectId: number | undefined): void;
     getSQLHandler(): SQLHandler<Tables, Filters>
 }
 
