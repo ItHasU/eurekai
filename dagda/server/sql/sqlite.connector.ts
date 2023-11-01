@@ -90,7 +90,7 @@ export class SQLiteConnector<Tables extends TablesDefinition> extends SQLConnect
             this.run("BEGIN");
             await this._createTableIfNeeded(tableName, fieldTypesFull);
             for (const fieldName in fieldTypesFull) {
-                this._createFieldIfNeeded(tableName, fieldName as keyof Required<T>, fieldTypesFull[fieldName]);
+                await this._createFieldIfNeeded(tableName, fieldName as keyof Required<T>, fieldTypesFull[fieldName]);
             }
             this.run("COMMIT");
         } catch (e) {

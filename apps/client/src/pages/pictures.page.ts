@@ -65,7 +65,7 @@ export class PicturesPage extends AbstractPageElement {
         }]);
 
         // -- Fetch prompts --
-        const prompts = this._data.getSQLHandler().getCache("prompts").getItems();
+        const prompts = this._data.getSQLHandler().getCache("prompts").getItems().filter(prompt => prompt.projectId === projectId);
         if (prompts.length === 0) {
             this._openPromptPanel();
             return;
@@ -339,13 +339,21 @@ export class PicturesPage extends AbstractPageElement {
         const prompt = this._promptEditor.getPrompt();
         const projectId = this._data.getSelectedProject();
         if (projectId != null) {
-            // await this._cache.withData(async (data) => {
-            //     await data.addPrompt({
-            //         ...prompt,
-            //         projectId: projectId,
-            //         active: true,
-            //     });
-            // });
+            let orderIndex = 1;
+            for (const prompt of this._data.getSQLHandler().getItems("prompts")) {
+                if (prompt.projectId === projectId) {
+                    orderIndex = Math.max(orderIndex, prompt.orderIndex + 1);
+                }
+            }
+            const tr = this._newTransaction();
+            tr.insert("prompts", {
+                ...prompt,
+                id: 0,
+                projectId,
+                orderIndex,
+                active: true
+            });
+            this._data.getSQLHandler().submit(tr);
             await this.refresh();
         }
         this._promptCard.classList.add("d-none");

@@ -122,12 +122,14 @@ export class SQLHandler<Tables extends TablesDefinition, Filter> implements SQLC
                     case OperationType.INSERT:
                         const tmpId = op.options.item.id;
                         if (tmpId < 0) {
-                            const item = this.getCache(op.options.table).getById(tmpId);
+                            const cache = this.getCache(op.options.table);
+                            const item = cache.getById(tmpId);
+                            cache.delete(tmpId); // Delete old item
                             if (item) {
                                 // Update the id
                                 item.id = result.updatedIds[tmpId];
                                 // Make sure the item is registered
-                                this.getCache(op.options.table).insert(item);
+                                cache.insert(item);
                             }
                         }
                         break;
