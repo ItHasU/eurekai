@@ -95,15 +95,13 @@ export class ProjectsPage extends AbstractPageElement {
             });
             if (project.pinned === BooleanEnum.TRUE) {
                 this._projectsPinnedDiv.appendChild(element);
-                // } else if (project.highresPendingCount > 0 || project.activePrompts > 0) {
-                //     this._projectsActiveDiv.appendChild(element);
             } else {
                 this._projectsArchivedDiv.appendChild(element);
             }
             element.refresh();
-            // if (projectId === this._cache.getSelectedProjectId()) {
-            //     element.querySelector(".card")?.classList.add(...BORDER_CLASSES);
-            // }
+            if (project.id === this._data.getSelectedProject()) {
+                element.querySelector(".card")?.classList.add(...BORDER_CLASSES);
+            }
         }
     }
 }

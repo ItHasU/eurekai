@@ -12,11 +12,6 @@ export class ProjectElement extends AbstractDTOElement<ProjectDTO> {
         super(project, require("./project.element.html").default);
         this.classList.add("list-group-item", "list-group-item-action");
         this.classList.toggle("lockable", project.lockable === BooleanEnum.TRUE);
-
-        this.addEventListener("click", () => {
-            // this._cache.setSelectedProjectId(project.id);
-            // APP.setPage(PicturesPage);
-        });
     }
 
     public override refresh(): void {
@@ -31,23 +26,28 @@ export class ProjectElement extends AbstractDTOElement<ProjectDTO> {
         } else {
             this._getElementByRef("unlock")?.parentElement?.classList.add("d-none");
         }
-        // this.querySelector('.dropdown button')?.addEventListener('click', function (event) {
-        //     event.stopPropagation();
-        // });
+        // Prevent click on dropdown to select the project
+        this.querySelector('.dropdown button')?.addEventListener('click', function (event) {
+            event.stopPropagation();
+        });
 
         if (this.data.featuredAttachmentId != null) {
             (<HTMLImageElement>this.querySelector("[ref='featured']")!).src = `/api/attachment/${this.data.featuredAttachmentId}`;
         }
         this._bindClick("pin", (evt) => {
+            evt.stopPropagation();
             this._options.pin();
         });
         this._bindClick("unpin", (evt) => {
+            evt.stopPropagation();
             this._options.unpin();
         });
         this._bindClick("lock", (evt) => {
+            evt.stopPropagation();
             this._options.lock();
         });
         this._bindClick("unlock", (evt) => {
+            evt.stopPropagation();
             this._options.unlock();
         });
     }

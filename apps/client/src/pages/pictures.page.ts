@@ -67,14 +67,15 @@ export class PicturesPage extends AbstractPageElement {
 
         // -- Fetch prompts --
         const prompts = this._data.getSQLHandler().getCache("prompts").getItems().filter(prompt => prompt.projectId === projectId);
-        if (prompts.length === 0) {
-            this._openPromptPanel();
-            return;
-        }
 
         const picturesRaw = this._data.getSQLHandler().getCache("pictures").getItems();
         const preferredSeeds: SeedDTO[] = [];//await this._cache.getSeeds();
         const project = this._data.getSQLHandler().getCache("projects").getById(projectId)
+
+        if (project == null) {
+            // Nothing to display
+            return;
+        }
 
         const promptsMap: { [id: number]: PromptDTO } = {};
         for (const prompt of prompts) {
@@ -82,6 +83,7 @@ export class PicturesPage extends AbstractPageElement {
         }
 
         let hasPendingPicture = false;
+        let hasPromptDisplayed = false;
         const pictures = [...picturesRaw];
         pictures.sort((p1, p2) => {
             let res = 0;
@@ -170,6 +172,7 @@ export class PicturesPage extends AbstractPageElement {
             promptItem.classList.add("col-12");
             promptItem.refresh();
             this._picturesDiv.appendChild(promptItem);
+            hasPromptDisplayed = true;
         }
 
         // -- Fill the pictures --
@@ -180,6 +183,10 @@ export class PicturesPage extends AbstractPageElement {
                 continue;
             }
             const prompt = promptsMap[picture.promptId];
+            if (prompt.projectId !== project.id) {
+                // Picture still in the cache but for another project
+                continue;
+            }
 
             // -- Handle line breaks after each prompt --
             if (!displayedPromptIds.has(picture.promptId)) {
@@ -271,11 +278,19 @@ export class PicturesPage extends AbstractPageElement {
         }
 
         for (const prompt of prompts) {
-            if (displayedPromptIds.has(prompt.id) || !prompt.active) {
+            if (displayedPromptIds.has(prompt.id) || prompt.active === BooleanEnum.FALSE) {
+                // Already displayed or not active anymore
                 continue;
             } else {
-                addPrompt(prompt);
+                if (prompt.projectId === project.id) {
+                    addPrompt(prompt);
+                }
             }
+        }
+        if (!hasPromptDisplayed) {
+            this._openPromptPanel();
+        } else {
+            this._closePromptPanel();
         }
 
         picturesDiv.scrollTo(0, 0);
