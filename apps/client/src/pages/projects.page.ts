@@ -29,29 +29,22 @@ export class ProjectsPage extends AbstractPageElement {
         this._bindClickForRef("projectNewButton", async () => {
             const name = this._nameInput.value;
             if (name) {
-                try {
-                    const tr = this._newTransaction();
+                await this._data.getSQLHandler().withTransaction((tr) => {
                     tr.insert("projects", {
                         id: 0,
                         lockable: BooleanEnum.FALSE,
                         name,
                         pinned: BooleanEnum.FALSE
                     });
-                    this._submit(tr);
-                } catch (err) {
-                    console.error(err);
-                } finally {
-                    await this.refresh();
-                }
+                });
+                await this.refresh();
             }
         });
     }
 
     /** @inheritdoc */
     public override async _refresh(): Promise<void> {
-        await this._data.getSQLHandler().fetch([
-            { type: "projects", options: undefined }
-        ]);
+        await this._data.getSQLHandler().fetch({ type: "projects", options: void (0) });
 
         // -- Fetch projects --
         const projects = this._data.getSQLHandler().getItems("projects");
@@ -66,28 +59,28 @@ export class ProjectsPage extends AbstractPageElement {
         // Render projects
         for (const project of projects) {
             const element = new ProjectElement(project, {
-                pin: () => {
-                    const tr = this._newTransaction();
-                    tr.update("projects", project, { pinned: BooleanEnum.TRUE });
-                    this._submit(tr);
+                pin: async () => {
+                    await this._data.getSQLHandler().withTransaction((tr) => {
+                        tr.update("projects", project, { pinned: BooleanEnum.TRUE });
+                    });
                     this.refresh();
                 },
-                unpin: () => {
-                    const tr = this._newTransaction();
-                    tr.update("projects", project, { pinned: BooleanEnum.FALSE });
-                    this._submit(tr);
+                unpin: async () => {
+                    await this._data.getSQLHandler().withTransaction((tr) => {
+                        tr.update("projects", project, { pinned: BooleanEnum.FALSE });
+                    });
                     this.refresh();
                 },
-                lock: () => {
-                    const tr = this._newTransaction();
-                    tr.update("projects", project, { lockable: BooleanEnum.TRUE });
-                    this._submit(tr);
+                lock: async () => {
+                    await this._data.getSQLHandler().withTransaction((tr) => {
+                        tr.update("projects", project, { lockable: BooleanEnum.TRUE });
+                    });
                     this.refresh();
                 },
-                unlock: () => {
-                    const tr = this._newTransaction();
-                    tr.update("projects", project, { lockable: BooleanEnum.FALSE });
-                    this._submit(tr);
+                unlock: async () => {
+                    await this._data.getSQLHandler().withTransaction((tr) => {
+                        tr.update("projects", project, { lockable: BooleanEnum.FALSE });
+                    });
                     this.refresh();
                 }
             });

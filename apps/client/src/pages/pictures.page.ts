@@ -1,6 +1,7 @@
-import { BooleanEnum, ComputationStatus, PictureDTO, PromptDTO, SeedDTO } from "@eurekai/shared/src/types";
+import { BooleanEnum, ComputationStatus, PictureDTO, ProjectDTO, PromptDTO, SeedDTO } from "@eurekai/shared/src/types";
 import { PictureElement } from "src/components/picture.element";
 import { PromptElement } from "src/components/prompt.element";
+import { showSelect } from "src/components/tools";
 import { PromptEditor } from "src/editors/prompt.editor";
 import { AbstractPageElement, DataProvider } from "./abstract.page.element";
 
@@ -57,12 +58,12 @@ export class PicturesPage extends AbstractPageElement {
             return;
         }
 
-        await this._data.getSQLHandler().fetch([{
+        await this._data.getSQLHandler().fetch({
             type: "project",
             options: {
                 projectId
             }
-        }]);
+        });
 
         // -- Fetch prompts --
         const prompts = this._data.getSQLHandler().getCache("prompts").getItems().filter(prompt => prompt.projectId === projectId);
@@ -125,40 +126,44 @@ export class PicturesPage extends AbstractPageElement {
             const promptItem = new PromptElement(prompt, {
                 pictures: pictures.filter(p => p.promptId === prompt.id),
                 start: async () => {
-                    // await this._cache.withData(async (data) => {
-                    //     await data.setPromptActive(prompt.id, true);
-                    //     prompt.active = true;
-                    // });
+                    await this._data.getSQLHandler().withTransaction((tr) => {
+                        tr.update("prompts", prompt, { active: BooleanEnum.TRUE });
+                    });
                     promptItem.refresh();
                     // Won't refresh pictures, but we don't care
                 },
                 stop: async () => {
-                    // await this._cache.withData(async (data) => {
-                    //     await data.setPromptActive(prompt.id, false);
-                    //     prompt.active = false;
-                    // });
+                    await this._data.getSQLHandler().withTransaction((tr) => {
+                        tr.update("prompts", prompt, { active: BooleanEnum.FALSE });
+                    });
                     promptItem.refresh();
                     // Won't refresh pictures, but we don't care
                 },
                 delete: async () => {
-                    // await this._cache.withData(async (data) => {
-                    //     await data.movePrompt(prompt.id, null);
-                    // });
-                    promptItem.remove();
+                    await this._data.getSQLHandler().withTransaction((tr) => {
+                        tr.delete("prompts", prompt.id);
+                        for (const picture of this._data.getSQLHandler().getItems("pictures")) {
+                            if (picture.promptId === prompt.id) {
+                                tr.delete("pictures", picture.id);
+                            }
+                        }
+                    });
+                    this.refresh();
                 },
                 move: async () => {
-                    // await this._cache.withData(async (data) => {
-                    //     const projects = await data.getProjects();
-                    //     const selectedProject = await showSelect<ProjectDTO>(projects, {
-                    //         valueKey: "id",
-                    //         displayString: "name",
-                    //         selected: projects.find(p => p.id === prompt.projectId)
-                    //     });
-                    //     if (selectedProject != null && selectedProject.id != prompt.projectId) {
-                    //         await data.movePrompt(prompt.id, selectedProject.id);
-                    //         promptItem.remove();
-                    //     }
-                    // });
+                    await this._data.getSQLHandler().fetch({ type: "projects", options: void (0) });
+                    const projects = this._data.getSQLHandler().getItems("projects");
+                    const selectedProject = await showSelect<ProjectDTO>(projects, {
+                        valueKey: "id",
+                        displayString: "name",
+                        selected: projects.find(p => p.id === prompt.projectId)
+                    });
+                    if (selectedProject != null && selectedProject.id != prompt.projectId) {
+                        await this._data.getSQLHandler().withTransaction((tr) => {
+                            tr.update("prompts", prompt, { projectId: selectedProject.id });
+                        });
+                        this.refresh();
+                    }
                 },
                 clone: this._openPromptPanel.bind(this, prompt)
             });
@@ -345,15 +350,15 @@ export class PicturesPage extends AbstractPageElement {
                     orderIndex = Math.max(orderIndex, prompt.orderIndex + 1);
                 }
             }
-            const tr = this._newTransaction();
-            tr.insert("prompts", {
-                ...prompt,
-                id: 0,
-                projectId,
-                orderIndex,
-                active: BooleanEnum.TRUE
+            await this._data.getSQLHandler().withTransaction((tr) => {
+                tr.insert("prompts", {
+                    ...prompt,
+                    id: 0,
+                    projectId,
+                    orderIndex,
+                    active: BooleanEnum.TRUE
+                });
             });
-            this._data.getSQLHandler().submit(tr);
             await this.refresh();
         }
         this._promptCard.classList.add("d-none");

@@ -82,7 +82,7 @@ export class SQLTransaction<Tables extends TablesDefinition> {
         });
     }
 
-    public async update<TableName extends keyof Tables, DTO extends Tables[TableName]>(table: TableName, item: DTO, values: Partial<Omit<DTO, "id">>): Promise<void> {
+    public update<TableName extends keyof Tables, DTO extends Tables[TableName]>(table: TableName, item: DTO, values: Partial<Omit<DTO, "id">>): void {
         // -- Perform the action on the cache --
         const valuesToUpdate: Record<string, unknown | null> = {}
         for (const k in values) {
@@ -102,7 +102,7 @@ export class SQLTransaction<Tables extends TablesDefinition> {
         });
     }
 
-    public async delete<TableName extends keyof Tables>(table: TableName, id: number): Promise<void> {
+    public delete<TableName extends keyof Tables>(table: TableName, id: number): void {
         // -- Perform the action on the cache --
         const cache = this._cacheHandler.getCache(table).delete(id)
 

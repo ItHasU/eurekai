@@ -1,5 +1,4 @@
 import { SQLHandler } from "@dagda/shared/sql/handler";
-import { SQLTransaction } from "@dagda/shared/sql/transaction";
 import { Filters, Tables } from "@eurekai/shared/src/types";
 
 export interface DataProvider {
@@ -55,24 +54,6 @@ export abstract class AbstractPageElement extends HTMLElement {
     }
 
     //#region Tools
-
-    protected _newTransaction(): SQLTransaction<Tables> {
-        return new SQLTransaction<Tables>(this._data.getSQLHandler());
-    }
-
-    /** 
-     * This function submits the transaction and handles errors.
-     * You don't need to wait for its return except if you want to make sure that 
-     */
-    protected _submit(transaction: SQLTransaction<Tables>): void {
-        // FIXME: Enhance error handling
-        this._data.getSQLHandler().submit(transaction).catch(e => {
-            console.error(e);
-
-            this._data.getSQLHandler().markCacheDirty();
-            this.refresh();
-        });
-    }
 
     protected _bindClickForRef(ref: string, cb: () => void): void {
         (this.querySelector(`*[ref="${ref}"]`) as HTMLButtonElement | undefined)?.addEventListener("click", cb);

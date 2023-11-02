@@ -82,7 +82,7 @@ export class SQLHandler<Tables extends TablesDefinition, Filter> implements SQLC
     }
 
     /** Fetch data */
-    public async fetch(filters: Filter[]): Promise<void> {
+    public async fetch(...filters: Filter[]): Promise<void> {
         this._fireStateChanged({ downloading: true });
 
         try {
@@ -154,6 +154,30 @@ export class SQLHandler<Tables extends TablesDefinition, Filter> implements SQLC
     //#endregion
 
     //#region Transactions ----------------------------------------------------
+
+    /** 
+     * Execute f() with a new transaction.
+     * Once the execution of f() is done, the transaction is automatically submitted to the server.  
+     * 
+     * The function will resolve once the transaction is submitted, but before the server has responded.
+     */
+    public async withTransaction(f: (transaction: SQLTransaction<Tables>) => Promise<void> | void) {
+        // -- Create transaction and run f() --
+        const tr = new SQLTransaction<Tables>(this);
+        try {
+            await f(tr);
+        } catch (e) {
+            console.error(e);
+            this.markCacheDirty();
+            throw e;
+        }
+        // -- Submit transaction to the server --
+        // Here, we don't wait for the promise to resolve
+        this.submit(tr).catch(e => {
+            console.error(e);
+            this.markCacheDirty();
+        });
+    }
 
     /** 
      * Submit the transaction to the connector.
