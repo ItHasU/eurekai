@@ -1,50 +1,9 @@
-import { Fetcher, ForeignKeys } from "@dagda/shared/sql/types";
+import { ForeignKeys } from "@dagda/shared/sql/types";
 
-//#region TXT2IMG -------------------------------------------------------------
+//#region Tables definition ---------------------------------------------------
 
-export type SamplingMethod =
-    "Euler a" | "Euler" |
-    "LMS" | "Heun" |
-    "DPM2" | "DPM2 a" | "DPM++ S2 a" | "DPM++ 2M" | "DPM++ SDE" | "DPM fast" | "DPM adaptive" |
-    "LMS Karras" |
-    "DPM2 Karras" | "DPM2 a Karras" |
-    "DPM++ 2S a Karras" | "DPM++ 2M Karras" | "DPM++ SDE Karras" |
-    "DDIM" |
-    "PLMS";
-
-export interface Txt2ImgOptions {
-    prompt: string;
-    negative_prompt?: string;
-    seed: number;
-    sampler_name: SamplingMethod;
-    steps: number;
-    width: number;
-    height: number;
-
-    batch_size: number;
-    n_iter: number;
-
-    cfg_scale: number;
-
-    enable_hr?: boolean;
-    hr_scale?: number;
-    denoising_strength?: number;
-
-    save_images?: boolean;
-
-    refiner_checkpoint?: string,
-    refiner_switch_at?: number
-}
-
-//#endregion
-
-//#region Database ------------------------------------------------------------
-
-/** Numeric true/false */
-export enum BooleanEnum {
-    FALSE = 0,
-    TRUE = 1
-}
+/** Table names */
+export type TableName = keyof Tables;
 
 /** The list of tables and their related type */
 export type Tables = {
@@ -55,6 +14,7 @@ export type Tables = {
     "attachments": AttachmentDTO;
 };
 
+/** Tables foreign keys */
 export const APP_FOREIGN_KEYS: ForeignKeys<Tables> = {
     projects: {
         lockable: false,
@@ -90,35 +50,19 @@ export const APP_FOREIGN_KEYS: ForeignKeys<Tables> = {
     }
 }
 
-type BaseFilter<T extends string, Options> = {
-    type: T;
-    options: Options;
+//#endregion
+
+//#region Custom field types --------------------------------------------------
+
+/** Numeric true/false */
+export enum BooleanEnum {
+    FALSE = 0,
+    TRUE = 1
 }
 
-export type ProjectsFilter = BaseFilter<"projects", undefined>;
-export type ProjectFilter = BaseFilter<"project", { projectId: number }>;
+//#endregion
 
-export type Filters = ProjectsFilter | ProjectFilter;
-
-export const FETCHER_URL = "/fetch";
-export type AppFetcher = Fetcher<Tables, Filters>;
-export type FetcherAPI = {
-    fetch: AppFetcher;
-}
-
-export type TableName = keyof Tables;
-export function t(tableName: TableName): string {
-    return tableName;
-}
-export function f<TableName extends keyof Tables>(table: TableName, field: keyof Tables[TableName]): string {
-    return `"${table}"."${field as string}"`;
-}
-export function eq<TableName extends keyof Tables, P extends keyof Tables[TableName]>(table: TableName, field: P, value: Tables[TableName][P], quoted: number extends Tables[TableName][P] ? false : true) {
-    return `"${table}"."${field as string}" = ${quoted ? "'" : ""}${new String(value ?? null).toString()}${quoted ? "'" : ""}`;
-}
-export function set<TableName extends keyof Tables, P extends keyof Tables[TableName]>(table: TableName, field: P, value: Tables[TableName][P], quoted: number extends Tables[TableName][P] ? false : true) {
-    return `"${field as string}" = ${quoted ? "'" : ""}${new String(value ?? null).toString()}${quoted ? "'" : ""}`;
-}
+//#region Database tables -----------------------------------------------------
 
 /** 
  * A project gather prompts with a common theme
@@ -256,6 +200,95 @@ export interface AttachmentDTO {
     id: number;
     /** data in base64 format */
     data: string;
+}
+
+//#endregion
+
+//#region Database tools ------------------------------------------------------
+
+export function t(tableName: TableName): string {
+    return tableName;
+}
+export function f<TableName extends keyof Tables>(table: TableName, field: keyof Tables[TableName]): string {
+    return `"${table}"."${field as string}"`;
+}
+export function eq<TableName extends keyof Tables, P extends keyof Tables[TableName]>(table: TableName, field: P, value: Tables[TableName][P], quoted: number extends Tables[TableName][P] ? false : true) {
+    return `"${table}"."${field as string}" = ${quoted ? "'" : ""}${new String(value ?? null).toString()}${quoted ? "'" : ""}`;
+}
+export function set<TableName extends keyof Tables, P extends keyof Tables[TableName]>(table: TableName, field: P, value: Tables[TableName][P], quoted: number extends Tables[TableName][P] ? false : true) {
+    return `"${field as string}" = ${quoted ? "'" : ""}${new String(value ?? null).toString()}${quoted ? "'" : ""}`;
+}
+
+//#endregion
+
+//#region Fetch filters -------------------------------------------------------
+
+type BaseFilter<T extends string, Options> = {
+    type: T;
+    options: Options;
+}
+
+/** Get all projects */
+export type ProjectsFilter = BaseFilter<"projects", undefined>;
+/** Get data for a specific project */
+export type ProjectFilter = BaseFilter<"project", { projectId: number }>;
+
+/** List of all filters */
+export type Filters = ProjectsFilter | ProjectFilter;
+
+/** Compare filters */
+export function filterEquals(newFilter: Filters, oldFilter: Filters): boolean {
+    if (newFilter.type !== oldFilter.type) {
+        return false;
+    } else {
+        switch (newFilter.type) {
+            case "projects":
+                return true;
+            case "project":
+                return newFilter.options.projectId === (oldFilter as ProjectFilter).options.projectId;
+            default:
+                // Not implemented
+                return false;
+        }
+    }
+}
+
+//#endregion
+
+//#region TXT2IMG -------------------------------------------------------------
+
+export type SamplingMethod =
+    "Euler a" | "Euler" |
+    "LMS" | "Heun" |
+    "DPM2" | "DPM2 a" | "DPM++ S2 a" | "DPM++ 2M" | "DPM++ SDE" | "DPM fast" | "DPM adaptive" |
+    "LMS Karras" |
+    "DPM2 Karras" | "DPM2 a Karras" |
+    "DPM++ 2S a Karras" | "DPM++ 2M Karras" | "DPM++ SDE Karras" |
+    "DDIM" |
+    "PLMS";
+
+export interface Txt2ImgOptions {
+    prompt: string;
+    negative_prompt?: string;
+    seed: number;
+    sampler_name: SamplingMethod;
+    steps: number;
+    width: number;
+    height: number;
+
+    batch_size: number;
+    n_iter: number;
+
+    cfg_scale: number;
+
+    enable_hr?: boolean;
+    hr_scale?: number;
+    denoising_strength?: number;
+
+    save_images?: boolean;
+
+    refiner_checkpoint?: string,
+    refiner_switch_at?: number
 }
 
 //#endregion

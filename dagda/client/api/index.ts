@@ -5,7 +5,7 @@ type PromiseReturn<T> = T extends Promise<infer R> ? R : T;
 
 /** Call a method on the server */
 export async function apiCall<Methods extends BaseMethods, MethodName extends keyof BaseMethods>(url: string, name: MethodName, ...args: Parameters<Methods[MethodName]>): Promise<PromiseReturn<ReturnType<Methods[MethodName]>>> {
-    const URL = `${url}/${name}`;
+    const URL = `/${url}/${name}`;
 
     const response = await fetch(URL, {
         method: "POST",

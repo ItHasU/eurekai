@@ -38,5 +38,5 @@ export function buildAPIRouter<Methods extends BaseMethods>(api: Methods): Route
  */
 export function registerAPI<Methods extends BaseMethods>(app: Application, url: string, api: Methods): void {
     console.log(`Registered /${url}/[${Object.keys(api).join(", ")}]`);
-    app.use(url, buildAPIRouter(api));
+    app.use(`/${url}`, buildAPIRouter(api));
 }

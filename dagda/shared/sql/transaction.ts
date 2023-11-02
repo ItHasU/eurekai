@@ -43,6 +43,19 @@ export interface SQLTransactionResult {
  */
 export class SQLTransaction<Tables extends TablesDefinition> {
 
+    //#region Temporary ids ---------------------------------------------------
+
+    /** @see _getNextTemporaryId */
+    private static _nextTemporaryId: number = 0;
+
+    /** 
+     * Get next temporary id. 
+     * Temporary ids are negative and replaced by auto generated ids on SQL insert. 
+     */
+    protected static _getNextTemporaryId(): number {
+        return --SQLTransaction._nextTemporaryId;
+    }
+
     /** List of operations performed */
     public readonly operations: SQLOperation<Tables, keyof Tables>[] = [];
 
@@ -54,7 +67,7 @@ export class SQLTransaction<Tables extends TablesDefinition> {
      */
     public insert<TableName extends keyof Tables, DTO extends Tables[TableName]>(table: TableName, item: Tables[TableName]): void {
         // -- Perform the action on the cache --
-        item.id = this._cacheHandler.getNextId();
+        item.id = SQLTransaction._getNextTemporaryId();
         this._cacheHandler.getCache(table).insert(item);
 
         // -- Store the operation --

@@ -1,32 +1,42 @@
-import { registerAPI_SQLConnectorProxy } from "@dagda/server/sql/proxy.connector";
-import { SQLiteConnector } from "@dagda/server/sql/sqlite.connector";
-import { Tables } from "@eurekai/shared/src/types";
+import { registerAdapterAPI } from "@dagda/server/sql/api.adapter";
+import { SQLiteHelper } from "@dagda/server/sql/sqlite.helper";
+import { Data } from "@dagda/shared/sql/types";
+import { Filters, ProjectDTO, PromptDTO, Tables } from "@eurekai/shared/src/types";
 import express from "express";
 import { resolve } from "node:path";
-import { registerFetchAPI } from "./fetch";
 
-export class AppServer {
-    public readonly app: express.Express;
+/** Initialize an Express app and register the routes */
+export async function initHTTPServer(db: SQLiteHelper<Tables>, port: number): Promise<void> {
+    const app = express();
+    app.use(express.json());
 
-    constructor(options: {
-        connector: SQLiteConnector<Tables>,
-        port: number
-    }) {
-        // -- Create app --
-        this.app = express();
-        this.app.use(express.json());
+    // -- Register client files routes --
+    const path: string = resolve("./apps/client/dist");
+    app.use(express.static(path));
 
-        // -- Register routes --
-        // Static files
-        const path: string = resolve("./apps/client/dist");
-        this.app.use(express.static(path));
-        // SQL Connector
-        registerAPI_SQLConnectorProxy(this.app, options.connector);
-        registerFetchAPI(this.app, options.connector);
+    // -- Register SQL routes --
+    registerAdapterAPI<Tables, Filters>(app, db, _fetch);
 
-        // -- Listen --
-        this.app.listen(options.port);
-        console.log(`Server started, connect to http://localhost:${options.port}/`);
+    // -- Listen --
+    app.listen(port);
+}
+
+/** 
+ * Fetch function for the app.  
+ * This function must return the records that match the filter
+ */
+async function _fetch(helper: SQLiteHelper<Tables>, filter: Filters): Promise<Data<Tables>> {
+    switch (filter.type) {
+        case "projects":
+            return {
+                projects: await helper.all<ProjectDTO>("SELECT * FROM projects")
+            };
+        case "project":
+            return {
+                projects: await helper.all<ProjectDTO>("SELECT * FROM projects WHERE id=?", [filter.options.projectId]),
+                prompts: await helper.all<PromptDTO>("SELECT * FROM prompts WHERE projectId=?", [filter.options.projectId]),
+            }
+        default:
+            return {};
     }
-
 }

@@ -1,7 +1,7 @@
 import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "../tools/events";
 import { SQLCache, SQLCacheHandler } from "./cache";
 import { OperationType, SQLTransaction } from "./transaction";
-import { SQLConnector, SQLFetcher, TablesDefinition } from "./types";
+import { SQLAdapter, TablesDefinition } from "./types";
 
 type SQLEvents = {
     "state": {
@@ -18,16 +18,24 @@ type SQLEvents = {
     }
 }
 
+
 /** 
- * Utility class allowing to fetch data, store them in a cache and submit modifications.
+ * Utility class allowing to fetch data, store them in a cache and submit modifications.  
  * The cache can then be accessed through synchronous methods.
  */
 export class SQLHandler<Tables extends TablesDefinition, Filter> implements SQLCacheHandler<Tables>, EventHandler<SQLEvents> {
 
+    /** List of filters loaded */
+    protected _filters: Filter[] = [];
+    /** If true, the cache will be erased on next fetch. */
+    protected _cacheDirty: boolean = false;
+    /** Les caches de chaque table */
+    protected _caches: { [TableName in keyof Tables]?: SQLCache<Tables[TableName]> } = {};
+
     /** Current state of the temporary id counter */
     protected _nextId: number = 0;
 
-    constructor(protected _connector: SQLConnector<Tables>, protected _fetcher: SQLFetcher<Tables, Filter>) { }
+    constructor(protected _adapter: SQLAdapter<Tables, Filter>) { }
 
     //#region Events ----------------------------------------------------------
 
@@ -59,24 +67,68 @@ export class SQLHandler<Tables extends TablesDefinition, Filter> implements SQLC
 
     //#region Cache -----------------------------------------------------------
 
-    /** Mark cache as dirty, will force reload on next fetch */
+    /** Force cache clear on next fetch */
     public markCacheDirty(): void {
-        this._fetcher.markCacheDirty();
-    }
-
-    /** Fetch part of the data corresponding to the filter */
-    public async fetch(filters: Filter[]): Promise<void> {
-        this._fireStateChanged({ downloading: true });
-        try {
-            await this._fetcher.fetch(filters);
-        } finally {
-            this._fireStateChanged({ downloading: false });
-        }
+        this._cacheDirty = true;
     }
 
     /** Get or build an empty cache */
     public getCache<TableName extends keyof Tables>(tableName: TableName): SQLCache<Tables[TableName]> {
-        return this._fetcher.getCache(tableName);
+        let cache: SQLCache<Tables[TableName]> | undefined = this._caches[tableName];
+        if (cache == null) {
+            this._caches[tableName] = cache = new SQLCache();
+        }
+        return cache;
+    }
+
+    /** Fetch data */
+    public async fetch(filters: Filter[]): Promise<void> {
+        this._fireStateChanged({ downloading: true });
+
+        try {
+            if (this._cacheDirty) {
+                // Clear all
+                this._filters = [];
+                this._caches = {};
+            }
+
+            // -- Keep filters that needs to be fetched --
+            const filtersToFetch: Filter[] = [];
+            for (const newFilter of filters) {
+                let hasFilter = false;
+                for (const oldFilter of this._filters) {
+                    hasFilter = this._adapter.filterEquals(newFilter, oldFilter);
+                    if (hasFilter) {
+                        break;
+                    }
+                }
+                if (!hasFilter) {
+                    // Filter if not found
+                    this._filters.push(newFilter);
+                    filtersToFetch.push(newFilter);
+                }
+            }
+
+            for (const filter of filtersToFetch) {
+                const result = await this._adapter.fetch(filter);
+                // Merge loaded items with current cache
+                for (const [table, items] of Object.entries(result)) {
+                    const cache = this.getCache(table);
+                    // Here it is important to insert all items instead of set
+                    // because we want to complete the cache
+                    for (const item of items) {
+                        cache.insert(item); // Add or override previous value
+                    }
+                }
+            }
+            // All done, cache is ok
+            this._cacheDirty = false;
+        } catch (e) {
+            this._cacheDirty = true;
+            throw e;
+        } finally {
+            this._fireStateChanged({ downloading: false });
+        }
     }
 
     /** 
@@ -103,10 +155,6 @@ export class SQLHandler<Tables extends TablesDefinition, Filter> implements SQLC
 
     //#region Transactions ----------------------------------------------------
 
-    public getNextId(): number {
-        return --this._nextId;
-    }
-
     /** 
      * Submit the transaction to the connector.
      * Once the result is received, the cache is updated
@@ -115,7 +163,7 @@ export class SQLHandler<Tables extends TablesDefinition, Filter> implements SQLC
         this._fireStateChanged({ uploading: true });
         try {
             // -- Call submit on the connector --
-            const result = await this._connector.submit(transaction.operations);
+            const result = await this._adapter.submit(transaction.operations);
             // -- Once done, update local DTO --
             for (const op of transaction.operations) {
                 switch (op.type) {

@@ -36,9 +36,6 @@ export class SQLCache<DTO extends BaseDTO> {
 
 export interface SQLCacheHandler<Tables extends TablesDefinition> {
 
-    /** Get a new id for the next DTO created */
-    getNextId(): BaseDTO["id"];
-
     /** Get or build an empty cache */
     getCache<TableName extends keyof Tables>(tableName: TableName): SQLCache<Tables[TableName]>
 }

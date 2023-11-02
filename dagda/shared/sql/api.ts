@@ -1,8 +1,5 @@
-import { SQLTransactionData } from "./transaction";
-import { SQLTransactionResult, TablesDefinition } from "./types";
+import { SQLAdapter, TablesDefinition } from "./types";
 
-export const SQL_URL = "/sql";
+export const SQL_URL = "sql";
 
-export type SQLConnectorAPI<Tables extends TablesDefinition> = {
-    submit: (transaction: SQLTransactionData<Tables>) => Promise<SQLTransactionResult>;
-}
+export type SQLAdapterAPI<Tables extends TablesDefinition, Filter> = Omit<SQLAdapter<Tables, Filter>, "filterEquals">

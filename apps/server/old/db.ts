@@ -1,6 +1,5 @@
-import { AttachmentDTO, BooleanEnum, ProjectWithStats, Txt2ImgOptions, eq, set } from "@eurekai/shared/src/types";
-import { ProjectDTO, Tables, TableName, f, t, PromptDTO, PictureDTO, ComputationStatus } from "@eurekai/shared/src/types";
 import { AbstractDataWrapper, Notification, SDModel } from "@eurekai/shared/src/data";
+import { AttachmentDTO, BooleanEnum, ComputationStatus, PictureDTO, ProjectDTO, ProjectWithStats, PromptDTO, TableName, Tables, Txt2ImgOptions, eq, f, set, t } from "@eurekai/shared/src/types";
 import sqlite from "better-sqlite3";
 import { AbstractAPI } from "./diffusers/abstract.api";
 
@@ -24,8 +23,6 @@ const DEFAULT_PARAMETERS: Txt2ImgOptions = {
 
     save_images: false
 };
-
-type SQLValue = number | string | null;
 
 export class DatabaseWrapper extends AbstractDataWrapper {
     protected _db: sqlite.Database;
