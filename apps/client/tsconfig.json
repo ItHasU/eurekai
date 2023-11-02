@@ -9,7 +9,7 @@
     ],
     "references": [
         {
-            "path": "../../packages/shared"
+            "path": "../shared"
         },
         {
             "path": "../../dagda/client"

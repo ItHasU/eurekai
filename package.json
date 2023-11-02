@@ -21,7 +21,6 @@
     "webpack-cli": "^5.0.2"
   },
   "workspaces": [
-    "packages/**",
     "apps/*",
     "dagda/*",
     "others/*"

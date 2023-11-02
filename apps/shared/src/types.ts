@@ -60,6 +60,35 @@ export enum BooleanEnum {
     TRUE = 1
 }
 
+/** State of computation of images */
+export enum ComputationStatus {
+    /**
+     * Not started, not requested yet
+     * (Specific for high resolution images) 
+     */
+    NONE = 0,
+
+    /** Waiting for computation */
+    PENDING,
+    /** Request sent the the generator */
+    COMPUTING,
+    /** Response received from the generator */
+    DONE,
+    /** Error received from the generator */
+    ERROR,
+
+    /**
+     * Accepted by the user
+     * (Only accessible if image was previously DONE)
+     */
+    ACCEPTED,
+    /**
+     * Rejected by the user
+     * (Only accessible if image was previously DONE)
+     */
+    REJECTED
+}
+
 //#endregion
 
 //#region Database tables -----------------------------------------------------
@@ -102,35 +131,6 @@ export interface ProjectWithStats extends ProjectDTO {
     highresPendingCount: number;
 }
 
-/** State of computation of images */
-export enum ComputationStatus {
-    /**
-     * Not started, not requested yet
-     * (Specific for high resolution images) 
-     */
-    NONE = 0,
-
-    /** Waiting for computation */
-    PENDING,
-    /** Request sent the the generator */
-    COMPUTING,
-    /** Response received from the generator */
-    DONE,
-    /** Error received from the generator */
-    ERROR,
-
-    /**
-     * Accepted by the user
-     * (Only accessible if image was previously DONE)
-     */
-    ACCEPTED,
-    /**
-     * Rejected by the user
-     * (Only accessible if image was previously DONE)
-     */
-    REJECTED
-}
-
 /** The prompt contains all the necessary information to generate an image (except the seed) */
 export interface PromptDTO {
     /** id of the prompt */
@@ -140,7 +140,7 @@ export interface PromptDTO {
     /** Virtual index to order the prompts */
     orderIndex: number;
     /** Is the prompt active for generation */
-    active: boolean;
+    active: BooleanEnum;
 
     /** Width */
     width: number;
