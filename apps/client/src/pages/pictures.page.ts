@@ -351,7 +351,7 @@ export class PicturesPage extends AbstractPageElement {
                 id: 0,
                 projectId,
                 orderIndex,
-                active: true
+                active: BooleanEnum.TRUE
             });
             this._data.getSQLHandler().submit(tr);
             await this.refresh();

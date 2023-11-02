@@ -1,6 +1,6 @@
 import { OperationType, SQLTransactionData, SQLTransactionResult } from "@dagda/shared/sql/transaction";
 import { BaseDTO, ForeignKeys, TablesDefinition } from "@dagda/shared/sql/types";
-import { SQLValue, SQLiteHelper } from "./sqlite.helper";
+import { SQLValue, SQLiteHelper, sqlValue } from "./sqlite.helper";
 
 /** Transaction submit implementation for SQLite */
 export async function submit<Tables extends TablesDefinition>(helper: SQLiteHelper<Tables>, transactionData: SQLTransactionData<Tables>): Promise<SQLTransactionResult> {
@@ -21,7 +21,7 @@ export async function submit<Tables extends TablesDefinition>(helper: SQLiteHelp
                             continue;
                         }
                         columnNames.push(key);
-                        values.push(JSON.stringify(operation.options.item[key]));
+                        values.push(sqlValue(operation.options.item[key]));
                     }
                     const query = `INSERT INTO ${operation.options.table as string} (${columnNames.join(",")}) VALUES (${columnNames.map(_ => "?").join(",")})`;
                     const newId = await helper.insert(query, values);
@@ -38,7 +38,7 @@ export async function submit<Tables extends TablesDefinition>(helper: SQLiteHelp
                             continue;
                         }
                         columnNames.push(`"${key}"=?`);
-                        values.push(JSON.stringify(operation.options.values[key]));
+                        values.push(sqlValue(operation.options.values[key]));
                     }
                     values.push(_getUpdatedId(result, operation.options.id));
                     const query = `UPDATE ${operation.options.table as string} SET ${columnNames.join(",")} WHERE id=?`;

@@ -1,7 +1,7 @@
 import { ForeignKeys, TablesDefinition } from "@dagda/shared/sql/types";
 import sqlite from "better-sqlite3";
 
-export type SQLValue = number | string | null;
+export type SQLValue = number | string | BigInt | Buffer | null;
 
 /** Helper for SQLite database */
 export class SQLiteHelper<Tables extends TablesDefinition> {
@@ -101,4 +101,25 @@ export class SQLiteHelper<Tables extends TablesDefinition> {
 
     //#endregion
 
+}
+
+export function sqlValue(value: any): SQLValue {
+    if (value == null) {
+        return null;
+    }
+    switch (typeof value) {
+        case "number":
+        case "bigint":
+        case "string":
+            // Returned as-is
+            return value;
+        case "object":
+            // Stringify
+            return JSON.stringify(value);
+        case "boolean":
+        case "symbol":
+        case "function":
+        default:
+            throw new Error(`Value of type ${typeof value} cannot not be used as it cannot be stored in SQLite`);
+    }
 }
