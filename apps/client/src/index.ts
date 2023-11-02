@@ -14,6 +14,7 @@ import { PromptElement } from "./components/prompt.element";
 import { PicturesPage } from "./pages/pictures.page";
 // import { SettingsPage } from "./pages/settings.page";
 import { generateFetchFunction, generateSubmitFunction } from "@dagda/client/sql/client.adapter";
+import { SQLStatusComponent } from "@dagda/client/sql/status.component";
 
 interface PageConstructor {
     new(data: DataProvider): AbstractPageElement;
@@ -33,17 +34,22 @@ class App implements DataProvider {
     protected _sqlHandler: SQLHandler<Tables, Filters>;
 
     protected readonly _pageDiv: HTMLDivElement;
+    protected readonly _statusPlaceholder: HTMLSpanElement;
+
     protected _currentPage: AbstractPageElement | null = null;
     protected _selectedProjectId: number | undefined = undefined;
 
     protected _lastRefreshed: DOMHighResTimeStamp | null = null;
 
     constructor() {
+        // -- SQLHandler --
         this._sqlHandler = new SQLHandler({
             filterEquals: filterEquals,
             fetch: generateFetchFunction(),
             submit: generateSubmitFunction()
         });
+        this._statusPlaceholder = document.getElementById("statusPlaceholder") as HTMLSpanElement;
+        this._statusPlaceholder.append(new SQLStatusComponent(this._sqlHandler));
 
         // -- Bind refresh button --
         const refreshButton = document.getElementById("refreshButton");

@@ -3,7 +3,7 @@ import { SQLCache, SQLCacheHandler } from "./cache";
 import { OperationType, SQLTransaction } from "./transaction";
 import { SQLAdapter, TablesDefinition } from "./types";
 
-type SQLEvents = {
+export type SQLEvents = {
     "state": {
         /** 
          * Is the handler currently loading data ?
@@ -14,7 +14,12 @@ type SQLEvents = {
          * Is the handler currently sending data ?
          * (ex: during submit())
          */
-        uploading: boolean
+        uploading: boolean,
+        /**
+         * Is the cache dirty ?
+         * (ex: after an error or during a refresh)
+         */
+        dirty: boolean
     }
 }
 
@@ -43,7 +48,8 @@ export class SQLHandler<Tables extends TablesDefinition, Filter> implements SQLC
 
     protected _state: SQLEvents["state"] = {
         downloading: false,
-        uploading: false
+        uploading: false,
+        dirty: false
     };
 
     /** @inheritdoc */
@@ -70,6 +76,9 @@ export class SQLHandler<Tables extends TablesDefinition, Filter> implements SQLC
     /** Force cache clear on next fetch */
     public markCacheDirty(): void {
         this._cacheDirty = true;
+        this._fireStateChanged({
+            dirty: true
+        });
     }
 
     /** Get or build an empty cache */
@@ -83,7 +92,6 @@ export class SQLHandler<Tables extends TablesDefinition, Filter> implements SQLC
 
     /** Fetch data */
     public async fetch(...filters: Filter[]): Promise<void> {
-        this._fireStateChanged({ downloading: true });
 
         try {
             if (this._cacheDirty) {
@@ -109,25 +117,29 @@ export class SQLHandler<Tables extends TablesDefinition, Filter> implements SQLC
                 }
             }
 
-            for (const filter of filtersToFetch) {
-                const result = await this._adapter.fetch(filter);
-                // Merge loaded items with current cache
-                for (const [table, items] of Object.entries(result)) {
-                    const cache = this.getCache(table);
-                    // Here it is important to insert all items instead of set
-                    // because we want to complete the cache
-                    for (const item of items) {
-                        cache.insert(item); // Add or override previous value
+            if (filtersToFetch.length > 0) {
+                this._fireStateChanged({ downloading: true });
+                for (const filter of filtersToFetch) {
+                    const result = await this._adapter.fetch(filter);
+                    // Merge loaded items with current cache
+                    for (const [table, items] of Object.entries(result)) {
+                        const cache = this.getCache(table);
+                        // Here it is important to insert all items instead of set
+                        // because we want to complete the cache
+                        for (const item of items) {
+                            cache.insert(item); // Add or override previous value
+                        }
                     }
                 }
+                this._fireStateChanged({ downloading: false });
             }
             // All done, cache is ok
             this._cacheDirty = false;
+            this._fireStateChanged({ dirty: false });
         } catch (e) {
             this._cacheDirty = true;
+            this._fireStateChanged({ dirty: true });
             throw e;
-        } finally {
-            this._fireStateChanged({ downloading: false });
         }
     }
 
@@ -209,6 +221,10 @@ export class SQLHandler<Tables extends TablesDefinition, Filter> implements SQLC
                         break;
                 }
             }
+        } catch (e) {
+            console.error(e);
+            this._cacheDirty = true;
+            this._fireStateChanged({ dirty: true });
         } finally {
             this._fireStateChanged({ uploading: false });
         }
