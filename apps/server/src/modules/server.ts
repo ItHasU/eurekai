@@ -1,7 +1,7 @@
 import { registerAdapterAPI } from "@dagda/server/sql/api.adapter";
 import { SQLiteHelper } from "@dagda/server/sql/sqlite.helper";
 import { Data } from "@dagda/shared/sql/types";
-import { ComputationStatus, Filters, PictureDTO, ProjectDTO, PromptDTO, Tables } from "@eurekai/shared/src/types";
+import { AttachmentDTO, ComputationStatus, Filters, PictureDTO, ProjectDTO, PromptDTO, Tables, f, t } from "@eurekai/shared/src/types";
 import express from "express";
 import { resolve } from "node:path";
 
@@ -16,6 +16,30 @@ export async function initHTTPServer(db: SQLiteHelper<Tables>, port: number): Pr
 
     // -- Register SQL routes --
     registerAdapterAPI<Tables, Filters>(app, db, sqlFetch);
+
+    // -- Register attachments route --
+    app.get("/attachment/:id", async (req, res) => {
+        // Send attachment as a png image from the base 64 string
+        const id = +req.params.id;
+        try {
+            const attachment = await db.get<AttachmentDTO>(`SELECT * FROM ${t("attachments")} WHERE ${f("attachments", "id")}=?`, [id]);
+            if (!attachment) {
+                res.status(404).send(`Attachment ${id} not found`);
+            } else {
+                var img = Buffer.from(attachment.data, 'base64');
+
+                res.writeHead(200, {
+                    'Content-Type': 'image/png',
+                    'Content-Length': img.length,
+                    'Cache-Control': 'max-age=86400' // 1 day in seconds
+                });
+                res.end(img);
+            }
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: new String(err) });
+        }
+    });
 
     // -- Listen --
     app.listen(port);

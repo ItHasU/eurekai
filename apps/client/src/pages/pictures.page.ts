@@ -50,9 +50,6 @@ export class PicturesPage extends AbstractPageElement {
 
     /** @inheritdoc */
     protected override async _refresh(): Promise<void> {
-        // -- Clear --
-        this._picturesDiv.innerHTML = "";
-
         // -- Make sure cache is updated --
         const projectId = this._data.getSelectedProject();
         if (projectId == null) {
@@ -66,12 +63,15 @@ export class PicturesPage extends AbstractPageElement {
             }
         });
 
-        // -- Fetch prompts --
-        const prompts = this._data.getSQLHandler().getCache("prompts").getItems().filter(prompt => prompt.projectId === projectId);
+        // -- Clear --
+        this._picturesDiv.innerHTML = "";
 
-        const picturesRaw = this._data.getSQLHandler().getCache("pictures").getItems();
-        const preferredSeeds: SeedDTO[] = [];//await this._cache.getSeeds();
+        // -- Fetch data --
         const project = this._data.getSQLHandler().getCache("projects").getById(projectId)
+        const prompts = this._data.getSQLHandler().getCache("prompts").getItems().filter(prompt => prompt.projectId === projectId);
+        const picturesRaw = this._data.getSQLHandler().getCache("pictures").getItems();
+
+        const preferredSeeds: SeedDTO[] = [];//await this._cache.getSeeds();
 
         if (project == null) {
             // Nothing to display
@@ -83,15 +83,13 @@ export class PicturesPage extends AbstractPageElement {
             promptsMap[prompt.id] = prompt;
         }
 
-        let hasPendingPicture = false;
         let hasPromptDisplayed = false;
-        const pictures = [...picturesRaw];
+        const pictures = picturesRaw.filter(picture => {
+            const prompt = promptsMap[picture.promptId];
+            return prompt != null && prompt.projectId == projectId;
+        });
         pictures.sort((p1, p2) => {
             let res = 0;
-
-            if (p1.status === ComputationStatus.PENDING || p2.status === ComputationStatus.PENDING) {
-                hasPendingPicture = true;
-            }
 
             if (res === 0) {
                 const prompt1 = promptsMap[p1.promptId];
@@ -99,10 +97,6 @@ export class PicturesPage extends AbstractPageElement {
                 if (prompt1 && prompt2) {
                     res = -(prompt1.orderIndex - prompt2.orderIndex);
                 }
-            }
-
-            if (res === 0) {
-                res = p1.id - p2.id;
             }
 
             if (res === 0) {
@@ -117,9 +111,10 @@ export class PicturesPage extends AbstractPageElement {
         });
 
         // -- Auto switch to accepted --
-        if (!hasPendingPicture && this._picturesFilterSelect.value === "done") {
-            this._picturesFilterSelect.value = "accept";
-        }
+        // FIXME : Not working
+        // if (!hasPendingPicture && this._picturesFilterSelect.value === "done") {
+        // this._picturesFilterSelect.value = "accept";
+        // }
 
         // -- Get the filter --
         let filter: (picture: PictureDTO) => boolean = this._getFilter();
@@ -178,15 +173,15 @@ export class PicturesPage extends AbstractPageElement {
         }
 
         // -- Fill the pictures --
-        const picturesDiv = this.querySelector("#picturesDiv") as HTMLDivElement;
         const displayedPromptIds: Set<number> = new Set();
         for (const picture of pictures) {
             if (!filter(picture)) {
                 continue;
             }
             const prompt = promptsMap[picture.promptId];
-            if (prompt.projectId !== project.id) {
-                // Picture still in the cache but for another project
+            if (prompt == null) {
+                // Should never happen since pictures are already filtered above
+                // still it is safer to test it once again
                 continue;
             }
 
@@ -210,18 +205,22 @@ export class PicturesPage extends AbstractPageElement {
                 isPreferredSeed: false, // preferredSeeds.has(picture.seed),
                 isLockable: project?.lockable === BooleanEnum.TRUE,
                 accept: async () => {
-                    // await this._cache.withData(async (data) => {
-                    //     await data.setPictureStatus(picture.id, ComputationStatus.ACCEPTED);
-                    //     picture.status = ComputationStatus.ACCEPTED;
-                    // });
+                    await this._data.getSQLHandler().withTransaction(tr => {
+                        tr.update("pictures", picture, {
+                            status: ComputationStatus.ACCEPTED
+                        });
+                        generateNextPicturesIfNeeded(this._data.getSQLHandler(), tr, prompt);
+                    });
                     item.refresh();
                     scrollToNextSibling(item);
                 },
                 reject: async () => {
-                    // await this._cache.withData(async (data) => {
-                    //     await data.setPictureStatus(picture.id, ComputationStatus.REJECTED);
-                    //     picture.status = ComputationStatus.REJECTED;
-                    // });
+                    await this._data.getSQLHandler().withTransaction(tr => {
+                        tr.update("pictures", picture, {
+                            status: ComputationStatus.REJECTED
+                        });
+                        generateNextPicturesIfNeeded(this._data.getSQLHandler(), tr, prompt);
+                    });
                     item.refresh();
                     scrollToNextSibling(item);
                 },
@@ -254,14 +253,16 @@ export class PicturesPage extends AbstractPageElement {
                     item.refresh();
                 },
                 setAsFeatured: async () => {
-                    // await this._cache.withData(async (data) => {
-                    //     await data.setProjectFeaturedImage(prompt.projectId, picture.attachmentId ?? null);
-                    // });
+                    await this._data.getSQLHandler().withTransaction(tr => {
+                        tr.update("projects", project, {
+                            featuredAttachmentId: picture.attachmentId
+                        });
+                    });
                 },
                 fetch: () => Promise.resolve("") //this._cache.data.getAttachment.bind(this._cache.data)
             });
             item.classList.add("col-sm-12", "col-md-6", "col-lg-4");
-            picturesDiv.appendChild(item);
+            this._picturesDiv.appendChild(item);
             item.refresh();
         }
 
@@ -281,7 +282,7 @@ export class PicturesPage extends AbstractPageElement {
             this._closePromptPanel();
         }
 
-        picturesDiv.scrollTo(0, 0);
+        this._picturesDiv.scrollTo(0, 0);
     }
 
     protected _getFilter(): (picture: PictureDTO) => boolean {
@@ -289,7 +290,7 @@ export class PicturesPage extends AbstractPageElement {
         const filterIndex = this._picturesFilterSelect.value;
         switch (filterIndex) {
             case "done":
-                filter = function (picture) { return picture.status <= ComputationStatus.DONE; }
+                filter = function (picture) { return picture.status === ComputationStatus.DONE; }
                 break;
             case "accept":
                 filter = function (picture) { return picture.status === ComputationStatus.ACCEPTED; }

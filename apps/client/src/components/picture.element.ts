@@ -88,10 +88,10 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
             if (entries.length > 0 && entries[0].target === containerDiv && entries[0].isIntersecting) {
                 // If displayed, load the image
                 if (this.data.attachmentId != null) {
-                    img_sd.src = `/api/attachment/${this.data.attachmentId}`;
+                    img_sd.src = `/attachment/${this.data.attachmentId}`;
                 }
                 if (this.data.highresAttachmentId != null) {
-                    img_hd.src = `/api/attachment/${this.data.highresAttachmentId}`;
+                    img_hd.src = `/attachment/${this.data.highresAttachmentId}`;
                 }
             } else {
                 // If hidden, unload the images

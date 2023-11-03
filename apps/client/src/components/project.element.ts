@@ -32,7 +32,7 @@ export class ProjectElement extends AbstractDTOElement<ProjectDTO> {
         });
 
         if (this.data.featuredAttachmentId != null) {
-            (<HTMLImageElement>this.querySelector("[ref='featured']")!).src = `/api/attachment/${this.data.featuredAttachmentId}`;
+            (<HTMLImageElement>this.querySelector("[ref='featured']")!).src = `/attachment/${this.data.featuredAttachmentId}`;
         }
         this._bindClick("pin", (evt) => {
             evt.stopPropagation();
