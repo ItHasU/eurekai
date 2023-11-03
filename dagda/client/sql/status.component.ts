@@ -21,7 +21,10 @@ export class SQLStatusComponent<Tables extends TablesDefinition, Filter> extends
         handler.on("state", (event) => {
             this._refresh(event.data);
         });
-        this.addEventListener("click", refreshCB);
+        this.addEventListener("click", async () => {
+            handler.markCacheDirty();
+            await refreshCB();
+        });
     }
 
     protected _refresh(data: SQLEvents["state"]): void {
