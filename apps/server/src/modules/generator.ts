@@ -1,7 +1,9 @@
 import { SQLHandler } from "@dagda/shared/sql/handler";
 import { ComputationStatus, Filters, PromptDTO, Tables } from "@eurekai/shared/src/types";
 import { DiffusersRegistry } from "src/diffusers";
+import { ImageDescription } from "src/diffusers/diffuser";
 //import { NotificationKind } from "@eurekai/shared/src/data";
+import { writeFile } from "fs/promises";
 
 interface PromptWithSeed extends PromptDTO {
     seed: number;
@@ -60,13 +62,17 @@ export class Generator {
 
                 // -- Generate the image --
                 try {
-                    const imageData = await diffuser.txt2img({
+                    const img: ImageDescription = {
                         width: prompt.width,
                         height: prompt.height,
                         prompt: prompt.prompt,
                         negative_prompt: prompt.negative_prompt,
                         seed: picture.seed
-                    }, false);
+                    };
+                    console.log(img);
+                    const imageData = await diffuser.txt2img(img, false);
+
+                    await writeFile(`${new Date().getTime()}.png`, Buffer.from(imageData, 'base64'));
 
                     // -- Save --
                     await this._handler.withTransaction((tr) => {

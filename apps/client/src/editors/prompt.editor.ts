@@ -34,9 +34,9 @@ export class PromptEditor extends HTMLElement {
             negative_prompt: negativePrompt ? negativePrompt : undefined,
             bufferSize,
 
-            width: 512,
-            height: 512,
-            model: ""
+            width: 1024,
+            height: 1024,
+            model: "SDXL juggernautXL_version6Rundiffusion.safetensors [1fe6c7ec54] + sd_xl_refiner_1.0_0.9vae.safetensors [8d0ce6c016]"
         };
     }
 

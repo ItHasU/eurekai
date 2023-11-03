@@ -14,7 +14,7 @@ export class DiffusersRegistry {
 
         // -- Fetch A1111 models --
         if (options.automatic1111_apiUrl != null) {
-            const a1111_models = await getAllModels(options.automatic1111_apiUrl)
+            const a1111_models = await getAllModels(options.automatic1111_apiUrl);
             for (const model of a1111_models) {
                 DiffusersRegistry._models.set(model.getTitle(), model);
             }

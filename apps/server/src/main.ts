@@ -17,7 +17,7 @@ async function main(): Promise<void> {
     });
 
     // -- Initialize the models -----------------------------------------------
-    DiffusersRegistry.fetchAllModels({
+    await DiffusersRegistry.fetchAllModels({
         automatic1111_apiUrl: getEnvString("API_URL")
     });
     const models = DiffusersRegistry.getModels();

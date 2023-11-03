@@ -1,7 +1,6 @@
+import { jsonPost } from "@dagda/server/tools/fetch";
 import { Txt2ImgOptions } from "@eurekai/shared/src/types";
 import { AbstractDiffuser, ImageDescription } from "../diffuser";
-
-declare var fetch: typeof import('undici').fetch; // Package undici is only required for typing not for runtime
 
 export type GenerateImageOptions = Omit<Txt2ImgOptions, "prompt" | "negative_prompt" | "width" | "height" | "seed">;
 
@@ -61,38 +60,18 @@ export abstract class Automatic1111 extends AbstractDiffuser {
 
     protected async _setModel(model: string): Promise<void> {
         const url = `${this._options.apiURL}/sdapi/v1/options`;
-        const result = await fetch(url, {
-            method: 'POST',
-            body: JSON.stringify({
-                "sd_model_checkpoint": model
-            }),
-            headers: {
-                'Content-Type': 'application/json',
-            }
+        await jsonPost(url, {
+            "sd_model_checkpoint": model
         });
-        if (result.status !== 200) {
-            throw new Error(result.statusText);
-        }
     }
 
     protected async _txt2img(options: Txt2ImgOptions): Promise<string[]> {
         const url = `${this._options.apiURL}/sdapi/v1/txt2img`;
-        const result = await fetch(url, {
-            method: 'POST',
-            body: JSON.stringify(options),
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
-        if (result.status !== 200) {
-            throw new Error(result.statusText);
-        } else {
-            const data = await result.json() as { images: string[] };
-            if (!data.images) {
-                throw new Error('api returned an invalid response');
-            }
-            return data.images;
+        const data = await jsonPost<{ images: string[] }>(url, options);
+        if (!data.images) {
+            throw new Error('api returned an invalid response');
         }
+        return data.images;
     }
 
     //#endregion

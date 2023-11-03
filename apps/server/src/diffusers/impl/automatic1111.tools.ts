@@ -1,4 +1,4 @@
-import { fetch } from "undici";
+import { jsonGet } from "@dagda/server/tools/fetch";
 import { AbstractDiffuser } from "../diffuser";
 import { SDModel } from "./automatic1111";
 import { SD } from "./sd";
@@ -6,12 +6,7 @@ import { SDXL } from "./sdxl";
 
 async function getModels(apiUrl: string): Promise<SDModel[]> {
     const url = `${apiUrl}/sdapi/v1/sd-models`;
-    const result = await fetch(url);
-    if (result.status !== 200) {
-        throw new Error(result.statusText);
-    } else {
-        return await result.json() as SDModel[];
-    }
+    return await jsonGet<SDModel[]>(url);
 }
 
 /** Fetch models from Automatic 1111 and try to best guess all the available models */

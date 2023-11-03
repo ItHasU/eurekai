@@ -31,6 +31,9 @@ export async function initDatabaseHelper(filename: string): Promise<SQLiteHelper
         highresStatus: "INTEGER",
         highresAttachmentId: "INTEGER NULL"
     });
+    await helper.initTable("attachments", {
+        data: "TEXT"
+    });
 
     return helper;
 }
