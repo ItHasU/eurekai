@@ -9,24 +9,25 @@ export class SQLStatusComponent<Tables extends TablesDefinition, Filter> extends
 
     protected _downloadIcon: HTMLElement;
     protected _uploadIcon: HTMLElement;
-    protected _dirtyIcon: HTMLElement;
+    protected _refreshIcon: HTMLElement;
 
-    constructor(handler: SQLHandler<Tables, Filter>) {
+    constructor(handler: SQLHandler<Tables, Filter>, refreshCB: () => void) {
         super();
         this.innerHTML = require("./status.component.html").default;
         this._downloadIcon = this.querySelector(`i[ref="downloadIcon"]`)!;
         this._uploadIcon = this.querySelector(`i[ref="uploadIcon"]`)!;
-        this._dirtyIcon = this.querySelector(`i[ref="dirtyIcon"]`)!;
+        this._refreshIcon = this.querySelector(`i[ref="refreshIcon"]`)!;
 
         handler.on("state", (event) => {
             this._refresh(event.data);
         });
+        this.addEventListener("click", refreshCB);
     }
 
     protected _refresh(data: SQLEvents["state"]): void {
-        this._downloadIcon.classList.toggle("text-light", data.downloading);
-        this._uploadIcon.classList.toggle("text-light", data.uploading);
-        this._dirtyIcon.classList.toggle("d-none", !data.dirty);
+        this._downloadIcon.classList.toggle("d-none", !data.downloading);
+        this._uploadIcon.classList.toggle("d-none", !data.uploading);
+        this._refreshIcon.classList.toggle("text-danger", data.dirty);
     }
 }
 

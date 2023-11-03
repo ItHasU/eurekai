@@ -49,20 +49,14 @@ class App implements DataProvider {
             submit: generateSubmitFunction()
         });
         this._statusPlaceholder = document.getElementById("statusPlaceholder") as HTMLSpanElement;
-        this._statusPlaceholder.append(new SQLStatusComponent(this._sqlHandler));
+        this._statusPlaceholder.append(new SQLStatusComponent(this._sqlHandler, async () => {
+            console.debug("Refresh button clicked");
+            // this._cache.clearNotifications();
+            if (this._currentPage) {
+                await this._currentPage.refresh();
+            }
+        }));
 
-        // -- Bind refresh button --
-        const refreshButton = document.getElementById("refreshButton");
-        if (refreshButton) {
-            refreshButton.addEventListener("click", async () => {
-                console.debug("Refresh button clicked");
-                // this._cache.clearNotifications();
-                this._sqlHandler.markCacheDirty();
-                if (this._currentPage) {
-                    await this._currentPage.refresh();
-                }
-            });
-        }
         // -- Bind lock button --
         const lockButton = document.getElementById("lockButton");
         if (lockButton) {
