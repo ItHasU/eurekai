@@ -36,8 +36,6 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         isPreferredSeed: boolean,
         accept: () => void,
         reject: () => void,
-        start: () => void,
-        stop: () => void,
         toggleSeed: () => void,
         toggleHighres: () => void,
         setAsFeatured: () => void,
@@ -62,8 +60,6 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         super.refresh();
         this._bindClick("accept", this._options.accept);
         this._bindClick("reject", this._options.reject);
-        this._bindClick("start", this._options.start);
-        this._bindClick("stop", this._options.stop);
         this._bindClick("seed", this._options.toggleSeed);
         this._bindClick("highres", this._options.toggleHighres);
         this._bindClick("featured", this._options.setAsFeatured);
@@ -199,7 +195,7 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         });
 
         // -- Handle highres --
-        const highresButton: HTMLButtonElement = this.querySelector("*[ref='highres']") as HTMLButtonElement;
+        const highresButton: HTMLButtonElement = this._getElementByRef("highres") as HTMLButtonElement;
         const highresIcon: HTMLSpanElement = highresButton.querySelector("i") as HTMLElement;
         highresIcon.classList.remove(ICON_HIGHRES, ICON_HIGHRES_COMPUTING, ICON_HIGHRES_DONE);
         switch (this.data.highresStatus) {
@@ -210,10 +206,6 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
             case ComputationStatus.PENDING:
                 highresIcon.classList.add(ICON_HIGHRES_COMPUTING);
                 highresButton.disabled = false;
-                break;
-            case ComputationStatus.COMPUTING:
-                highresIcon.classList.add(ICON_HIGHRES_COMPUTING);
-                highresButton.disabled = true;
                 break;
             case ComputationStatus.DONE:
                 highresIcon.classList.add(ICON_HIGHRES_DONE);

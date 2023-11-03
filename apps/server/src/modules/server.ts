@@ -1,7 +1,7 @@
 import { registerAdapterAPI } from "@dagda/server/sql/api.adapter";
 import { SQLiteHelper } from "@dagda/server/sql/sqlite.helper";
 import { Data } from "@dagda/shared/sql/types";
-import { Filters, ProjectDTO, PromptDTO, Tables } from "@eurekai/shared/src/types";
+import { ComputationStatus, Filters, PictureDTO, ProjectDTO, PromptDTO, Tables } from "@eurekai/shared/src/types";
 import express from "express";
 import { resolve } from "node:path";
 
@@ -15,7 +15,7 @@ export async function initHTTPServer(db: SQLiteHelper<Tables>, port: number): Pr
     app.use(express.static(path));
 
     // -- Register SQL routes --
-    registerAdapterAPI<Tables, Filters>(app, db, _fetch);
+    registerAdapterAPI<Tables, Filters>(app, db, sqlFetch);
 
     // -- Listen --
     app.listen(port);
@@ -25,7 +25,7 @@ export async function initHTTPServer(db: SQLiteHelper<Tables>, port: number): Pr
  * Fetch function for the app.  
  * This function must return the records that match the filter
  */
-async function _fetch(helper: SQLiteHelper<Tables>, filter: Filters): Promise<Data<Tables>> {
+export async function sqlFetch(helper: SQLiteHelper<Tables>, filter: Filters): Promise<Data<Tables>> {
     switch (filter.type) {
         case "projects":
             return {
@@ -35,6 +35,13 @@ async function _fetch(helper: SQLiteHelper<Tables>, filter: Filters): Promise<Da
             return {
                 projects: await helper.all<ProjectDTO>("SELECT * FROM projects WHERE id=?", [filter.options.projectId]),
                 prompts: await helper.all<PromptDTO>("SELECT * FROM prompts WHERE projectId=?", [filter.options.projectId]),
+                pictures: await helper.all<PictureDTO>("SELECT pictures.* FROM pictures JOIN prompts ON pictures.promptId = prompts.id WHERE prompts.projectId = ?", [filter.options.projectId])
+            }
+        case "pending":
+            return {
+                projects: await helper.all<ProjectDTO>("SELECT * FROM projects"),
+                prompts: await helper.all<PromptDTO>("SELECT prompts.* FROM pictures LEFT JOIN prompts ON prompts.id = pictures.promptId WHERE pictures.status = ?", [ComputationStatus.PENDING]),
+                pictures: await helper.all<PictureDTO>("SELECT pictures.* FROM pictures WHERE pictures.status = ?", [ComputationStatus.PENDING])
             }
         default:
             return {};

@@ -65,7 +65,7 @@ export class SQLTransaction<Tables extends TablesDefinition> {
      * Insert an item in the database.
      * This function will allocate a temporary negative id.
      */
-    public insert<TableName extends keyof Tables, DTO extends Tables[TableName]>(table: TableName, item: Tables[TableName]): void {
+    public insert<TableName extends keyof Tables>(table: TableName, item: Tables[TableName]): Tables[TableName] {
         // -- Perform the action on the cache --
         item.id = SQLTransaction._getNextTemporaryId();
         this._cacheHandler.getCache(table).insert(item);
@@ -80,6 +80,7 @@ export class SQLTransaction<Tables extends TablesDefinition> {
                 }
             }
         });
+        return item;
     }
 
     public update<TableName extends keyof Tables, DTO extends Tables[TableName]>(table: TableName, item: DTO, values: Partial<Omit<DTO, "id">>): void {

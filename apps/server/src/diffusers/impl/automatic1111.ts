@@ -1,8 +1,5 @@
 import { Txt2ImgOptions } from "@eurekai/shared/src/types";
-import { AbstractAPI, ImageDescription } from "../abstract.api";
-import { DatabaseWrapper } from "src/modules/db";
-import { SDXL } from "./sdxl";
-import { SD } from "./sd";
+import { AbstractDiffuser, ImageDescription } from "../diffuser";
 
 declare var fetch: typeof import('undici').fetch; // Package undici is only required for typing not for runtime
 
@@ -25,7 +22,7 @@ export interface ModelOptions {
     highresTemplate: GenerateImageOptions;
 }
 
-export abstract class Automatic1111 extends AbstractAPI {
+export abstract class Automatic1111 extends AbstractDiffuser {
 
     constructor(protected _title: string, protected readonly _options: ModelOptions) {
         super();
@@ -100,17 +97,4 @@ export abstract class Automatic1111 extends AbstractAPI {
 
     //#endregion
 
-    //#region Fetch models
-
-    public static async getModels(apiUrl: string): Promise<SDModel[]> {
-        const url = `${apiUrl}/sdapi/v1/sd-models`;
-        const result = await fetch(url);
-        if (result.status !== 200) {
-            throw new Error(result.statusText);
-        } else {
-            return await result.json() as SDModel[];
-        }
-    }
-
-    //#endregion
 }

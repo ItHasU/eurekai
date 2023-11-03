@@ -23,6 +23,14 @@ export async function initDatabaseHelper(filename: string): Promise<SQLiteHelper
         "prompt": "TEXT",
         "negative_prompt": "TEXT"
     });
+    await helper.initTable("pictures", {
+        promptId: "INTEGER",
+        seed: "INTEGER",
+        status: "INTEGER",
+        attachmentId: "INTEGER NULL",
+        highresStatus: "INTEGER",
+        highresAttachmentId: "INTEGER NULL"
+    });
 
     return helper;
 }

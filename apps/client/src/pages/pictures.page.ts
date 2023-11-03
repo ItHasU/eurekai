@@ -1,3 +1,4 @@
+import { generateNextPicturesIfNeeded } from "@eurekai/shared/src/pictures.data";
 import { BooleanEnum, ComputationStatus, PictureDTO, ProjectDTO, PromptDTO, SeedDTO } from "@eurekai/shared/src/types";
 import { PictureElement } from "src/components/picture.element";
 import { PromptElement } from "src/components/prompt.element";
@@ -130,6 +131,7 @@ export class PicturesPage extends AbstractPageElement {
                 start: async () => {
                     await this._data.getSQLHandler().withTransaction((tr) => {
                         tr.update("prompts", prompt, { active: BooleanEnum.TRUE });
+                        generateNextPicturesIfNeeded(this._data.getSQLHandler(), tr, prompt);
                     });
                     promptItem.refresh();
                     // Won't refresh pictures, but we don't care
@@ -223,20 +225,6 @@ export class PicturesPage extends AbstractPageElement {
                     item.refresh();
                     scrollToNextSibling(item);
                 },
-                start: async () => {
-                    // await this._cache.withData(async (data) => {
-                    //     await data.setPromptActive(picture.promptId, true);
-                    //     if (prompt) { prompt.active = true; }
-                    // });
-                    item.refresh();
-                },
-                stop: async () => {
-                    // await this._cache.withData(async (data) => {
-                    //     await data.setPromptActive(picture.promptId, false);
-                    //     if (prompt) { prompt.active = false; }
-                    // });
-                    item.refresh();
-                },
                 toggleSeed: async () => {
                     // await this._cache.withData(async (data) => {
                     //     await data.setSeedPreferred(prompt.projectId, picture.seed, !item._options.isPreferredSeed);
@@ -301,7 +289,7 @@ export class PicturesPage extends AbstractPageElement {
         const filterIndex = this._picturesFilterSelect.value;
         switch (filterIndex) {
             case "done":
-                filter = function (picture) { return picture.status === ComputationStatus.DONE; }
+                filter = function (picture) { return picture.status <= ComputationStatus.DONE; }
                 break;
             case "accept":
                 filter = function (picture) { return picture.status === ComputationStatus.ACCEPTED; }
@@ -366,13 +354,14 @@ export class PicturesPage extends AbstractPageElement {
                 }
             }
             await this._data.getSQLHandler().withTransaction((tr) => {
-                tr.insert("prompts", {
+                const newPrompt = tr.insert("prompts", {
                     ...prompt,
                     id: 0,
                     projectId,
                     orderIndex,
                     active: BooleanEnum.TRUE
                 });
+                generateNextPicturesIfNeeded(this._data.getSQLHandler(), tr, newPrompt);
             });
             await this.refresh();
         }

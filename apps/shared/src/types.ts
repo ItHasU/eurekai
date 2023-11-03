@@ -70,8 +70,6 @@ export enum ComputationStatus {
 
     /** Waiting for computation */
     PENDING,
-    /** Request sent the the generator */
-    COMPUTING,
     /** Response received from the generator */
     DONE,
     /** Error received from the generator */
@@ -232,9 +230,11 @@ type BaseFilter<T extends string, Options> = {
 export type ProjectsFilter = BaseFilter<"projects", undefined>;
 /** Get data for a specific project */
 export type ProjectFilter = BaseFilter<"project", { projectId: number }>;
+/** Get pending pictures and associated prompts */
+export type PendingPicturesFilter = BaseFilter<"pending", undefined>;
 
 /** List of all filters */
-export type Filters = ProjectsFilter | ProjectFilter;
+export type Filters = ProjectsFilter | ProjectFilter | PendingPicturesFilter;
 
 /** Compare filters */
 export function filterEquals(newFilter: Filters, oldFilter: Filters): boolean {
@@ -243,6 +243,8 @@ export function filterEquals(newFilter: Filters, oldFilter: Filters): boolean {
     } else {
         switch (newFilter.type) {
             case "projects":
+            case "pending":
+                // No options to compare
                 return true;
             case "project":
                 return newFilter.options.projectId === (oldFilter as ProjectFilter).options.projectId;
