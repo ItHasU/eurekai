@@ -3,7 +3,7 @@ import { registerAdapterAPI } from "@dagda/server/sql/api.adapter";
 import { SQLiteHelper } from "@dagda/server/sql/sqlite.helper";
 import { Data } from "@dagda/shared/sql/types";
 import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api";
-import { AttachmentDTO, ComputationStatus, Filters, PictureDTO, ProjectDTO, PromptDTO, Tables, f, t } from "@eurekai/shared/src/types";
+import { AttachmentDTO, ComputationStatus, Filters, PictureDTO, ProjectDTO, PromptDTO, SeedDTO, Tables, f, t } from "@eurekai/shared/src/types";
 import express, { Application } from "express";
 import { resolve } from "node:path";
 import { DiffusersRegistry } from "src/diffusers";
@@ -65,7 +65,9 @@ export async function sqlFetch(helper: SQLiteHelper<Tables>, filter: Filters): P
             return {
                 projects: await helper.all<ProjectDTO>("SELECT * FROM projects WHERE id=?", [filter.options.projectId]),
                 prompts: await helper.all<PromptDTO>("SELECT * FROM prompts WHERE projectId=?", [filter.options.projectId]),
-                pictures: await helper.all<PictureDTO>("SELECT pictures.* FROM pictures JOIN prompts ON pictures.promptId = prompts.id WHERE prompts.projectId = ?", [filter.options.projectId])
+                pictures: await helper.all<PictureDTO>("SELECT pictures.* FROM pictures JOIN prompts ON pictures.promptId = prompts.id WHERE prompts.projectId = ?", [filter.options.projectId]),
+                // attachments: not fetch using cache but through a custom route
+                seeds: await helper.all<SeedDTO>(`SELECT * FROM ${t("seeds")} WHERE ${f("seeds", "projectId")}=?`, [filter.options.projectId])
             }
         case "pending":
             return {

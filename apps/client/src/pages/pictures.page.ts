@@ -1,5 +1,5 @@
-import { generateNextPicturesIfNeeded } from "@eurekai/shared/src/pictures.data";
-import { BooleanEnum, ComputationStatus, PictureDTO, ProjectDTO, PromptDTO, SeedDTO } from "@eurekai/shared/src/types";
+import { generateNextPicturesIfNeeded, isPreferredSeed, togglePreferredSeed } from "@eurekai/shared/src/pictures.data";
+import { BooleanEnum, ComputationStatus, PictureDTO, ProjectDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { PictureElement } from "src/components/picture.element";
 import { PromptElement } from "src/components/prompt.element";
 import { showSelect } from "src/components/tools";
@@ -98,7 +98,7 @@ export class PicturesPage extends AbstractPageElement {
             }
         }
         // TODO Preferred seeds
-        const preferredSeeds: SeedDTO[] = [];//await this._cache.getSeeds();
+        const preferredSeeds: Set<number> = new Set(StaticDataProvider.sqlHandler.getItems("seeds").filter(s => s.projectId === projectId).map(s => s.seed));
 
         // -- Render per prompt -----------------------------------------------
         // Sort prompts per order index (inverted)
@@ -118,7 +118,7 @@ export class PicturesPage extends AbstractPageElement {
         });
 
         // -- Get the filter --
-        let filter: (picture: PictureDTO) => boolean = this._getFilter();
+        let filter: (picture: PictureDTO) => boolean = this._getFilter(preferredSeeds);
 
         for (const prompt of prompts) {
             // -- Add a line break --
@@ -184,7 +184,7 @@ export class PicturesPage extends AbstractPageElement {
                 // -- Add the picture --
                 const item = new PictureElement(picture, {
                     prompt,
-                    isPreferredSeed: false, // preferredSeeds.has(picture.seed),
+                    isPreferredSeed: isPreferredSeed(StaticDataProvider.sqlHandler, projectId, picture.seed),
                     isLockable: project.lockable === BooleanEnum.TRUE,
                     accept: async () => {
                         await StaticDataProvider.sqlHandler.withTransaction(tr => {
@@ -207,10 +207,10 @@ export class PicturesPage extends AbstractPageElement {
                         scrollToNextSibling(item);
                     },
                     toggleSeed: async () => {
-                        // await this._cache.withData(async (data) => {
-                        //     await data.setSeedPreferred(prompt.projectId, picture.seed, !item._options.isPreferredSeed);
-                        //     item._options.isPreferredSeed = !item._options.isPreferredSeed;
-                        // });
+                        await StaticDataProvider.sqlHandler.withTransaction(tr => {
+                            togglePreferredSeed(StaticDataProvider.sqlHandler, tr, projectId, picture.seed);
+                        });
+                        item._options.isPreferredSeed = isPreferredSeed(StaticDataProvider.sqlHandler, projectId, picture.seed);
                         item.refresh();
                     },
                     toggleHighres: async () => {
@@ -259,18 +259,24 @@ export class PicturesPage extends AbstractPageElement {
         this._picturesDiv.scrollTo(0, 0);
     }
 
-    protected _getFilter(): (picture: PictureDTO) => boolean {
+    protected _getFilter(preferredSeeds: Set<number>): (picture: PictureDTO) => boolean {
         let filter: (picture: PictureDTO) => boolean = function () { return true };
         const filterIndex = this._picturesFilterSelect.value;
         switch (filterIndex) {
+            case "all":
+                filter = function () { return true; }
+                break;
+            case "preferred":
+                filter = function (picture) { return picture.status >= ComputationStatus.DONE && preferredSeeds.has(picture.seed); };
+                break;
             case "done":
-                filter = function (picture) { return picture.status === ComputationStatus.DONE; }
+                filter = function (picture) { return picture.status === ComputationStatus.DONE; };
                 break;
             case "accept":
-                filter = function (picture) { return picture.status === ComputationStatus.ACCEPTED; }
+                filter = function (picture) { return picture.status === ComputationStatus.ACCEPTED; };
                 break;
             case "reject":
-                filter = function (picture) { return picture.status === ComputationStatus.REJECTED; }
+                filter = function (picture) { return picture.status === ComputationStatus.REJECTED; };
                 break;
             default:
                 console.error(`Invalid value : ${filterIndex}`)

@@ -34,6 +34,10 @@ export async function initDatabaseHelper(filename: string): Promise<SQLiteHelper
     await helper.initTable("attachments", {
         data: "TEXT"
     });
+    await helper.initTable("seeds", {
+        projectId: "INTEGER",
+        seed: "INTEGER"
+    });
 
     return helper;
 }

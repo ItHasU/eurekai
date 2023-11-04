@@ -7,6 +7,8 @@
                     <option value="done" selected>Pictures to evaluate</option>
                     <option value="accept">Pictures accepted</option>
                     <option value="reject">Pictures rejected</option>
+                    <option value="preferred">Pictures with preferred seeds</option>
+                    <option value="all">All pictures</option>
                 </select>
                 <button ref="zipButton" type="button" class="btn btn-primary">
                     <i class="bi bi-file-zip"></i> <span class="d-none d-lg-inline">
@@ -28,7 +30,8 @@
             <div class="card border-light mt-2" tabindex="-1">
                 <div class="card-header">
                     New prompt
-                    <button ref="closePromptButton" type="button" class="btn-close float-end" aria-label="Close"></button>
+                    <button ref="closePromptButton" type="button" class="btn-close float-end"
+                        aria-label="Close"></button>
                 </div>
                 <div class="card-body">
                     <editor-prompt id="promptEditor"></editor-prompt>
