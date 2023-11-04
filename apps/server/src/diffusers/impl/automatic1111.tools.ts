@@ -32,11 +32,11 @@ export async function getAllModels(apiURL: string): Promise<AbstractDiffuser[]> 
     const diffusers: AbstractDiffuser[] = [];
     for (const sdxl_model of sdxl_models) {
         for (const sdxl_refiner of sdxl_refiners) {
-            diffusers.push(new SDXL(apiURL, sdxl_model.title, sdxl_refiner.title));
+            diffusers.push(new SDXL(apiURL, sdxl_model, sdxl_refiner));
         }
     }
     for (const sd_model of sd_models) {
-        diffusers.push(new SD(apiURL, sd_model.title));
+        diffusers.push(new SD(apiURL, sd_model));
     }
     return diffusers;
 }

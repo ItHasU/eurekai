@@ -1,11 +1,3 @@
-import { SQLHandler } from "@dagda/shared/sql/handler";
-import { Filters, Tables } from "@eurekai/shared/src/types";
-
-export interface DataProvider {
-    getSelectedProject(): number | undefined;
-    setSelectedProject(projectId: number | undefined): void;
-    getSQLHandler(): SQLHandler<Tables, Filters>
-}
 
 /**
  * Abstract class for a page.
@@ -22,7 +14,7 @@ export abstract class AbstractPageElement extends HTMLElement {
     /** 
      * Pass the HTML template to render in the WebComponent.
      */
-    constructor(template: string, protected _data: DataProvider) {
+    constructor(template: string) {
         super();
         // Load template
         this.innerHTML = template;

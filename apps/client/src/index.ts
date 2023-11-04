@@ -2,22 +2,17 @@ import "bootstrap";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "bootstrap/dist/css/bootstrap.css";
 
-import { SQLHandler } from "@dagda/shared/sql/handler";
-import { Filters, Tables, filterEquals } from "@eurekai/shared/src/types";
-import { PromptEditor } from "./editors/prompt.editor";
-import { AbstractPageElement, DataProvider } from "./pages/abstract.page.element";
-import { ProjectsPage } from "./pages/projects.page";
-
-// import { Notification, NotificationKind } from "@eurekai/shared/src/data";
+import { SQLStatusComponent } from "@dagda/client/sql/status.component";
 import { PictureElement } from "./components/picture.element";
 import { PromptElement } from "./components/prompt.element";
+import { PromptEditor } from "./editors/prompt.editor";
+import { AbstractPageElement } from "./pages/abstract.page.element";
 import { PicturesPage } from "./pages/pictures.page";
-// import { SettingsPage } from "./pages/settings.page";
-import { generateFetchFunction, generateSubmitFunction } from "@dagda/client/sql/client.adapter";
-import { SQLStatusComponent } from "@dagda/client/sql/status.component";
+import { ProjectsPage } from "./pages/projects.page";
+import { StaticDataProvider } from "./tools/dataProvider";
 
 interface PageConstructor {
-    new(data: DataProvider): AbstractPageElement;
+    new(): AbstractPageElement;
 }
 
 // -- Make sure components are loaded --
@@ -29,27 +24,19 @@ PictureElement;
 
 PromptEditor;
 
-class App implements DataProvider {
-
-    protected _sqlHandler: SQLHandler<Tables, Filters>;
+class App {
 
     protected readonly _pageDiv: HTMLDivElement;
     protected readonly _statusPlaceholder: HTMLSpanElement;
 
     protected _currentPage: AbstractPageElement | null = null;
-    protected _selectedProjectId: number | undefined = undefined;
 
     protected _lastRefreshed: DOMHighResTimeStamp | null = null;
 
     constructor() {
         // -- SQLHandler --
-        this._sqlHandler = new SQLHandler({
-            filterEquals: filterEquals,
-            fetch: generateFetchFunction(),
-            submit: generateSubmitFunction()
-        });
         this._statusPlaceholder = document.getElementById("statusPlaceholder") as HTMLSpanElement;
-        this._statusPlaceholder.append(new SQLStatusComponent(this._sqlHandler, async () => {
+        this._statusPlaceholder.append(new SQLStatusComponent(StaticDataProvider.sqlHandler, async () => {
             console.debug("Refresh button clicked");
             // this._cache.clearNotifications();
             if (this._currentPage) {
@@ -65,7 +52,6 @@ class App implements DataProvider {
         // -- Bind pages --
         this._pageDiv = document.getElementById("pageDiv") as HTMLDivElement;
         this._bindPage("projectsButton", ProjectsPage);
-        // this._bindPage("settingsButton", SettingsPage);
 
         this.setPage(ProjectsPage);
 
@@ -81,23 +67,6 @@ class App implements DataProvider {
         window.requestAnimationFrame(step);
     }
 
-    //#region DataProvider ----------------------------------------------------
-
-    public getSQLHandler(): SQLHandler<Tables, Filters> {
-        return this._sqlHandler;
-    }
-
-    public getSelectedProject(): number | undefined {
-        return this._selectedProjectId;
-    }
-
-    public setSelectedProject(projectId: number | undefined): void {
-        this._selectedProjectId = projectId;
-        this.setPage(PicturesPage);
-    }
-
-    //#endregion
-
     protected _bindPage(buttonId: string, pageConstructor: PageConstructor): void {
         const button = document.getElementById(buttonId);
         if (button) {
@@ -111,7 +80,7 @@ class App implements DataProvider {
         // -- Empty page --
         this._pageDiv.innerHTML = "";
         // -- Create page --
-        this._currentPage = new pageConstructor(this);
+        this._currentPage = new pageConstructor();
         this._pageDiv.appendChild(this._currentPage);
         this._currentPage.refresh(); // Catched by the page
     }

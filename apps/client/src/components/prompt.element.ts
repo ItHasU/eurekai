@@ -1,3 +1,4 @@
+import { ModelInfo } from "@eurekai/shared/src/models.api";
 import { ComputationStatus, PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { AbstractDTOElement } from "./abstract.dto.element";
 
@@ -11,6 +12,7 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> {
     public readonly acceptedPercent: number;
 
     constructor(data: PromptDTO, protected _options: {
+        model: ModelInfo | null,
         pictures: PictureDTO[],
         start: () => void,
         stop: () => void,

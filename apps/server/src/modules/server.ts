@@ -1,9 +1,12 @@
+import { registerAPI } from "@dagda/server/api";
 import { registerAdapterAPI } from "@dagda/server/sql/api.adapter";
 import { SQLiteHelper } from "@dagda/server/sql/sqlite.helper";
 import { Data } from "@dagda/shared/sql/types";
+import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api";
 import { AttachmentDTO, ComputationStatus, Filters, PictureDTO, ProjectDTO, PromptDTO, Tables, f, t } from "@eurekai/shared/src/types";
-import express from "express";
+import express, { Application } from "express";
 import { resolve } from "node:path";
+import { DiffusersRegistry } from "src/diffusers";
 
 /** Initialize an Express app and register the routes */
 export async function initHTTPServer(db: SQLiteHelper<Tables>, port: number): Promise<void> {
@@ -16,6 +19,9 @@ export async function initHTTPServer(db: SQLiteHelper<Tables>, port: number): Pr
 
     // -- Register SQL routes --
     registerAdapterAPI<Tables, Filters>(app, db, sqlFetch);
+
+    // -- Register models routes --
+    _registerModelsAPI(app);
 
     // -- Register attachments route --
     app.get("/attachment/:id", async (req, res) => {
@@ -70,4 +76,20 @@ export async function sqlFetch(helper: SQLiteHelper<Tables>, filter: Filters): P
         default:
             return {};
     }
+}
+
+function _registerModelsAPI(app: Application): void {
+    registerAPI<ModelsAPI>(app, MODELS_URL, {
+        getModels: async (refresh: boolean): Promise<ModelInfo[]> => {
+            if (refresh) {
+                await DiffusersRegistry.fetchAllModels();
+            }
+
+            const res: ModelInfo[] = [];
+            for (const model of await DiffusersRegistry.getModels()) {
+                res.push(model.getModelInfo());
+            }
+            return res;
+        }
+    });
 }

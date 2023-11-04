@@ -1,3 +1,5 @@
+import { ModelInfo } from "@eurekai/shared/src/models.api";
+
 /** Common parameters to generate an image */
 export interface ImageDescription {
     prompt: string;
@@ -9,11 +11,8 @@ export interface ImageDescription {
 
 /** Abstract API to connect to an image generator */
 export abstract class AbstractDiffuser {
-    /** 
-     * Get title of the model. 
-     * Must be unique so it can be reused later.
-     */
-    public abstract getTitle(): string;
+    /** Get model info */
+    public abstract getModelInfo(): ModelInfo;
 
     /** Generate an image. */
     public abstract txt2img(options: ImageDescription, highres: boolean): Promise<string>;

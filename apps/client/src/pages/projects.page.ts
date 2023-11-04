@@ -1,6 +1,9 @@
 import { BooleanEnum } from "@eurekai/shared/src/types";
+import { APP } from "src";
+import { StaticDataProvider } from "src/tools/dataProvider";
 import { ProjectElement } from "../components/project.element";
-import { AbstractPageElement, DataProvider } from "./abstract.page.element";
+import { AbstractPageElement } from "./abstract.page.element";
+import { PicturesPage } from "./pictures.page";
 
 const BORDER_CLASSES = ["border-primary", "border-2"];
 
@@ -14,8 +17,8 @@ export class ProjectsPage extends AbstractPageElement {
     protected readonly _projectsActiveDiv: HTMLDivElement;
     protected readonly _projectsArchivedDiv: HTMLDivElement;
 
-    constructor(data: DataProvider) {
-        super(require("./projects.page.html").default, data);
+    constructor() {
+        super(require("./projects.page.html").default);
 
         // -- Get components --
         this._nameInput = this.querySelector("#projectNameInput") as HTMLInputElement;
@@ -29,7 +32,7 @@ export class ProjectsPage extends AbstractPageElement {
         this._bindClickForRef("projectNewButton", async () => {
             const name = this._nameInput.value;
             if (name) {
-                await this._data.getSQLHandler().withTransaction((tr) => {
+                await StaticDataProvider.sqlHandler.withTransaction((tr) => {
                     tr.insert("projects", {
                         id: 0,
                         lockable: BooleanEnum.FALSE,
@@ -44,10 +47,10 @@ export class ProjectsPage extends AbstractPageElement {
 
     /** @inheritdoc */
     public override async _refresh(): Promise<void> {
-        await this._data.getSQLHandler().fetch({ type: "projects", options: void (0) });
+        await StaticDataProvider.sqlHandler.fetch({ type: "projects", options: void (0) });
 
         // -- Fetch projects --
-        const projects = this._data.getSQLHandler().getItems("projects");
+        const projects = StaticDataProvider.sqlHandler.getItems("projects");
         projects.sort((a, b) => -(a.id - b.id));
 
         // -- Render projects --
@@ -60,25 +63,25 @@ export class ProjectsPage extends AbstractPageElement {
         for (const project of projects) {
             const element = new ProjectElement(project, {
                 pin: async () => {
-                    await this._data.getSQLHandler().withTransaction((tr) => {
+                    await StaticDataProvider.sqlHandler.withTransaction((tr) => {
                         tr.update("projects", project, { pinned: BooleanEnum.TRUE });
                     });
                     this.refresh();
                 },
                 unpin: async () => {
-                    await this._data.getSQLHandler().withTransaction((tr) => {
+                    await StaticDataProvider.sqlHandler.withTransaction((tr) => {
                         tr.update("projects", project, { pinned: BooleanEnum.FALSE });
                     });
                     this.refresh();
                 },
                 lock: async () => {
-                    await this._data.getSQLHandler().withTransaction((tr) => {
+                    await StaticDataProvider.sqlHandler.withTransaction((tr) => {
                         tr.update("projects", project, { lockable: BooleanEnum.TRUE });
                     });
                     this.refresh();
                 },
                 unlock: async () => {
-                    await this._data.getSQLHandler().withTransaction((tr) => {
+                    await StaticDataProvider.sqlHandler.withTransaction((tr) => {
                         tr.update("projects", project, { lockable: BooleanEnum.FALSE });
                     });
                     this.refresh();
@@ -86,12 +89,8 @@ export class ProjectsPage extends AbstractPageElement {
             });
             element.addEventListener("click", () => {
                 console.debug(`Project ${project.id} selected`);
-                this._data.setSelectedProject(project.id);
-                // Remove border from all projects
-                this.querySelectorAll(".card")?.forEach((card) => {
-                    card.classList.remove(...BORDER_CLASSES);
-                });
-                element.querySelector(".card")?.classList.add(...BORDER_CLASSES);
+                StaticDataProvider.setSelectedProject(project.id);
+                APP.setPage(PicturesPage);
             });
             if (project.pinned === BooleanEnum.TRUE) {
                 this._projectsPinnedDiv.appendChild(element);
@@ -99,7 +98,7 @@ export class ProjectsPage extends AbstractPageElement {
                 this._projectsArchivedDiv.appendChild(element);
             }
             element.refresh();
-            if (project.id === this._data.getSelectedProject()) {
+            if (project.id === StaticDataProvider.getSelectedProject()) {
                 element.querySelector(".card")?.classList.add(...BORDER_CLASSES);
             }
         }

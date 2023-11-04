@@ -1,9 +1,14 @@
 <div class="row mt-2">
     <div class="col-md">
         <label for="modelSelect" class="form-label">Model</label>
-        <select id="modelSelect" class="form-control">
-            <option value="0">Deliberate 2.2</option>
-        </select>
+        <div class="input-group">
+            <select id="modelsSelect" class="form-control">
+                <option value="">--</option>
+            </select>
+            <button class="btn btn-outline-secondary" type="button" id="modelsButton">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </div>
     </div>
     <div class="col-md">
         <label for="widthInput" class="form-label">Size</label>

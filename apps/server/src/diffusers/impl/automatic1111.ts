@@ -6,6 +6,7 @@ export type GenerateImageOptions = Omit<Txt2ImgOptions, "prompt" | "negative_pro
 
 /** Stable Diffusion model information */
 export interface SDModel {
+    /** This is the string to use for setModel() */
     title: string,
     model_name: string,
     hash: string,
@@ -16,20 +17,16 @@ export interface SDModel {
 
 export interface ModelOptions {
     apiURL: string;
-    model: string;
+    model: SDModel;
+    size: number;
     lowresTemplate: GenerateImageOptions;
     highresTemplate: GenerateImageOptions;
 }
 
 export abstract class Automatic1111 extends AbstractDiffuser {
 
-    constructor(protected _title: string, protected readonly _options: ModelOptions) {
+    constructor(protected readonly _options: ModelOptions) {
         super();
-    }
-
-    /** @inheritdoc */
-    public override getTitle(): string {
-        return this._title;
     }
 
     //#region Image generation
@@ -37,7 +34,7 @@ export abstract class Automatic1111 extends AbstractDiffuser {
     /** @inheritdoc */
     public override async txt2img(image: ImageDescription, highres: boolean): Promise<string> {
         // -- Set model --
-        await this._setModel(this._options.model);
+        await this._setModel(this._options.model.title);
 
         // -- Generate image --
         const options: Txt2ImgOptions = {

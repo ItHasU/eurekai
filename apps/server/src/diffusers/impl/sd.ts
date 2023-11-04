@@ -1,4 +1,5 @@
-import { Automatic1111, GenerateImageOptions } from "./automatic1111";
+import { ModelInfo } from "@eurekai/shared/src/models.api";
+import { Automatic1111, GenerateImageOptions, SDModel } from "./automatic1111";
 
 const DEFAULT_PARAMETERS: GenerateImageOptions = {
     batch_size: 1,
@@ -9,12 +10,14 @@ const DEFAULT_PARAMETERS: GenerateImageOptions = {
     steps: 20
 };
 
+/** Stable diffusion model */
 export class SD extends Automatic1111 {
 
-    constructor(apiURL: string, model: string) {
-        super(`SD ${model}`, {
+    constructor(apiURL: string, model: SDModel) {
+        super({
             apiURL,
             model,
+            size: 512, // SD 1.5
             lowresTemplate: {
                 ...DEFAULT_PARAMETERS
             },
@@ -28,4 +31,12 @@ export class SD extends Automatic1111 {
         });
     }
 
+    /** @inheritdoc */
+    public override getModelInfo(): ModelInfo {
+        return {
+            uid: `SD-${this._options.model.hash}`,
+            displayName: `[SD] ${this._options.model.model_name}`,
+            size: this._options.size
+        };
+    }
 }

@@ -4,7 +4,8 @@ import { PictureElement } from "src/components/picture.element";
 import { PromptElement } from "src/components/prompt.element";
 import { showSelect } from "src/components/tools";
 import { PromptEditor } from "src/editors/prompt.editor";
-import { AbstractPageElement, DataProvider } from "./abstract.page.element";
+import { StaticDataProvider } from "src/tools/dataProvider";
+import { AbstractPageElement } from "./abstract.page.element";
 
 function scrollToNextSibling(node: HTMLElement): void {
     const parent = node.parentElement;
@@ -30,8 +31,8 @@ export class PicturesPage extends AbstractPageElement {
     protected readonly _promptCard: HTMLDivElement;
     protected readonly _promptEditor: PromptEditor;
 
-    constructor(data: DataProvider) {
-        super(require("./pictures.page.html").default, data);
+    constructor() {
+        super(require("./pictures.page.html").default);
 
         // -- Get components --
         this._picturesDiv = this.querySelector("#picturesDiv") as HTMLDivElement;
@@ -51,12 +52,12 @@ export class PicturesPage extends AbstractPageElement {
     /** @inheritdoc */
     protected override async _refresh(): Promise<void> {
         // -- Make sure cache is updated --
-        const projectId = this._data.getSelectedProject();
+        const projectId = StaticDataProvider.getSelectedProject();
         if (projectId == null) {
             return;
         }
 
-        await this._data.getSQLHandler().fetch({
+        await StaticDataProvider.sqlHandler.fetch({
             type: "project",
             options: {
                 projectId
@@ -67,9 +68,9 @@ export class PicturesPage extends AbstractPageElement {
         this._picturesDiv.innerHTML = "";
 
         // -- Fetch data --
-        const project = this._data.getSQLHandler().getCache("projects").getById(projectId)
-        const prompts = this._data.getSQLHandler().getCache("prompts").getItems().filter(prompt => prompt.projectId === projectId);
-        const picturesRaw = this._data.getSQLHandler().getCache("pictures").getItems();
+        const project = StaticDataProvider.sqlHandler.getCache("projects").getById(projectId)
+        const prompts = StaticDataProvider.sqlHandler.getCache("prompts").getItems().filter(prompt => prompt.projectId === projectId);
+        const picturesRaw = StaticDataProvider.sqlHandler.getCache("pictures").getItems();
 
         const preferredSeeds: SeedDTO[] = [];//await this._cache.getSeeds();
 
@@ -120,28 +121,31 @@ export class PicturesPage extends AbstractPageElement {
         let filter: (picture: PictureDTO) => boolean = this._getFilter();
 
         // -- Add prompt function --
+        const models = await StaticDataProvider.getModels();
+
         const addPrompt = (prompt: PromptDTO): void => {
             const promptItem = new PromptElement(prompt, {
+                model: models.find(info => info.uid === prompt.model) ?? null,
                 pictures: pictures.filter(p => p.promptId === prompt.id),
                 start: async () => {
-                    await this._data.getSQLHandler().withTransaction((tr) => {
+                    await StaticDataProvider.sqlHandler.withTransaction((tr) => {
                         tr.update("prompts", prompt, { active: BooleanEnum.TRUE });
-                        generateNextPicturesIfNeeded(this._data.getSQLHandler(), tr, prompt);
+                        generateNextPicturesIfNeeded(StaticDataProvider.sqlHandler, tr, prompt);
                     });
                     promptItem.refresh();
                     // Won't refresh pictures, but we don't care
                 },
                 stop: async () => {
-                    await this._data.getSQLHandler().withTransaction((tr) => {
+                    await StaticDataProvider.sqlHandler.withTransaction((tr) => {
                         tr.update("prompts", prompt, { active: BooleanEnum.FALSE });
                     });
                     promptItem.refresh();
                     // Won't refresh pictures, but we don't care
                 },
                 delete: async () => {
-                    await this._data.getSQLHandler().withTransaction((tr) => {
+                    await StaticDataProvider.sqlHandler.withTransaction((tr) => {
                         tr.delete("prompts", prompt.id);
-                        for (const picture of this._data.getSQLHandler().getItems("pictures")) {
+                        for (const picture of StaticDataProvider.sqlHandler.getItems("pictures")) {
                             if (picture.promptId === prompt.id) {
                                 tr.delete("pictures", picture.id);
                             }
@@ -150,15 +154,15 @@ export class PicturesPage extends AbstractPageElement {
                     this.refresh();
                 },
                 move: async () => {
-                    await this._data.getSQLHandler().fetch({ type: "projects", options: void (0) });
-                    const projects = this._data.getSQLHandler().getItems("projects");
+                    await StaticDataProvider.sqlHandler.fetch({ type: "projects", options: void (0) });
+                    const projects = StaticDataProvider.sqlHandler.getItems("projects");
                     const selectedProject = await showSelect<ProjectDTO>(projects, {
                         valueKey: "id",
                         displayString: "name",
                         selected: projects.find(p => p.id === prompt.projectId)
                     });
                     if (selectedProject != null && selectedProject.id != prompt.projectId) {
-                        await this._data.getSQLHandler().withTransaction((tr) => {
+                        await StaticDataProvider.sqlHandler.withTransaction((tr) => {
                             tr.update("prompts", prompt, { projectId: selectedProject.id });
                         });
                         this.refresh();
@@ -205,21 +209,21 @@ export class PicturesPage extends AbstractPageElement {
                 isPreferredSeed: false, // preferredSeeds.has(picture.seed),
                 isLockable: project?.lockable === BooleanEnum.TRUE,
                 accept: async () => {
-                    await this._data.getSQLHandler().withTransaction(tr => {
+                    await StaticDataProvider.sqlHandler.withTransaction(tr => {
                         tr.update("pictures", picture, {
                             status: ComputationStatus.ACCEPTED
                         });
-                        generateNextPicturesIfNeeded(this._data.getSQLHandler(), tr, prompt);
+                        generateNextPicturesIfNeeded(StaticDataProvider.sqlHandler, tr, prompt);
                     });
                     item.refresh();
                     scrollToNextSibling(item);
                 },
                 reject: async () => {
-                    await this._data.getSQLHandler().withTransaction(tr => {
+                    await StaticDataProvider.sqlHandler.withTransaction(tr => {
                         tr.update("pictures", picture, {
                             status: ComputationStatus.REJECTED
                         });
-                        generateNextPicturesIfNeeded(this._data.getSQLHandler(), tr, prompt);
+                        generateNextPicturesIfNeeded(StaticDataProvider.sqlHandler, tr, prompt);
                     });
                     item.refresh();
                     scrollToNextSibling(item);
@@ -253,7 +257,7 @@ export class PicturesPage extends AbstractPageElement {
                     item.refresh();
                 },
                 setAsFeatured: async () => {
-                    await this._data.getSQLHandler().withTransaction(tr => {
+                    await StaticDataProvider.sqlHandler.withTransaction(tr => {
                         tr.update("projects", project, {
                             featuredAttachmentId: picture.attachmentId
                         });
@@ -346,15 +350,15 @@ export class PicturesPage extends AbstractPageElement {
 
     protected async _onNewPromptClick(): Promise<void> {
         const prompt = this._promptEditor.getPrompt();
-        const projectId = this._data.getSelectedProject();
+        const projectId = StaticDataProvider.getSelectedProject();
         if (projectId != null) {
             let orderIndex = 1;
-            for (const prompt of this._data.getSQLHandler().getItems("prompts")) {
+            for (const prompt of StaticDataProvider.sqlHandler.getItems("prompts")) {
                 if (prompt.projectId === projectId) {
                     orderIndex = Math.max(orderIndex, prompt.orderIndex + 1);
                 }
             }
-            await this._data.getSQLHandler().withTransaction((tr) => {
+            await StaticDataProvider.sqlHandler.withTransaction((tr) => {
                 const newPrompt = tr.insert("prompts", {
                     ...prompt,
                     id: 0,
@@ -362,7 +366,7 @@ export class PicturesPage extends AbstractPageElement {
                     orderIndex,
                     active: BooleanEnum.TRUE
                 });
-                generateNextPicturesIfNeeded(this._data.getSQLHandler(), tr, newPrompt);
+                generateNextPicturesIfNeeded(StaticDataProvider.sqlHandler, tr, newPrompt);
             });
             await this.refresh();
         }

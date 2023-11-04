@@ -2,7 +2,7 @@ import { submit } from "@dagda/server/sql/sqlite.adapter";
 import { SQLHandler } from "@dagda/shared/sql/handler";
 import { Filters, Tables, filterEquals } from "@eurekai/shared/src/types";
 import { DiffusersRegistry } from "./diffusers";
-import { getEnvNumber, getEnvString } from "./modules/config";
+import { getEnvNumber } from "./modules/config";
 import { initDatabaseHelper } from "./modules/db";
 import { Generator } from "./modules/generator";
 import { initHTTPServer, sqlFetch } from "./modules/server";
@@ -17,13 +17,12 @@ async function main(): Promise<void> {
     });
 
     // -- Initialize the models -----------------------------------------------
-    await DiffusersRegistry.fetchAllModels({
-        automatic1111_apiUrl: getEnvString("API_URL")
-    });
+    await DiffusersRegistry.fetchAllModels();
     const models = DiffusersRegistry.getModels();
     console.log(`${models.length} model(s)`);
     for (const model of models) {
-        console.log(`- ${model.getTitle()}`);
+        const info = model.getModelInfo();
+        console.log(`- [${info.uid}] ${info.displayName}`);
     }
 
     // -- Generate ------------------------------------------------------------
