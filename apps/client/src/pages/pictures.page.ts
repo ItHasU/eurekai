@@ -57,73 +57,76 @@ export class PicturesPage extends AbstractPageElement {
             return;
         }
 
+        // -- Async part ------------------------------------------------------
         await StaticDataProvider.sqlHandler.fetch({
             type: "project",
             options: {
                 projectId
             }
         });
+        const models = await StaticDataProvider.getModels();
 
-        // -- Clear --
+        // -- Clear -----------------------------------------------------------
         this._picturesDiv.innerHTML = "";
 
-        // -- Fetch data --
+        // -- Prepare data ----------------------------------------------------
+        // Project
         const project = StaticDataProvider.sqlHandler.getCache("projects").getById(projectId)
-        const prompts = StaticDataProvider.sqlHandler.getCache("prompts").getItems().filter(prompt => prompt.projectId === projectId);
-        const picturesRaw = StaticDataProvider.sqlHandler.getCache("pictures").getItems();
-
-        const preferredSeeds: SeedDTO[] = [];//await this._cache.getSeeds();
-
         if (project == null) {
             // Nothing to display
             return;
         }
-
-        const promptsMap: { [id: number]: PromptDTO } = {};
+        // Prompts for the project (there might be others in cache)
+        const prompts = StaticDataProvider.sqlHandler.getCache("prompts").getItems().filter(prompt => prompt.projectId === projectId);
+        const promptsMap: { [id: number]: { prompt: PromptDTO, pictures: PictureDTO[] } } = {};
         for (const prompt of prompts) {
-            promptsMap[prompt.id] = prompt;
+            promptsMap[prompt.id] = { prompt, pictures: [] };
         }
+        // Pictures for the project (the ones associated to prompts of the project)
+        const pictures: PictureDTO[] = [];
+        for (const picture of StaticDataProvider.sqlHandler.getCache("pictures").getItems()) {
+            const promptForPicture = promptsMap[picture.promptId];
+            if (promptForPicture == null) {
+                // Prompt is not from the project since the map
+                // only contains prompts from the project
+            } else if (promptForPicture.prompt.projectId !== projectId) {
+                // Prompt is not from project 
+                // (should never happen since prompt in map are already filtered)
+            } else {
+                promptForPicture.pictures.push(picture);
+                pictures.push(picture);
+            }
+        }
+        // TODO Preferred seeds
+        const preferredSeeds: SeedDTO[] = [];//await this._cache.getSeeds();
 
-        let hasPromptDisplayed = false;
-        const pictures = picturesRaw.filter(picture => {
-            const prompt = promptsMap[picture.promptId];
-            return prompt != null && prompt.projectId == projectId;
-        });
-        pictures.sort((p1, p2) => {
+        // -- Render per prompt -----------------------------------------------
+        // Sort prompts per order index (inverted)
+        prompts.sort((p1, p2) => {
             let res = 0;
 
             if (res === 0) {
-                const prompt1 = promptsMap[p1.promptId];
-                const prompt2 = promptsMap[p2.promptId];
-                if (prompt1 && prompt2) {
-                    res = -(prompt1.orderIndex - prompt2.orderIndex);
-                }
+                // Reverse order
+                return -(p1.orderIndex - p2.orderIndex);
             }
 
             if (res === 0) {
-                res = p1.status - p2.status;
-            }
-
-            if (res === 0) {
-                res = p1.id - p2.id;
+                return p1.id - p2.id;
             }
 
             return res;
         });
 
-        // -- Auto switch to accepted --
-        // FIXME : Not working
-        // if (!hasPendingPicture && this._picturesFilterSelect.value === "done") {
-        // this._picturesFilterSelect.value = "accept";
-        // }
-
         // -- Get the filter --
         let filter: (picture: PictureDTO) => boolean = this._getFilter();
 
-        // -- Add prompt function --
-        const models = await StaticDataProvider.getModels();
+        for (const prompt of prompts) {
+            // -- Add a line break --
+            const div = document.createElement("div");
+            div.classList.add("w-100");
+            this._picturesDiv.appendChild(div);
 
-        const addPrompt = (prompt: PromptDTO): void => {
+            // -- Render prompt --
             const promptItem = new PromptElement(prompt, {
                 model: models.find(info => info.uid === prompt.model) ?? null,
                 pictures: pictures.filter(p => p.promptId === prompt.id),
@@ -173,119 +176,86 @@ export class PicturesPage extends AbstractPageElement {
             promptItem.classList.add("col-12");
             promptItem.refresh();
             this._picturesDiv.appendChild(promptItem);
-            hasPromptDisplayed = true;
+
+            // -- Render images --
+            const picturesForPrompt = (promptsMap[prompt.id]?.pictures ?? []).filter(filter);
+            picturesForPrompt.sort((i1, i2) => { return -(i1.id - i2.id); });
+            for (const picture of picturesForPrompt) {
+                // -- Add the picture --
+                const item = new PictureElement(picture, {
+                    prompt,
+                    isPreferredSeed: false, // preferredSeeds.has(picture.seed),
+                    isLockable: project.lockable === BooleanEnum.TRUE,
+                    accept: async () => {
+                        await StaticDataProvider.sqlHandler.withTransaction(tr => {
+                            tr.update("pictures", picture, {
+                                status: ComputationStatus.ACCEPTED
+                            });
+                            generateNextPicturesIfNeeded(StaticDataProvider.sqlHandler, tr, prompt);
+                        });
+                        item.refresh();
+                        scrollToNextSibling(item);
+                    },
+                    reject: async () => {
+                        await StaticDataProvider.sqlHandler.withTransaction(tr => {
+                            tr.update("pictures", picture, {
+                                status: ComputationStatus.REJECTED
+                            });
+                            generateNextPicturesIfNeeded(StaticDataProvider.sqlHandler, tr, prompt);
+                        });
+                        item.refresh();
+                        scrollToNextSibling(item);
+                    },
+                    toggleSeed: async () => {
+                        // await this._cache.withData(async (data) => {
+                        //     await data.setSeedPreferred(prompt.projectId, picture.seed, !item._options.isPreferredSeed);
+                        //     item._options.isPreferredSeed = !item._options.isPreferredSeed;
+                        // });
+                        item.refresh();
+                    },
+                    toggleHighres: async () => {
+                        // await this._cache.withData(async (data) => {
+                        //     switch (picture.highresStatus) {
+                        //         case ComputationStatus.REJECTED:
+                        //         case ComputationStatus.ERROR:
+                        //         case ComputationStatus.NONE:
+                        //             await data.setPictureHighres(picture.id, true);
+                        //             picture.highresStatus = ComputationStatus.PENDING;
+                        //             break;
+                        //         case ComputationStatus.PENDING:
+                        //             await data.setPictureHighres(picture.id, false);
+                        //             picture.highresStatus = ComputationStatus.NONE;
+                        //             break;
+                        //         case ComputationStatus.COMPUTING:
+                        //         case ComputationStatus.DONE:
+                        //             // No way to cancel from there
+                        //             break;
+                        //     }
+                        // });
+                        item.refresh();
+                    },
+                    setAsFeatured: async () => {
+                        await StaticDataProvider.sqlHandler.withTransaction(tr => {
+                            tr.update("projects", project, {
+                                featuredAttachmentId: picture.attachmentId
+                            });
+                        });
+                    }
+                });
+                item.classList.add("col-sm-12", "col-md-6", "col-lg-4");
+                this._picturesDiv.appendChild(item);
+                item.refresh();
+            }
         }
 
-        // -- Fill the pictures --
-        const displayedPromptIds: Set<number> = new Set();
-        for (const picture of pictures) {
-            if (!filter(picture)) {
-                continue;
-            }
-            const prompt = promptsMap[picture.promptId];
-            if (prompt == null) {
-                // Should never happen since pictures are already filtered above
-                // still it is safer to test it once again
-                continue;
-            }
-
-            // -- Handle line breaks after each prompt --
-            if (!displayedPromptIds.has(picture.promptId)) {
-                displayedPromptIds.add(picture.promptId);
-                // Add a line break
-                const div = document.createElement("div");
-                div.classList.add("w-100");
-                this._picturesDiv.appendChild(div);
-
-                // Add the prompt
-                if (prompt) {
-                    addPrompt(prompt);
-                }
-            }
-
-            // -- Add the picture --
-            const item = new PictureElement(picture, {
-                prompt,
-                isPreferredSeed: false, // preferredSeeds.has(picture.seed),
-                isLockable: project?.lockable === BooleanEnum.TRUE,
-                accept: async () => {
-                    await StaticDataProvider.sqlHandler.withTransaction(tr => {
-                        tr.update("pictures", picture, {
-                            status: ComputationStatus.ACCEPTED
-                        });
-                        generateNextPicturesIfNeeded(StaticDataProvider.sqlHandler, tr, prompt);
-                    });
-                    item.refresh();
-                    scrollToNextSibling(item);
-                },
-                reject: async () => {
-                    await StaticDataProvider.sqlHandler.withTransaction(tr => {
-                        tr.update("pictures", picture, {
-                            status: ComputationStatus.REJECTED
-                        });
-                        generateNextPicturesIfNeeded(StaticDataProvider.sqlHandler, tr, prompt);
-                    });
-                    item.refresh();
-                    scrollToNextSibling(item);
-                },
-                toggleSeed: async () => {
-                    // await this._cache.withData(async (data) => {
-                    //     await data.setSeedPreferred(prompt.projectId, picture.seed, !item._options.isPreferredSeed);
-                    //     item._options.isPreferredSeed = !item._options.isPreferredSeed;
-                    // });
-                    item.refresh();
-                },
-                toggleHighres: async () => {
-                    // await this._cache.withData(async (data) => {
-                    //     switch (picture.highresStatus) {
-                    //         case ComputationStatus.REJECTED:
-                    //         case ComputationStatus.ERROR:
-                    //         case ComputationStatus.NONE:
-                    //             await data.setPictureHighres(picture.id, true);
-                    //             picture.highresStatus = ComputationStatus.PENDING;
-                    //             break;
-                    //         case ComputationStatus.PENDING:
-                    //             await data.setPictureHighres(picture.id, false);
-                    //             picture.highresStatus = ComputationStatus.NONE;
-                    //             break;
-                    //         case ComputationStatus.COMPUTING:
-                    //         case ComputationStatus.DONE:
-                    //             // No way to cancel from there
-                    //             break;
-                    //     }
-                    // });
-                    item.refresh();
-                },
-                setAsFeatured: async () => {
-                    await StaticDataProvider.sqlHandler.withTransaction(tr => {
-                        tr.update("projects", project, {
-                            featuredAttachmentId: picture.attachmentId
-                        });
-                    });
-                },
-                fetch: () => Promise.resolve("") //this._cache.data.getAttachment.bind(this._cache.data)
-            });
-            item.classList.add("col-sm-12", "col-md-6", "col-lg-4");
-            this._picturesDiv.appendChild(item);
-            item.refresh();
-        }
-
-        for (const prompt of prompts) {
-            if (displayedPromptIds.has(prompt.id) || prompt.active === BooleanEnum.FALSE) {
-                // Already displayed or not active anymore
-                continue;
-            } else {
-                if (prompt.projectId === project.id) {
-                    addPrompt(prompt);
-                }
-            }
-        }
-        if (!hasPromptDisplayed) {
+        // -- Auto display prompt panel ---------------------------------------
+        if (prompts.length === 0) {
             this._openPromptPanel();
         } else {
             this._closePromptPanel();
         }
 
+        // -- Scroll to top ---------------------------------------------------
         this._picturesDiv.scrollTo(0, 0);
     }
 

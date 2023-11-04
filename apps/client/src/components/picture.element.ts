@@ -38,8 +38,7 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         reject: () => void,
         toggleSeed: () => void,
         toggleHighres: () => void,
-        setAsFeatured: () => void,
-        fetch: (attachmentId: number) => Promise<string>
+        setAsFeatured: () => void
     }) {
         super(data, require("./picture.element.html").default);
     }

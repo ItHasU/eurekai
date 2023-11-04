@@ -38,15 +38,26 @@
     <div class="row mt-2">
       <div class="col">
         <div class="progress-stacked">
+          {{#if pendingCount}}
+          <div class="progress pending" role="progressbar" style="width: {{pendingPercent}}%">
+            <div class="progress-bar bg-light text-dark">{{pendingCount}}</div>
+          </div>
+          {{/if}}
+          {{#if rejectedCount}}
           <div class="progress rejected" role="progressbar" style="width: {{rejectedPercent}}%">
             <div class="progress-bar bg-danger">{{rejectedCount}}</div>
           </div>
-          <div class="progress pending" role="progressbar" style="width: {{pendingPercent}}%">
-            <div class="progress-bar bg-secondary">{{pendingCount}}</div>
+          {{/if}}
+          {{#if doneCount}}
+          <div class="progress done" role="progressbar" style="width: {{donePercent}}%">
+            <div class="progress-bar bg-secondary">{{doneCount}}</div>
           </div>
+          {{/if}}
+          {{#if acceptedCount}}
           <div class="progress accepted" role="progressbar" style="width: {{acceptedPercent}}%">
             <div class="progress-bar bg-success">{{acceptedCount}}</div>
           </div>
+          {{/if}}
         </div>
       </div>
     </div>
