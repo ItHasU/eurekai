@@ -3,7 +3,6 @@ import { ComputationStatus, Filters, PromptDTO, Tables } from "@eurekai/shared/s
 import { DiffusersRegistry } from "src/diffusers";
 import { ImageDescription } from "src/diffusers/diffuser";
 //import { NotificationKind } from "@eurekai/shared/src/data";
-import { writeFile } from "fs/promises";
 
 interface PromptWithSeed extends PromptDTO {
     seed: number;
@@ -72,7 +71,8 @@ export class Generator {
                     console.log(img);
                     const imageData = await diffuser.txt2img(img, false);
 
-                    await writeFile(`${new Date().getTime()}.png`, Buffer.from(imageData, 'base64'));
+                    // For debugging purpose, write image to disk
+                    // await writeFile(`${new Date().getTime()}.png`, Buffer.from(imageData, 'base64'));
 
                     // -- Save --
                     await this._handler.withTransaction((tr) => {
