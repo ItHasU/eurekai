@@ -82,7 +82,6 @@ export class PromptEditor extends HTMLElement {
         for (const ratio of RATIOS) {
             const item = htmlStringToElement<HTMLLIElement>(`<li><a class="dropdown-item">${ratio.width}:${ratio.height}</a></li>`)!;
             item.querySelector("a")?.addEventListener("click", (evt) => {
-                evt.stopPropagation();
                 const factor = Math.sqrt(ratio.width / ratio.height);
                 const w = Math.round(size * factor / 8) * 8;
                 const h = Math.round(size / factor / 8) * 8;
