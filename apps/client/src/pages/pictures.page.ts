@@ -46,6 +46,7 @@ export class PicturesPage extends AbstractPageElement {
         this._bindClickForRef("closePromptButton", this._closePromptPanel.bind(this));
         this._bindClickForRef("newPromptButton", this._onNewPromptClick.bind(this));
         this._bindClickForRef("zipButton", this._onZipClick.bind(this));
+        this._bindClickForRef("clearRejectedButton", this._onClearRejectedButtonClick.bind(this));
         this._picturesFilterSelect.addEventListener("change", this.refresh.bind(this, false));
     }
 
@@ -311,6 +312,37 @@ export class PicturesPage extends AbstractPageElement {
         // } catch (e) {
         //     console.error(e);
         // }
+    }
+
+    protected async _onClearRejectedButtonClick(): Promise<void> {
+        const projectId = StaticDataProvider.getSelectedProject();
+        if (projectId == null) {
+            return;
+        }
+        const projectPromptIds: Set<number> = new Set();
+        for (const prompt of StaticDataProvider.sqlHandler.getItems("prompts")) {
+            if (prompt.projectId === projectId) {
+                projectPromptIds.add(prompt.id);
+            }
+        }
+        await StaticDataProvider.sqlHandler.withTransaction((tr) => {
+            for (const picture of StaticDataProvider.sqlHandler.getItems("pictures")) {
+                if (!projectPromptIds.has(picture.promptId)) {
+                    continue;
+                }
+
+                if (picture.status === ComputationStatus.REJECTED) {
+                    if (picture.attachmentId) {
+                        tr.delete("attachments", picture.attachmentId);
+                    }
+                    if (picture.highresAttachmentId) {
+                        tr.delete("attachments", picture.highresAttachmentId);
+                    }
+                    tr.delete("pictures", picture.id);
+                }
+            }
+        });
+        this.refresh();
     }
 
     protected _openPromptPanel(prompt?: PromptDTO): void {
