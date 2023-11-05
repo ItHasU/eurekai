@@ -28,19 +28,19 @@ export type SQLEvents = {
  * Utility class allowing to fetch data, store them in a cache and submit modifications.  
  * The cache can then be accessed through synchronous methods.
  */
-export class SQLHandler<Tables extends TablesDefinition, Filter> implements SQLCacheHandler<Tables>, EventHandler<SQLEvents> {
+export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQLCacheHandler<Tables>, EventHandler<SQLEvents> {
 
     /** List of filters loaded */
-    protected _filters: Filter[] = [];
+    protected _loadedContexts: Contexts[] = [];
     /** If true, the cache will be erased on next fetch. */
     protected _cacheDirty: boolean = false;
-    /** Les caches de chaque table */
+    /** One cache per table */
     protected _caches: { [TableName in keyof Tables]?: SQLCache<Tables[TableName]> } = {};
 
     /** Current state of the temporary id counter */
     protected _nextId: number = 0;
 
-    constructor(protected _adapter: SQLAdapter<Tables, Filter>) { }
+    constructor(protected _adapter: SQLAdapter<Tables, Contexts>) { }
 
     //#region Events ----------------------------------------------------------
 
@@ -91,35 +91,35 @@ export class SQLHandler<Tables extends TablesDefinition, Filter> implements SQLC
     }
 
     /** Fetch data */
-    public async fetch(...filters: Filter[]): Promise<void> {
+    public async fetch(...contexts: Contexts[]): Promise<void> {
 
         try {
             if (this._cacheDirty) {
                 // Clear all
-                this._filters = [];
+                this._loadedContexts = [];
                 this._caches = {};
             }
 
             // -- Keep filters that needs to be fetched --
-            const filtersToFetch: Filter[] = [];
-            for (const newFilter of filters) {
-                let hasFilter = false;
-                for (const oldFilter of this._filters) {
-                    hasFilter = this._adapter.filterEquals(newFilter, oldFilter);
-                    if (hasFilter) {
+            const contextsToFetch: Contexts[] = [];
+            for (const newContext of contexts) {
+                let hasContext = false;
+                for (const oldContext of this._loadedContexts) {
+                    hasContext = this._adapter.contextEquals(newContext, oldContext);
+                    if (hasContext) {
                         break;
                     }
                 }
-                if (!hasFilter) {
-                    // Filter if not found
-                    this._filters.push(newFilter);
-                    filtersToFetch.push(newFilter);
+                if (!hasContext) {
+                    // Context is not found
+                    this._loadedContexts.push(newContext);
+                    contextsToFetch.push(newContext);
                 }
             }
 
-            if (filtersToFetch.length > 0) {
+            if (contextsToFetch.length > 0) {
                 this._fireStateChanged({ downloading: true });
-                for (const filter of filtersToFetch) {
+                for (const filter of contextsToFetch) {
                     const result = await this._adapter.fetch(filter);
                     // Merge loaded items with current cache
                     for (const [table, items] of Object.entries(result)) {

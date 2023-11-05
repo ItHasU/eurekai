@@ -2,19 +2,19 @@ import { apiCall } from "@dagda/client/api";
 import { generateFetchFunction, generateSubmitFunction } from "@dagda/client/sql/client.adapter";
 import { SQLHandler } from "@dagda/shared/sql/handler";
 import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api";
-import { Filters, Tables, filterEquals } from "@eurekai/shared/src/types";
+import { AppContexts, AppTables, appContextEquals } from "@eurekai/shared/src/types";
 
 /** A global class containing static methods accessible from all the components */
 export class StaticDataProvider {
 
     //#region SQL Handler -----------------------------------------------------
 
-    protected static _sqlHandler: SQLHandler<Tables, Filters> | null;
+    protected static _sqlHandler: SQLHandler<AppTables, AppContexts> | null;
 
-    public static get sqlHandler(): SQLHandler<Tables, Filters> {
+    public static get sqlHandler(): SQLHandler<AppTables, AppContexts> {
         if (this._sqlHandler == null) {
-            this._sqlHandler = new SQLHandler<Tables, Filters>({
-                filterEquals: filterEquals,
+            this._sqlHandler = new SQLHandler<AppTables, AppContexts>({
+                contextEquals: appContextEquals,
                 fetch: generateFetchFunction(),
                 submit: generateSubmitFunction()
             });

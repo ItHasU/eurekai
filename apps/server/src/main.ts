@@ -1,6 +1,6 @@
 import { submit } from "@dagda/server/sql/sqlite.adapter";
 import { SQLHandler } from "@dagda/shared/sql/handler";
-import { Filters, Tables, filterEquals } from "@eurekai/shared/src/types";
+import { AppContexts, AppTables, appContextEquals } from "@eurekai/shared/src/types";
 import { DiffusersRegistry } from "./diffusers";
 import { getEnvNumber } from "./modules/config";
 import { initDatabaseHelper } from "./modules/db";
@@ -10,8 +10,8 @@ import { initHTTPServer, sqlFetch } from "./modules/server";
 async function main(): Promise<void> {
     // -- Initialize db -------------------------------------------------------
     const db = await initDatabaseHelper("./eurekai.db");
-    const handler = new SQLHandler<Tables, Filters>({
-        filterEquals: filterEquals,
+    const handler = new SQLHandler<AppTables, AppContexts>({
+        contextEquals: appContextEquals,
         fetch: filter => sqlFetch(db, filter),
         submit: transactionData => submit(db, transactionData)
     });

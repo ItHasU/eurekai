@@ -1,9 +1,9 @@
 import { SQLiteHelper } from "@dagda/server/sql/sqlite.helper";
-import { APP_FOREIGN_KEYS, Tables } from "@eurekai/shared/src/types";
+import { APP_FOREIGN_KEYS, AppTables } from "@eurekai/shared/src/types";
 
 /** Build a SqliteHelper and initialize tables if needed */
-export async function initDatabaseHelper(filename: string): Promise<SQLiteHelper<Tables>> {
-    const helper = new SQLiteHelper<Tables>(filename, APP_FOREIGN_KEYS);
+export async function initDatabaseHelper(filename: string): Promise<SQLiteHelper<AppTables>> {
+    const helper = new SQLiteHelper<AppTables>(filename, APP_FOREIGN_KEYS);
 
     // -- Initialize tables ---------------------------------------------------
     await helper.initTable("projects", {

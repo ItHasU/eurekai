@@ -1,9 +1,9 @@
 import { SQLHandler } from "@dagda/shared/sql/handler";
 import { SQLTransaction } from "@dagda/shared/sql/transaction";
-import { BooleanEnum, ComputationStatus, Filters, PictureDTO, PromptDTO, Tables } from "./types";
+import { AppContexts, AppTables, BooleanEnum, ComputationStatus, PictureDTO, PromptDTO } from "./types";
 
 /** Whenever necessary, will generate new pending pictures for the prompt */
-export function generateNextPicturesIfNeeded(handler: SQLHandler<Tables, Filters>, tr: SQLTransaction<Tables>, prompt: PromptDTO): void {
+export function generateNextPicturesIfNeeded(handler: SQLHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables>, prompt: PromptDTO): void {
     if (prompt.active === BooleanEnum.FALSE) {
         return;
     }
@@ -47,7 +47,7 @@ export function generateNextPicturesIfNeeded(handler: SQLHandler<Tables, Filters
     }
 }
 
-export function isPreferredSeed(handler: SQLHandler<Tables, Filters>, projectId: number, seed: number): boolean {
+export function isPreferredSeed(handler: SQLHandler<AppTables, AppContexts>, projectId: number, seed: number): boolean {
     for (const preferredSeed of handler.getItems("seeds")) {
         if (preferredSeed.projectId === projectId && preferredSeed.seed === seed) {
             return true;
@@ -56,7 +56,7 @@ export function isPreferredSeed(handler: SQLHandler<Tables, Filters>, projectId:
     return false;
 }
 
-export function togglePreferredSeed(handler: SQLHandler<Tables, Filters>, tr: SQLTransaction<Tables>, projectId: number, seed: number): void {
+export function togglePreferredSeed(handler: SQLHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables>, projectId: number, seed: number): void {
     const alreadyExisting = handler.getItems("seeds").find(preferredSeed => preferredSeed.projectId === projectId && preferredSeed.seed === seed);
     if (alreadyExisting == null) {
         // Not found, create it

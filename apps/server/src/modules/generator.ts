@@ -1,17 +1,12 @@
 import { SQLHandler } from "@dagda/shared/sql/handler";
-import { ComputationStatus, Filters, PromptDTO, Tables } from "@eurekai/shared/src/types";
+import { AppContexts, AppTables, ComputationStatus } from "@eurekai/shared/src/types";
 import { DiffusersRegistry } from "src/diffusers";
 import { ImageDescription } from "src/diffusers/diffuser";
-//import { NotificationKind } from "@eurekai/shared/src/data";
-
-interface PromptWithSeed extends PromptDTO {
-    seed: number;
-}
 
 export class Generator {
     protected _stopOnNextTimeout: boolean = false;
 
-    constructor(protected _handler: SQLHandler<Tables, Filters>) {
+    constructor(protected _handler: SQLHandler<AppTables, AppContexts>) {
         this._scheduleNextIfNeeded();
     }
 

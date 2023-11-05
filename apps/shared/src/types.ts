@@ -3,10 +3,10 @@ import { ForeignKeys } from "@dagda/shared/sql/types";
 //#region Tables definition ---------------------------------------------------
 
 /** Table names */
-export type TableName = keyof Tables;
+export type TableName = keyof AppTables;
 
 /** The list of tables and their related type */
-export type Tables = {
+export type AppTables = {
     "projects": ProjectDTO;
     "prompts": PromptDTO;
     "seeds": SeedDTO;
@@ -15,7 +15,7 @@ export type Tables = {
 };
 
 /** Tables foreign keys */
-export const APP_FOREIGN_KEYS: ForeignKeys<Tables> = {
+export const APP_FOREIGN_KEYS: ForeignKeys<AppTables> = {
     projects: {
         lockable: false,
         name: false,
@@ -207,13 +207,13 @@ export interface AttachmentDTO {
 export function t(tableName: TableName): string {
     return tableName;
 }
-export function f<TableName extends keyof Tables>(table: TableName, field: keyof Tables[TableName]): string {
+export function f<TableName extends keyof AppTables>(table: TableName, field: keyof AppTables[TableName]): string {
     return `"${table}"."${field as string}"`;
 }
-export function eq<TableName extends keyof Tables, P extends keyof Tables[TableName]>(table: TableName, field: P, value: Tables[TableName][P], quoted: number extends Tables[TableName][P] ? false : true) {
+export function eq<TableName extends keyof AppTables, P extends keyof AppTables[TableName]>(table: TableName, field: P, value: AppTables[TableName][P], quoted: number extends AppTables[TableName][P] ? false : true) {
     return `"${table}"."${field as string}" = ${quoted ? "'" : ""}${new String(value ?? null).toString()}${quoted ? "'" : ""}`;
 }
-export function set<TableName extends keyof Tables, P extends keyof Tables[TableName]>(table: TableName, field: P, value: Tables[TableName][P], quoted: number extends Tables[TableName][P] ? false : true) {
+export function set<TableName extends keyof AppTables, P extends keyof AppTables[TableName]>(table: TableName, field: P, value: AppTables[TableName][P], quoted: number extends AppTables[TableName][P] ? false : true) {
     return `"${field as string}" = ${quoted ? "'" : ""}${new String(value ?? null).toString()}${quoted ? "'" : ""}`;
 }
 
@@ -221,33 +221,33 @@ export function set<TableName extends keyof Tables, P extends keyof Tables[Table
 
 //#region Fetch filters -------------------------------------------------------
 
-type BaseFilter<T extends string, Options> = {
+type BaseContext<T extends string, Options> = {
     type: T;
     options: Options;
 }
 
 /** Get all projects */
-export type ProjectsFilter = BaseFilter<"projects", undefined>;
+export type ProjectsContext = BaseContext<"projects", undefined>;
 /** Get data for a specific project */
-export type ProjectFilter = BaseFilter<"project", { projectId: number }>;
+export type ProjectContext = BaseContext<"project", { projectId: number }>;
 /** Get pending pictures and associated prompts */
-export type PendingPicturesFilter = BaseFilter<"pending", undefined>;
+export type PendingPicturesContext = BaseContext<"pending", undefined>;
 
 /** List of all filters */
-export type Filters = ProjectsFilter | ProjectFilter | PendingPicturesFilter;
+export type AppContexts = ProjectsContext | ProjectContext | PendingPicturesContext;
 
 /** Compare filters */
-export function filterEquals(newFilter: Filters, oldFilter: Filters): boolean {
-    if (newFilter.type !== oldFilter.type) {
+export function appContextEquals(newContext: AppContexts, oldContext: AppContexts): boolean {
+    if (newContext.type !== oldContext.type) {
         return false;
     } else {
-        switch (newFilter.type) {
+        switch (newContext.type) {
             case "projects":
             case "pending":
                 // No options to compare
                 return true;
             case "project":
-                return newFilter.options.projectId === (oldFilter as ProjectFilter).options.projectId;
+                return newContext.options.projectId === (oldContext as ProjectContext).options.projectId;
             default:
                 // Not implemented
                 return false;

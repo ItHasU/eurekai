@@ -30,15 +30,15 @@ export interface SQLTransactionResult {
 /**
  * The adapter provides services for the handler.
  */
-export interface SQLAdapter<Tables extends TablesDefinition, Filter> {
+export interface SQLAdapter<Tables extends TablesDefinition, Contexts> {
     /** 
      * Compare filter.
      * MUST BE executable locally without a promise for quick performances.
      */
-    filterEquals(newFilter: Filter, oldFilter: Filter): boolean;
+    contextEquals(newContext: Contexts, oldContext: Contexts): boolean;
 
     /** Fetch data corresponding to filter */
-    fetch(filter: Filter): Promise<Data<Tables>>;
+    fetch(context: Contexts): Promise<Data<Tables>>;
 
     /** Submit changes in the transaction */
     submit(transactionData: SQLTransactionData<Tables>): Promise<SQLTransactionResult>;

@@ -1,9 +1,6 @@
 import { BaseDTO, TablesDefinition } from "./types";
 
 export class SQLCache<DTO extends BaseDTO> {
-    /** Filter applied to the data (null means no data loaded) */
-    private _filter: Partial<Omit<DTO, "id">> | null = null;
-
     /** List of items */
     private readonly _items: Map<number, DTO> = new Map();
 

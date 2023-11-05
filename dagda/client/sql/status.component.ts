@@ -5,13 +5,13 @@ import { TablesDefinition } from "@dagda/shared/sql/types";
  * A simple component to display communication status of the SQLHandler.
  * This component cannot be inserted in HTML as it requires and handler at construction.
  */
-export class SQLStatusComponent<Tables extends TablesDefinition, Filter> extends HTMLElement {
+export class SQLStatusComponent<Tables extends TablesDefinition, Contexts> extends HTMLElement {
 
     protected _downloadIcon: HTMLElement;
     protected _uploadIcon: HTMLElement;
     protected _refreshIcon: HTMLElement;
 
-    constructor(handler: SQLHandler<Tables, Filter>, refreshCB: () => void) {
+    constructor(handler: SQLHandler<Tables, Contexts>, refreshCB: () => void) {
         super();
         this.innerHTML = require("./status.component.html").default;
         this._downloadIcon = this.querySelector(`i[ref="downloadIcon"]`)!;

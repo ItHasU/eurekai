@@ -3,13 +3,13 @@ import { registerAdapterAPI } from "@dagda/server/sql/api.adapter";
 import { SQLiteHelper } from "@dagda/server/sql/sqlite.helper";
 import { Data } from "@dagda/shared/sql/types";
 import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api";
-import { AttachmentDTO, ComputationStatus, Filters, PictureDTO, ProjectDTO, PromptDTO, SeedDTO, Tables, f, t } from "@eurekai/shared/src/types";
+import { AppContexts, AppTables, AttachmentDTO, ComputationStatus, PictureDTO, ProjectDTO, PromptDTO, SeedDTO, f, t } from "@eurekai/shared/src/types";
 import express, { Application } from "express";
 import { resolve } from "node:path";
 import { DiffusersRegistry } from "src/diffusers";
 
 /** Initialize an Express app and register the routes */
-export async function initHTTPServer(db: SQLiteHelper<Tables>, port: number): Promise<void> {
+export async function initHTTPServer(db: SQLiteHelper<AppTables>, port: number): Promise<void> {
     const app = express();
     app.use(express.json());
 
@@ -18,7 +18,7 @@ export async function initHTTPServer(db: SQLiteHelper<Tables>, port: number): Pr
     app.use(express.static(path));
 
     // -- Register SQL routes --
-    registerAdapterAPI<Tables, Filters>(app, db, sqlFetch);
+    registerAdapterAPI<AppTables, AppContexts>(app, db, sqlFetch);
 
     // -- Register models routes --
     _registerModelsAPI(app);
@@ -55,7 +55,7 @@ export async function initHTTPServer(db: SQLiteHelper<Tables>, port: number): Pr
  * Fetch function for the app.  
  * This function must return the records that match the filter
  */
-export async function sqlFetch(helper: SQLiteHelper<Tables>, filter: Filters): Promise<Data<Tables>> {
+export async function sqlFetch(helper: SQLiteHelper<AppTables>, filter: AppContexts): Promise<Data<AppTables>> {
     switch (filter.type) {
         case "projects":
             return {
