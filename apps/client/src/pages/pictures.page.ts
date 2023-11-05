@@ -332,13 +332,13 @@ export class PicturesPage extends AbstractPageElement {
                 }
 
                 if (picture.status === ComputationStatus.REJECTED) {
+                    tr.delete("pictures", picture.id);
                     if (picture.attachmentId) {
                         tr.delete("attachments", picture.attachmentId);
                     }
                     if (picture.highresAttachmentId) {
                         tr.delete("attachments", picture.highresAttachmentId);
                     }
-                    tr.delete("pictures", picture.id);
                 }
             }
         });
