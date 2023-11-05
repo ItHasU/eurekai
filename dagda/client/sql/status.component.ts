@@ -11,7 +11,7 @@ export class SQLStatusComponent<Tables extends TablesDefinition, Contexts> exten
     protected _uploadIcon: HTMLElement;
     protected _refreshIcon: HTMLElement;
 
-    constructor(handler: SQLHandler<Tables, Contexts>, refreshCB: () => void) {
+    constructor(handler: SQLHandler<Tables, Contexts>) {
         super();
         this.innerHTML = require("./status.component.html").default;
         this._downloadIcon = this.querySelector(`i[ref="downloadIcon"]`)!;
@@ -20,10 +20,6 @@ export class SQLStatusComponent<Tables extends TablesDefinition, Contexts> exten
 
         handler.on("state", (event) => {
             this._refresh(event.data);
-        });
-        this.addEventListener("click", async () => {
-            handler.markCacheDirty();
-            await refreshCB();
         });
     }
 

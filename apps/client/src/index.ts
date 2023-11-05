@@ -36,13 +36,13 @@ class App {
     constructor() {
         // -- SQLHandler --
         this._statusPlaceholder = document.getElementById("statusPlaceholder") as HTMLSpanElement;
-        this._statusPlaceholder.append(new SQLStatusComponent(StaticDataProvider.sqlHandler, async () => {
-            console.debug("Refresh button clicked");
-            // this._cache.clearNotifications();
+        this._statusPlaceholder.append(new SQLStatusComponent(StaticDataProvider.sqlHandler));
+        this._statusPlaceholder.addEventListener("click", async () => {
+            StaticDataProvider.sqlHandler.markCacheDirty();
             if (this._currentPage) {
                 await this._currentPage.refresh();
             }
-        }));
+        });
 
         // -- Bind lock button --
         const lockButton = document.getElementById("lockButton");
