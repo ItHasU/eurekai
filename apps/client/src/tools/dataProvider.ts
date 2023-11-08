@@ -26,11 +26,15 @@ export class StaticDataProvider {
 
     //#region Models ----------------------------------------------------------
 
-    protected static _modelsCache: Promise<ModelInfo[]> | null = null;
+    protected static _modelsCacheP: Promise<ModelInfo[]> | null = null;
+    protected static _modelsCache: ModelInfo[] = [];
 
     public static getModels(forceRefresh: boolean = false): Promise<ModelInfo[]> {
-        if (forceRefresh || this._modelsCache == null) {
-            this._modelsCache = apiCall<ModelsAPI, "getModels">(MODELS_URL, "getModels", forceRefresh).catch(e => {
+        if (forceRefresh || this._modelsCacheP == null) {
+            this._modelsCacheP = apiCall<ModelsAPI, "getModels">(MODELS_URL, "getModels", forceRefresh).then((modelCache) => {
+                this._modelsCache = modelCache;
+                return modelCache;
+            }).catch(e => {
                 console.error(e);
                 return [{
                     uid: "!",
@@ -39,7 +43,16 @@ export class StaticDataProvider {
                 }];
             });
         }
-        return this._modelsCache;
+        return this._modelsCacheP;
+    }
+
+    public static getModelFromCache(uid: string): ModelInfo | null {
+        for (const model of this._modelsCache) {
+            if (model.uid === uid) {
+                return model;
+            }
+        }
+        return null;
     }
 
     //#endregion

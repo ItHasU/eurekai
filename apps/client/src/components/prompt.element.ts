@@ -1,55 +1,108 @@
+import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "@dagda/shared/tools/events";
 import { ModelInfo } from "@eurekai/shared/src/models.api";
-import { ComputationStatus, PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
+import { generateNextPictures } from "@eurekai/shared/src/pictures.data";
+import { ComputationStatus, ProjectDTO, PromptDTO } from "@eurekai/shared/src/types";
+import { StaticDataProvider } from "src/tools/dataProvider";
 import { AbstractDTOElement } from "./abstract.dto.element";
+import { showSelect } from "./tools";
 
-export class PromptElement extends AbstractDTOElement<PromptDTO> {
+export type PromptEvents = {
+    /** Triggered when the user asks for a clone */
+    clone: { prompt: PromptDTO };
+    /** Triggered when prompt needs to be deleted from the current view */
+    delete: { prompt: PromptDTO };
+}
+export class PromptElement extends AbstractDTOElement<PromptDTO> implements EventHandler<PromptEvents> {
 
-    public readonly pendingCount: number;
-    public readonly doneCount: number;
-    public readonly acceptedCount: number;
-    public readonly rejectedCount: number;
+    protected model: ModelInfo | null;
+    protected pendingCount: number = 0;
+    protected doneCount: number = 0;
+    protected acceptedCount: number = 0;
+    protected rejectedCount: number = 0;
+    protected pendingPercent: number = 0;
+    protected donePercent: number = 0;
+    protected acceptedPercent: number = 0;
+    protected rejectedPercent: number = 0;
 
-    public readonly pendingPercent: number;
-    public readonly donePercent: number;
-    public readonly acceptedPercent: number;
-    public readonly rejectedPercent: number;
-
-    constructor(data: PromptDTO, protected _options: {
-        model: ModelInfo | null,
-        pictures: PictureDTO[],
-        start: () => void,
-        stop: () => void,
-        delete: () => void,
-        move: () => void,
-        clone?: () => void
-    }) {
+    constructor(data: PromptDTO) {
         super(data, require("./prompt.element.html").default);
-        this.pendingCount = _options.pictures.filter(p => p.status === ComputationStatus.PENDING && p.promptId === this.data.id).length;
-        this.doneCount = _options.pictures.filter(p => p.status === ComputationStatus.DONE && p.promptId === this.data.id).length;
-        this.rejectedCount = _options.pictures.filter(p => p.status === ComputationStatus.REJECTED && p.promptId === this.data.id).length;
-        this.acceptedCount = _options.pictures.filter(p => p.status === ComputationStatus.ACCEPTED && p.promptId === this.data.id).length;
+        this.model = StaticDataProvider.getModelFromCache(data.model);
+    }
+
+    //#region Events ----------------------------------------------------------
+
+    protected _eventData: EventHandlerData<PromptEvents> = {};
+
+    public on<EventName extends keyof PromptEvents>(eventName: EventName, listener: EventListener<PromptEvents[EventName]>): void {
+        EventHandlerImpl.on(this._eventData, eventName, listener);
+    }
+
+    //#endregion
+
+    public override refresh(): void {
+        // -- Prepare variables for the template ------------------------------
+        this.pendingCount = 0;
+        this.doneCount = 0;
+        this.rejectedCount = 0;
+        this.acceptedCount = 0;
+        for (const picture of StaticDataProvider.sqlHandler.getItems("pictures")) {
+            if (picture.promptId !== this.data.id) {
+                continue;
+            }
+            switch (picture.status) {
+                case ComputationStatus.PENDING:
+                    this.pendingCount++;
+                    break;
+                case ComputationStatus.DONE:
+                    this.doneCount++;
+                    break;
+                case ComputationStatus.ACCEPTED:
+                    this.acceptedCount++;
+                    break;
+                case ComputationStatus.REJECTED:
+                    this.rejectedCount++;
+                    break;
+            }
+        }
+
         const total = this.pendingCount + this.rejectedCount + this.doneCount + this.acceptedCount;
         this.pendingPercent = this.pendingCount / total * 100;
         this.donePercent = this.doneCount / total * 100;
         this.acceptedPercent = this.acceptedCount / total * 100;
         this.rejectedPercent = this.rejectedCount / total * 100;
-    }
 
-    public get hasCloneMethod(): boolean {
-        return this._options.clone != null;
-    }
-
-    public override refresh(): void {
+        // -- Render the template ---------------------------------------------
         super.refresh();
-        this._bindClick("accept", this._options.start);
-        this._bindClick("reject", this._options.stop);
-        if (this._options.clone) {
-            this._bindClick("clone", this._options.clone);
-        }
-        this._bindClick("delete", this._options.delete);
-        this._bindClick("move", this._options.move);
-    }
 
+        // -- Bind buttons ----------------------------------------------------
+        // Here we need to bind the buttons once the template has been rendered
+        this.querySelectorAll<HTMLButtonElement>("button[data-count]").forEach(countButton => {
+            const count = countButton.attributes.getNamedItem("data-count")?.value ?? 1;
+            countButton.innerHTML += `+${count}`;
+            countButton.addEventListener("click", async () => {
+                await StaticDataProvider.sqlHandler.withTransaction(tr => {
+                    generateNextPictures(StaticDataProvider.sqlHandler, tr, this.data, +count);
+                });
+                this.refresh();
+            });
+        });
+        this._bindClick("clone", () => EventHandlerImpl.fire(this._eventData, "clone", { prompt: this.data }));
+        this._bindClick("delete", () => EventHandlerImpl.fire(this._eventData, "delete", { prompt: this.data }));
+        this._bindClick("move", async () => {
+            const projects = StaticDataProvider.sqlHandler.getItems("projects");
+            const selectedProject = await showSelect<ProjectDTO>(projects, {
+                valueKey: "id",
+                displayString: "name",
+                selected: projects.find(p => p.id === this.data.projectId)
+            });
+            if (selectedProject != null && selectedProject.id != this.data.projectId) {
+                await StaticDataProvider.sqlHandler.withTransaction((tr) => {
+                    tr.update("prompts", this.data, { projectId: selectedProject.id });
+                });
+                EventHandlerImpl.fire(this._eventData, "delete", { prompt: this.data });
+            }
+        });
+    }
 }
 
 customElements.define("custom-prompt", PromptElement);

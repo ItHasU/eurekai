@@ -15,8 +15,6 @@ export async function initDatabaseHelper(filename: string): Promise<SQLiteHelper
     await helper.initTable("prompts", {
         "projectId": "INTEGER",
         "orderIndex": "INTEGER",
-        "active": "INTEGER",
-        "bufferSize": "INTEGER",
         "width": "INTEGER",
         "height": "INTEGER",
         "model": "TEXT",

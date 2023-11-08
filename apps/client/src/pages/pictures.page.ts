@@ -1,8 +1,7 @@
-import { generateNextPicturesIfNeeded, isPreferredSeed, togglePreferredSeed } from "@eurekai/shared/src/pictures.data";
-import { BooleanEnum, ComputationStatus, PictureDTO, ProjectDTO, PromptDTO } from "@eurekai/shared/src/types";
+import { generateNextPictures, isPreferredSeed, togglePreferredSeed } from "@eurekai/shared/src/pictures.data";
+import { BooleanEnum, ComputationStatus, PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { PictureElement } from "src/components/picture.element";
 import { PromptElement } from "src/components/prompt.element";
-import { showSelect } from "src/components/tools";
 import { PromptEditor } from "src/editors/prompt.editor";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { AbstractPageElement } from "./abstract.page.element";
@@ -128,52 +127,14 @@ export class PicturesPage extends AbstractPageElement {
             this._picturesDiv.appendChild(div);
 
             // -- Render prompt --
-            const promptItem = new PromptElement(prompt, {
-                model: models.find(info => info.uid === prompt.model) ?? null,
-                pictures: pictures.filter(p => p.promptId === prompt.id),
-                start: async () => {
-                    await StaticDataProvider.sqlHandler.withTransaction((tr) => {
-                        tr.update("prompts", prompt, { active: BooleanEnum.TRUE });
-                        generateNextPicturesIfNeeded(StaticDataProvider.sqlHandler, tr, prompt);
-                    });
-                    promptItem.refresh();
-                    // Won't refresh pictures, but we don't care
-                },
-                stop: async () => {
-                    await StaticDataProvider.sqlHandler.withTransaction((tr) => {
-                        tr.update("prompts", prompt, { active: BooleanEnum.FALSE });
-                    });
-                    promptItem.refresh();
-                    // Won't refresh pictures, but we don't care
-                },
-                delete: async () => {
-                    await StaticDataProvider.sqlHandler.withTransaction((tr) => {
-                        tr.delete("prompts", prompt.id);
-                        for (const picture of StaticDataProvider.sqlHandler.getItems("pictures")) {
-                            if (picture.promptId === prompt.id) {
-                                tr.delete("pictures", picture.id);
-                            }
-                        }
-                    });
-                    this.refresh();
-                },
-                move: async () => {
-                    await StaticDataProvider.sqlHandler.fetch({ type: "projects", options: void (0) });
-                    const projects = StaticDataProvider.sqlHandler.getItems("projects");
-                    const selectedProject = await showSelect<ProjectDTO>(projects, {
-                        valueKey: "id",
-                        displayString: "name",
-                        selected: projects.find(p => p.id === prompt.projectId)
-                    });
-                    if (selectedProject != null && selectedProject.id != prompt.projectId) {
-                        await StaticDataProvider.sqlHandler.withTransaction((tr) => {
-                            tr.update("prompts", prompt, { projectId: selectedProject.id });
-                        });
-                        this.refresh();
-                    }
-                },
-                clone: this._openPromptPanel.bind(this, prompt)
+            const promptItem = new PromptElement(prompt);
+            promptItem.on("clone", (evt) => {
+                this._openPromptPanel(evt.data.prompt);
             });
+            promptItem.on("delete", () => {
+                this.refresh();
+            });
+
             promptItem.classList.add("col-12");
             promptItem.refresh();
             this._picturesDiv.appendChild(promptItem);
@@ -192,9 +153,9 @@ export class PicturesPage extends AbstractPageElement {
                             tr.update("pictures", picture, {
                                 status: ComputationStatus.ACCEPTED
                             });
-                            generateNextPicturesIfNeeded(StaticDataProvider.sqlHandler, tr, prompt);
                         });
                         item.refresh();
+                        promptItem.refresh();
                         scrollToNextSibling(item);
                     },
                     reject: async () => {
@@ -202,9 +163,9 @@ export class PicturesPage extends AbstractPageElement {
                             tr.update("pictures", picture, {
                                 status: ComputationStatus.REJECTED
                             });
-                            generateNextPicturesIfNeeded(StaticDataProvider.sqlHandler, tr, prompt);
                         });
                         item.refresh();
+                        promptItem.refresh();
                         scrollToNextSibling(item);
                     },
                     toggleSeed: async () => {
@@ -371,10 +332,9 @@ export class PicturesPage extends AbstractPageElement {
                     ...prompt,
                     id: 0,
                     projectId,
-                    orderIndex,
-                    active: BooleanEnum.TRUE
+                    orderIndex
                 });
-                generateNextPicturesIfNeeded(StaticDataProvider.sqlHandler, tr, newPrompt);
+                generateNextPictures(StaticDataProvider.sqlHandler, tr, newPrompt, 1);
             });
             await this.refresh();
         }

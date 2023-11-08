@@ -25,8 +25,6 @@ export const APP_FOREIGN_KEYS: ForeignKeys<AppTables> = {
     prompts: {
         projectId: true,
         orderIndex: false,
-        active: false,
-        bufferSize: false,
         height: false,
         width: false,
         model: false,
@@ -137,8 +135,6 @@ export interface PromptDTO {
     projectId: number;
     /** Virtual index to order the prompts */
     orderIndex: number;
-    /** Is the prompt active for generation */
-    active: BooleanEnum;
 
     /** Width */
     width: number;
@@ -151,8 +147,6 @@ export interface PromptDTO {
     prompt: string;
     /** Negative prompt for the image */
     negative_prompt?: string;
-    /** Maximum count of images to evaluate (0 = no limit) */
-    bufferSize: number;
 }
 
 /** 

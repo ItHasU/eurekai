@@ -52,7 +52,7 @@ export class EventHandlerImpl {
             // No one has been registered yet
         } else {
             const event: Event<Events[EventName]> = new Event(eventData);
-            for (const listener of eventInfo.listeners){
+            for (const listener of eventInfo.listeners) {
                 listener(event);
             }
         }

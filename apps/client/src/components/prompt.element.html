@@ -1,24 +1,24 @@
 <div class="card mb-3">
   <div class="card-body">
     <div class="card-text pb-2">
-      <b>#{{data.orderIndex}}</b> <code>{{_options.model.displayName}}</code><br>
+      <b>#{{data.orderIndex}}</b> <code>{{model.displayName}}</code><br>
       <b>Prompt&nbsp;: </b>{{data.prompt}}<br>
       <b>Negative&nbsp;: </b>{{data.negative_prompt}}<br>
-      <b>Buffer size&nbsp;: </b>{{data.bufferSize}}
     </div>
     <div class="row g-1">
       <div class="col">
-        {{#if data.active}}
-        <button ref="reject" type="button" class="btn btn-danger form-control"><i class="bi bi-stop"></i></button>
-        {{else}}
-        <button ref="accept" type="button" class="btn btn-success form-control"><i class="bi bi-play"></i></button>
-        {{/if}}
+        <div class="btn-group w-100">
+          <button type="button" class="btn btn-secondary form-control" data-count="5"></button>
+          <button type="button" class="btn btn-secondary form-control" data-count="10"></button>
+          <button type="button" class="btn btn-secondary form-control" data-count="50"></button>
+          <button ref="addPreferredButton" type="button" class="btn btn-secondary form-control">
+            <i class="bi bi-heart-fill text-danger-emphasis"></i>
+          </button>
+        </div>
       </div>
-      {{#if hasCloneMethod}}
       <div class="col">
         <button ref="clone" type="button" class="btn btn-primary form-control"><i class="bi bi-clipboard"></i></button>
       </div>
-      {{/if}}
       <div class="col">
         <div class="dropdown">
           <button class="btn btn-secondary form-control" type="button" data-bs-toggle="dropdown" aria-expanded="false">
