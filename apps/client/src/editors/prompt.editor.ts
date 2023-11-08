@@ -98,8 +98,8 @@ export class PromptEditor extends HTMLElement {
         // -- Set all fields to passed prompt --
         this._positiveInput.value = prompt?.prompt ?? "";
         this._negativeInput.value = prompt?.negative_prompt ?? "";
-        this._widthInput.value = "" + (prompt?.width ?? 1024);
-        this._heightInput.value = "" + (prompt?.height ?? 1024);
+        this._widthInput.value = "" + (prompt?.width ?? DEFAULT_SIZE);
+        this._heightInput.value = "" + (prompt?.height ?? DEFAULT_SIZE);
         this._modelsSelect.value = prompt?.model ?? "";
     }
 

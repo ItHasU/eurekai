@@ -3,7 +3,7 @@ import { SQLTransaction } from "@dagda/shared/sql/transaction";
 import { AppContexts, AppTables, ComputationStatus, PictureDTO, PromptDTO } from "./types";
 
 /** Generate a certain amount of images */
-export function generateNextPictures(handler: SQLHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables>, prompt: PromptDTO, count: number): void {
+export function generateNextPictures(handler: SQLHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables>, prompt: PromptDTO, count: number | null): void {
     // -- Get a list of preferred seeds --
     const preferredSeeds: Set<number> = new Set();
     for (const seed of handler.getItems("seeds")) {
@@ -12,7 +12,18 @@ export function generateNextPictures(handler: SQLHandler<AppTables, AppContexts>
         }
     }
 
+    for (const picture of handler.getItems("pictures")) {
+        if (picture.promptId === prompt.id && picture.status !== ComputationStatus.ERROR) {
+            preferredSeeds.delete(picture.seed);
+        }
+    }
+
     // -- Create new pictures --
+    if (count === null) {
+        // If count is null, just create the missing preferred seeds
+        count = preferredSeeds.size;
+    }
+
     for (let i = 0; i < count; i++) {
         const newPicture: PictureDTO = {
             id: 0,
