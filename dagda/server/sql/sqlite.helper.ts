@@ -1,18 +1,20 @@
 import { ForeignKeys, TablesDefinition } from "@dagda/shared/sql/types";
-import sqlite from "better-sqlite3";
+import * as sqlite3 from "promised-sqlite3";
 
 export type SQLValue = number | string | BigInt | Buffer | null;
 
 /** Helper for SQLite database */
 export class SQLiteHelper<Tables extends TablesDefinition> {
 
-    protected _db: sqlite.Database;
+    protected _db: Promise<sqlite3.AsyncDatabase>;
 
     constructor(filename: string, protected _foreignKeys: ForeignKeys<Tables>) {
-        this._db = new sqlite(filename);
+        this._db = sqlite3.AsyncDatabase.open(filename);
     }
 
-    public get db(): sqlite.Database { return this._db; }
+    public get db(): Promise<sqlite3.AsyncDatabase> {
+        return this._db;
+    }
 
     public get foreignKeys(): ForeignKeys<Tables> { return this._foreignKeys; }
 
@@ -26,15 +28,15 @@ export class SQLiteHelper<Tables extends TablesDefinition> {
             ...fieldTypes
         } as { [fields in keyof Required<T>]: string };
         try {
-            this.run("BEGIN");
+            await this.run("BEGIN");
             await this._createTableIfNeeded(tableName, fieldTypesFull);
             for (const fieldName in fieldTypesFull) {
                 await this._createFieldIfNeeded(tableName, fieldName as keyof Required<T>, fieldTypesFull[fieldName]);
             }
-            this.run("COMMIT");
+            await this.run("COMMIT");
         } catch (e) {
             console.error(e);
-            this.run("ROLLBACK");
+            await this.run("ROLLBACK");
             throw e;
         }
     }
@@ -53,24 +55,22 @@ export class SQLiteHelper<Tables extends TablesDefinition> {
     //#region Select ----------------------------------------------------------
 
     /** Get a list of items */
-    public all<Row>(query: string, params: SQLValue[] = []): Promise<Row[]> {
+    public async all<Row>(query: string, params: SQLValue[] = []): Promise<Row[]> {
         try {
-            const rows = this._db.prepare(query).all(...params) as Row[];
-            return Promise.resolve(rows);
+            return (await this._db).all<Row>(query, ...params);
         } catch (e) {
-            console.log(query, params);
-            return Promise.reject(e);
+            console.error("Failed:", query, params);
+            throw e; // Forward error
         }
     }
 
     /** Get one item if it exists */
-    public get<Row>(query: string, params: SQLValue[] = []): Promise<Row | null> {
+    public async get<Row>(query: string, params: SQLValue[] = []): Promise<Row | null> {
         try {
-            const row = this._db.prepare(query).get(...params) as Row | undefined;
-            return Promise.resolve(row ?? null);
+            return (await this._db).get<Row>(query, ...params);
         } catch (e) {
-            console.log(query, params);
-            return Promise.reject(e);
+            console.error("Failed:", query, params);
+            throw e;
         }
     }
 
@@ -89,11 +89,10 @@ export class SQLiteHelper<Tables extends TablesDefinition> {
     }
 
     /** General query */
-    public run(query: string, params: SQLValue[] = []): Promise<void> {
+    public async run(query: string, params: SQLValue[] = []): Promise<void> {
         console.log(query, params);
         try {
-            this._db.prepare(query).run(...params);
-            return Promise.resolve();
+            await (await this._db).run(query, ...params);
         } catch (e) {
             return Promise.reject(e);
         }
