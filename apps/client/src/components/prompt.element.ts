@@ -15,10 +15,14 @@ export type PromptEvents = {
 export class PromptElement extends AbstractDTOElement<PromptDTO> implements EventHandler<PromptEvents> {
 
     protected model: ModelInfo | null;
+
+    protected errorCount: number = 0;
     protected pendingCount: number = 0;
     protected doneCount: number = 0;
     protected acceptedCount: number = 0;
     protected rejectedCount: number = 0;
+
+    protected errorPercent: number = 0;
     protected pendingPercent: number = 0;
     protected donePercent: number = 0;
     protected acceptedPercent: number = 0;
@@ -41,6 +45,7 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> implements Even
 
     public override refresh(): void {
         // -- Prepare variables for the template ------------------------------
+        this.errorCount = 0;
         this.pendingCount = 0;
         this.doneCount = 0;
         this.rejectedCount = 0;
@@ -50,6 +55,9 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> implements Even
                 continue;
             }
             switch (picture.status) {
+                case ComputationStatus.ERROR:
+                    this.errorCount++;
+                    break;
                 case ComputationStatus.PENDING:
                     this.pendingCount++;
                     break;

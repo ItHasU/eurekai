@@ -38,6 +38,11 @@
     <div class="row mt-2">
       <div class="col">
         <div class="progress-stacked">
+          {{#if errorCount}}
+          <div class="progress pending" role="progressbar" style="width: {{errorPercent}}%">
+            <div class="progress-bar bg-dark text-light">{{errorCount}}</div>
+          </div>
+          {{/if}}
           {{#if pendingCount}}
           <div class="progress pending" role="progressbar" style="width: {{pendingPercent}}%">
             <div class="progress-bar bg-light text-dark">{{pendingCount}}</div>
