@@ -28,15 +28,15 @@ export class SQLiteHelper<Tables extends TablesDefinition> {
             ...fieldTypes
         } as { [fields in keyof Required<T>]: string };
         try {
-            await this.run("BEGIN");
+            // await this.run("BEGIN");
             await this._createTableIfNeeded(tableName, fieldTypesFull);
             for (const fieldName in fieldTypesFull) {
                 await this._createFieldIfNeeded(tableName, fieldName as keyof Required<T>, fieldTypesFull[fieldName]);
             }
-            await this.run("COMMIT");
+            // await this.run("COMMIT");
         } catch (e) {
             console.error(e);
-            await this.run("ROLLBACK");
+            // await this.run("ROLLBACK");
             throw e;
         }
     }
