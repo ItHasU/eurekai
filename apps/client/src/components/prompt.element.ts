@@ -95,14 +95,18 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> implements Even
                 this.refresh();
             });
         });
-        this._bindClick("addPreferredButton", async () => {
-            await StaticDataProvider.sqlHandler.withTransaction(tr => {
-                generateNextPictures(StaticDataProvider.sqlHandler, tr, this.data, null);
-            });
-            this.refresh();
-        });
         this._bindClick("clone", () => EventHandlerImpl.fire(this._eventData, "clone", { prompt: this.data }));
-        this._bindClick("delete", () => EventHandlerImpl.fire(this._eventData, "delete", { prompt: this.data }));
+        this._bindClick("delete", async () => {
+            await StaticDataProvider.sqlHandler.withTransaction((tr) => {
+                for (const picture of StaticDataProvider.sqlHandler.getItems("pictures")) {
+                    if (picture.promptId === this.data.id) {
+                        tr.delete("pictures", picture.id);
+                    }
+                }
+                tr.delete("prompts", this.data.id);
+            });
+            EventHandlerImpl.fire(this._eventData, "delete", { prompt: this.data });
+        });
         this._bindClick("move", async () => {
             const projects = StaticDataProvider.sqlHandler.getItems("projects");
             const selectedProject = await showSelect<ProjectDTO>(projects, {
