@@ -73,7 +73,8 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> implements Even
             }
         }
 
-        const total = this.pendingCount + this.rejectedCount + this.doneCount + this.acceptedCount;
+        const total = this.errorCount + this.pendingCount + this.rejectedCount + this.doneCount + this.acceptedCount;
+        this.errorPercent = this.errorCount / total * 100;
         this.pendingPercent = this.pendingCount / total * 100;
         this.donePercent = this.doneCount / total * 100;
         this.acceptedPercent = this.acceptedCount / total * 100;
