@@ -334,7 +334,8 @@ export class PicturesPage extends AbstractPageElement {
                     projectId,
                     orderIndex
                 });
-                generateNextPictures(StaticDataProvider.sqlHandler, tr, newPrompt, 1);
+                // Create pictures for all preferred seeds
+                generateNextPictures(StaticDataProvider.sqlHandler, tr, newPrompt, null);
             });
             await this.refresh();
         }
