@@ -8,7 +8,7 @@ export async function submit<Tables extends TablesDefinition>(helper: SQLiteHelp
         updatedIds: {}
     }
     try {
-        // await helper.run("BEGIN");
+        await helper.run("BEGIN");
         for (const operation of transactionData) {
             switch (operation.type) {
                 case OperationType.INSERT: {
@@ -54,9 +54,9 @@ export async function submit<Tables extends TablesDefinition>(helper: SQLiteHelp
                     throw new Error("Not implemented");
             }
         }
-        // await helper.run("COMMIT");
+        await helper.run("COMMIT");
     } catch (e) {
-        // helper.run("ROLLBACK");
+        await helper.run("ROLLBACK");
         throw e; // Forward the exception to notice the caller that there was an error
     }
 
