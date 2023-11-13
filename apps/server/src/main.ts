@@ -17,12 +17,16 @@ async function main(): Promise<void> {
     });
 
     // -- Initialize the models -----------------------------------------------
-    await DiffusersRegistry.fetchAllModels();
-    const models = DiffusersRegistry.getModels();
-    console.log(`${models.length} model(s)`);
-    for (const model of models) {
-        const info = model.getModelInfo();
-        console.log(`- [${info.uid}] ${info.displayName}`);
+    try {
+        await DiffusersRegistry.fetchAllModels();
+        const models = DiffusersRegistry.getModels();
+        console.log(`${models.length} model(s)`);
+        for (const model of models) {
+            const info = model.getModelInfo();
+            console.log(`- [${info.uid}] ${info.displayName}`);
+        }
+    } catch (e) {
+        console.error("Failed to fetch models, retry later manually");
     }
 
     // -- Generate ------------------------------------------------------------

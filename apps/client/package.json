@@ -11,13 +11,15 @@
   "devDependencies": {
     "@dagda/build": "*",
     "@eurekai/shared": "*",
-    "@types/bootstrap": "^5.2.6"
+    "@types/bootstrap": "^5.2.6",
+    "@types/diff-match-patch": "^1.0.36"
   },
   "dependencies": {
     "@dagda/client": "*",
     "@dagda/shared": "*",
     "bootstrap": "=5.3.2",
     "bootstrap-icons": "^1.10.4",
+    "diff-match-patch": "^1.0.5",
     "handlebars": "^4.7.7"
   }
 }
