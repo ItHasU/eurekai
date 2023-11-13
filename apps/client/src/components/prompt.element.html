@@ -4,16 +4,19 @@
       <b>#{{data.orderIndex}}</b>
       <code>{{model.displayName}}</code>
       <br>
-      <b>Prompt&nbsp;: </b>
+      <b>Prompt changes&nbsp;: </b>
       <a class="text-decoration-none" data-bs-toggle="collapse" href="#promptDiff_{{this.data.id}}">
         <span class="text-danger">-{{promptRemovedCount}}</span>
         <span class="text-success">+{{promptAddedCount}}</span>
       </a>
-      <b>, Negative&nbsp;: </b>
+      <b>, Negative prompt changes&nbsp;: </b>
       <a class="text-decoration-none" data-bs-toggle="collapse" href="#negativePromptDiff_{{this.data.id}}">
         <span class="text-danger">-{{negativePromptRemovedCount}}</span>
         <span class="text-success">+{{negativePromptAddedCount}}</span>
       </a>
+      <div class="collapse show" id="promptDiff_{{this.data.id}}">
+        <b>Prompt&nbsp;: </b>{{{promptDiffShort}}}
+      </div>
       <div class="collapse" id="promptDiff_{{this.data.id}}">
         <b>Prompt&nbsp;: </b>{{{promptDiff}}}
       </div>

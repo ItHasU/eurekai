@@ -34,6 +34,7 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> implements Even
     protected promptRemovedCount: number = 0;
     protected promptAddedCount: number = 0;
     protected promptDiff: string = "";
+    protected promptDiffShort: string = "";
     protected negativePromptRemovedCount: number = 0;
     protected negativePromptAddedCount: number = 0;
     protected negativePromptDiff: string = "";
@@ -111,22 +112,29 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> implements Even
         this.promptRemovedCount = 0;
         this.promptAddedCount = 0;
         this.promptDiff = this.data.prompt;
+        this.promptDiffShort = this.data.prompt;
         this.negativePromptRemovedCount = 0;
         this.negativePromptAddedCount = 0;
-        this.negativePromptDiff = this.data.prompt;
+        this.negativePromptDiff = this.data.negative_prompt ?? "";
         if (previousPrompt != null) {
             this.promptDiff = "";
+            this.promptDiffShort = "";
             const positiveDiff = DIFF.diff_main(previousPrompt.prompt, this.data.prompt);
             DIFF.diff_cleanupSemantic(positiveDiff);
             for (const d of positiveDiff) {
                 if (d[0] < 0) {
                     this.promptRemovedCount++;
-                    this.promptDiff += `<span class="text-danger"><del>${d[1]}</del></span>`;
+                    const t = `<span class="text-danger"><del>${d[1]}</del></span>`
+                    this.promptDiff += t;
+                    this.promptDiffShort += t;
                 } else if (d[0] > 0) {
                     this.promptAddedCount++;
-                    this.promptDiff += `<span class="text-success">${d[1]}</span>`;
+                    const t = `<span class="text-success">${d[1]}</span>`;
+                    this.promptDiff += t;
+                    this.promptDiffShort += t;
                 } else {
                     this.promptDiff += `<span class="text-muted">${d[1]}</span>`;
+                    this.promptDiffShort += `...`;
                 }
             }
 
