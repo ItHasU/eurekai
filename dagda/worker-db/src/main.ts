@@ -15,7 +15,7 @@ class DatabaseWrapper {
     }
 
     protected _onMessage(request: WorkerRequest): void {
-        console.debug(request);
+        // console.debug(request);
         const response: WorkerResponse = {
             id: request.id,
             data: undefined
