@@ -28,7 +28,7 @@ export async function initHTTPServer(db: SQLiteHelper<AppTables>, port: number):
         // Send attachment as a png image from the base 64 string
         const id = +req.params.id;
         try {
-            const attachment = await db.get<AttachmentDTO>(`SELECT * FROM ${t("attachments")} WHERE ${f("attachments", "id")}=?`, [id]);
+            const attachment = await db.get<AttachmentDTO>(`SELECT * FROM ${t("attachments")} WHERE ${f("attachments", "id")}=?`, id);
             if (!attachment) {
                 res.status(404).send(`Attachment ${id} not found`);
             } else {
@@ -63,17 +63,17 @@ export async function sqlFetch(helper: SQLiteHelper<AppTables>, filter: AppConte
             };
         case "project":
             return {
-                projects: await helper.all<ProjectDTO>("SELECT * FROM projects WHERE id=?", [filter.options.projectId]),
-                prompts: await helper.all<PromptDTO>("SELECT * FROM prompts WHERE projectId=?", [filter.options.projectId]),
-                pictures: await helper.all<PictureDTO>("SELECT pictures.* FROM pictures JOIN prompts ON pictures.promptId = prompts.id WHERE prompts.projectId = ?", [filter.options.projectId]),
+                projects: await helper.all<ProjectDTO>("SELECT * FROM projects WHERE id=?", filter.options.projectId),
+                prompts: await helper.all<PromptDTO>("SELECT * FROM prompts WHERE projectId=?", filter.options.projectId),
+                pictures: await helper.all<PictureDTO>("SELECT pictures.* FROM pictures JOIN prompts ON pictures.promptId = prompts.id WHERE prompts.projectId = ?", filter.options.projectId),
                 // attachments: not fetch using cache but through a custom route
-                seeds: await helper.all<SeedDTO>(`SELECT * FROM ${t("seeds")} WHERE ${f("seeds", "projectId")}=?`, [filter.options.projectId])
+                seeds: await helper.all<SeedDTO>(`SELECT * FROM ${t("seeds")} WHERE ${f("seeds", "projectId")}=?`, filter.options.projectId)
             }
         case "pending":
             return {
                 projects: await helper.all<ProjectDTO>("SELECT * FROM projects"),
-                prompts: await helper.all<PromptDTO>("SELECT prompts.* FROM pictures LEFT JOIN prompts ON prompts.id = pictures.promptId WHERE pictures.status = ?", [ComputationStatus.PENDING]),
-                pictures: await helper.all<PictureDTO>("SELECT pictures.* FROM pictures WHERE pictures.status = ?", [ComputationStatus.PENDING])
+                prompts: await helper.all<PromptDTO>("SELECT prompts.* FROM pictures LEFT JOIN prompts ON prompts.id = pictures.promptId WHERE pictures.status = ?", ComputationStatus.PENDING),
+                pictures: await helper.all<PictureDTO>("SELECT pictures.* FROM pictures WHERE pictures.status = ?", ComputationStatus.PENDING)
             }
         default:
             return {};

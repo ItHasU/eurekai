@@ -3,16 +3,15 @@ import { BaseDTO, ForeignKeys, TablesDefinition } from "@dagda/shared/sql/types"
 import { SQLValue, SQLiteHelper, sqlValue } from "./sqlite.helper";
 
 /** Transaction submit implementation for SQLite */
-export async function submit<Tables extends TablesDefinition>(helper: SQLiteHelper<Tables>, transactionData: SQLTransactionData<Tables>): Promise<SQLTransactionResult> {
-    const result: SQLTransactionResult = {
-        updatedIds: {}
-    }
-    try {
-        await helper.run("BEGIN");
+export function submit<Tables extends TablesDefinition>(_helper: SQLiteHelper<Tables>, transactionData: SQLTransactionData<Tables>): Promise<SQLTransactionResult> {
+    return _helper.withRunner(async runner => {
+        const result: SQLTransactionResult = {
+            updatedIds: {}
+        }
         for (const operation of transactionData) {
             switch (operation.type) {
                 case OperationType.INSERT: {
-                    _updateForeignKeys(helper.foreignKeys, result, operation.options.table, operation.options.item);
+                    _updateForeignKeys(_helper.foreignKeys, result, operation.options.table, operation.options.item);
                     const columnNames = [];
                     const values: SQLValue[] = [];
                     for (const key in operation.options.item) {
@@ -24,12 +23,12 @@ export async function submit<Tables extends TablesDefinition>(helper: SQLiteHelp
                         values.push(sqlValue(operation.options.item[key]));
                     }
                     const query = `INSERT INTO ${operation.options.table as string} (${columnNames.join(",")}) VALUES (${columnNames.map(_ => "?").join(",")})`;
-                    const newId = await helper.insert(query, values);
+                    const newId = await runner.insert(query, ...values);
                     result.updatedIds[operation.options.item.id] = newId;
                     break;
                 }
                 case OperationType.UPDATE: {
-                    _updateForeignKeys(helper.foreignKeys, result, operation.options.table, operation.options.values as any);
+                    _updateForeignKeys(_helper.foreignKeys, result, operation.options.table, operation.options.values as any);
                     const columnNames = [];
                     const values: SQLValue[] = [];
                     for (const key in operation.options.values) {
@@ -42,25 +41,20 @@ export async function submit<Tables extends TablesDefinition>(helper: SQLiteHelp
                     }
                     values.push(_getUpdatedId(result, operation.options.id));
                     const query = `UPDATE ${operation.options.table as string} SET ${columnNames.join(",")} WHERE id=?`;
-                    await helper.run(query, values);
+                    await runner.run(query, ...values);
                     break;
                 }
                 case OperationType.DELETE: {
                     const query = `DELETE FROM ${operation.options.table as string} WHERE id=?`;
-                    await helper.run(query, [_getUpdatedId(result, operation.options.id)]);
+                    await runner.run(query, _getUpdatedId(result, operation.options.id));
                     break;
                 }
                 default:
                     throw new Error("Not implemented");
             }
         }
-        await helper.run("COMMIT");
-    } catch (e) {
-        await helper.run("ROLLBACK");
-        throw e; // Forward the exception to notice the caller that there was an error
-    }
-
-    return result;
+        return result;
+    });
 }
 
 //#region Foreign keys tools --------------------------------------------------
