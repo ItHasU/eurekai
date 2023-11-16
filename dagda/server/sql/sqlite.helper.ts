@@ -1,5 +1,6 @@
 import { ForeignKeys, TablesDefinition } from "@dagda/shared/sql/types";
 import { WorkerRequest, WorkerResponse } from "@dagda/shared/sql/worker";
+import { Queue } from "@dagda/shared/tools/queue";
 import { Worker } from "node:worker_threads";
 
 /** Values accepted by SQLite */
@@ -133,10 +134,11 @@ export class SQLWorker implements SQLRunner {
 export class SQLiteHelper<Tables extends TablesDefinition> implements SQLRunner {
 
     protected _worker: SQLWorker;
-    protected _queue: Promise<void> = Promise.resolve();
+    protected _queue: Queue<SQLRunner>;
 
     constructor(filename: string, protected _foreignKeys: ForeignKeys<Tables>) {
         this._worker = new SQLWorker(filename);
+        this._queue = new Queue(this._worker);
     }
 
     public get foreignKeys(): ForeignKeys<Tables> { return this._foreignKeys; }
@@ -176,16 +178,8 @@ export class SQLiteHelper<Tables extends TablesDefinition> implements SQLRunner 
 
     //#region Transaction -----------------------------------------------------
 
-    public async withRunner<T>(f: (runner: SQLRunner) => Promise<T>): Promise<T> {
-        // Wait for the end of the queue
-        const result = this._queue.then(async () => {
-            // Execute the function
-            return await f(this._worker);
-        });
-        // Then queue the function, but we don't return this function
-        this._queue = result.catch(e => {/* Don't care */ }).then(() => { });
-        // And return the result
-        return result;
+    public withRunner<T>(f: (runner: SQLRunner) => Promise<T>): Promise<T> {
+        return this._queue.enqueue(f);
     }
 
     public async withTransaction<T>(f: (runner: SQLRunner) => Promise<T>): Promise<T> {
