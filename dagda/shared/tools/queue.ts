@@ -1,5 +1,7 @@
 function _void(): void { }
 
+export type Runnable<T, R> = (resource: T) => PromiseLike<R>;
+
 /** 
  * A queue for runnables.
  * 
@@ -18,7 +20,7 @@ export class Queue<T = void> {
      * Enqueue a runnable.
      * The runnable will receive the resource passed in the constructor as first parameter.
      */
-    enqueue<R>(f: (resource: T) => PromiseLike<R>): Promise<R> {
+    enqueue<R>(f: Runnable<T, R>): Promise<R> {
         const result = this._queue.then(() => {
             return f(this._resource);
         });
