@@ -12,6 +12,7 @@ export type Runnable<T, R> = (resource: T) => PromiseLike<R>;
 export class Queue<T = void> {
 
     protected _queue: Promise<void> = Promise.resolve();
+    protected _count: number = 0;
 
     constructor(protected _resource: T) {
     }
@@ -20,13 +21,16 @@ export class Queue<T = void> {
      * Enqueue a runnable.
      * The runnable will receive the resource passed in the constructor as first parameter.
      */
-    enqueue<R>(f: Runnable<T, R>): Promise<R> {
+    run<R>(f: Runnable<T, R>): Promise<R> {
+        this._count++;
         const result = this._queue.then(() => {
             return f(this._resource);
         });
 
         // Don't catch the rejection and ignore the result
-        this._queue = result.catch(_void).then(_void);
+        this._queue = result.catch(_void).then(() => {
+            this._count--;
+        });
 
         return result;
     }

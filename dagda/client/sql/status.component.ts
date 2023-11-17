@@ -9,6 +9,7 @@ export class SQLStatusComponent<Tables extends TablesDefinition, Contexts> exten
 
     protected _downloadIcon: HTMLElement;
     protected _uploadIcon: HTMLElement;
+    protected _uploadCountSpan: HTMLSpanElement;
     protected _refreshIcon: HTMLElement;
 
     constructor(handler: SQLHandler<Tables, Contexts>) {
@@ -16,6 +17,7 @@ export class SQLStatusComponent<Tables extends TablesDefinition, Contexts> exten
         this.innerHTML = require("./status.component.html").default;
         this._downloadIcon = this.querySelector(`i[ref="downloadIcon"]`)!;
         this._uploadIcon = this.querySelector(`i[ref="uploadIcon"]`)!;
+        this._uploadCountSpan = this.querySelector(`span[ref="uploadCountSpan"]`)!;
         this._refreshIcon = this.querySelector(`i[ref="refreshIcon"]`)!;
 
         handler.on("state", (event) => {
@@ -24,8 +26,10 @@ export class SQLStatusComponent<Tables extends TablesDefinition, Contexts> exten
     }
 
     protected _refresh(data: SQLEvents["state"]): void {
-        this._downloadIcon.classList.toggle("d-none", !data.downloading);
-        this._uploadIcon.classList.toggle("d-none", !data.uploading);
+        this._downloadIcon.classList.toggle("d-none", data.downloading === 0);
+        this._uploadIcon.classList.toggle("d-none", data.uploading === 0);
+        this._uploadCountSpan.classList.toggle("d-none", data.uploading < 2);
+        this._uploadCountSpan.innerHTML = "" + data.uploading;
         this._refreshIcon.classList.toggle("text-danger", data.dirty);
     }
 }

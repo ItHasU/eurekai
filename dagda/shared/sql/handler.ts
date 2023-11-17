@@ -1,3 +1,4 @@
+import { Queue } from "@dagda/shared/tools/queue";
 import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "../tools/events";
 import { SQLCache, SQLCacheHandler } from "./cache";
 import { OperationType, SQLTransaction } from "./transaction";
@@ -9,12 +10,12 @@ export type SQLEvents = {
          * Is the handler currently loading data ?
          * (ex: during loadTable()) 
          */
-        downloading: boolean,
+        downloading: number,
         /**
          * Is the handler currently sending data ?
          * (ex: during submit())
          */
-        uploading: boolean,
+        uploading: number,
         /**
          * Is the cache dirty ?
          * (ex: after an error or during a refresh)
@@ -40,6 +41,9 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
     /** Current state of the temporary id counter */
     protected _nextId: number = 0;
 
+    /** Queue for submit of transactions */
+    protected _submitQueue: Queue<void> = new Queue(void (0));
+
     constructor(protected _adapter: SQLAdapter<Tables, Contexts>) { }
 
     //#region Events ----------------------------------------------------------
@@ -47,8 +51,8 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
     protected readonly _eventHandlerData: EventHandlerData<SQLEvents> = {};
 
     protected _state: SQLEvents["state"] = {
-        downloading: false,
-        uploading: false,
+        downloading: 0,
+        uploading: 0,
         dirty: false
     };
 
@@ -92,7 +96,6 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
 
     /** Fetch data */
     public async fetch(...contexts: Contexts[]): Promise<void> {
-
         try {
             if (this._cacheDirty) {
                 // Clear all
@@ -118,7 +121,7 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
             }
 
             if (contextsToFetch.length > 0) {
-                this._fireStateChanged({ downloading: true });
+                this._fireStateChanged({ downloading: this._state.downloading + 1 });
                 for (const filter of contextsToFetch) {
                     const result = await this._adapter.fetch(filter);
                     // Merge loaded items with current cache
@@ -131,7 +134,7 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
                         }
                     }
                 }
-                this._fireStateChanged({ downloading: false });
+                this._fireStateChanged({ downloading: this._state.downloading - 1 });
             }
             // All done, cache is ok
             this._cacheDirty = false;
@@ -196,38 +199,40 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
      * Once the result is received, the cache is updated
      */
     public async submit(transaction: SQLTransaction<Tables>): Promise<void> {
-        this._fireStateChanged({ uploading: true });
-        try {
-            // -- Call submit on the connector --
-            const result = await this._adapter.submit(transaction.operations);
-            // -- Once done, update local DTO --
-            for (const op of transaction.operations) {
-                switch (op.type) {
-                    case OperationType.INSERT:
-                        const tmpId = op.options.item.id;
-                        if (tmpId < 0) {
-                            const cache = this.getCache(op.options.table);
-                            const item = cache.getById(tmpId);
-                            cache.delete(tmpId); // Delete old item
-                            if (item) {
-                                // Update the id
-                                item.id = result.updatedIds[tmpId];
-                                // Make sure the item is registered
-                                cache.insert(item);
+        this._fireStateChanged({ uploading: this._state.uploading + 1 });
+        await this._submitQueue.run(async () => {
+            try {
+                // -- Call submit on the connector --
+                const result = await this._adapter.submit(transaction.operations);
+                // -- Once done, update local DTO --
+                for (const op of transaction.operations) {
+                    switch (op.type) {
+                        case OperationType.INSERT:
+                            const tmpId = op.options.item.id;
+                            if (tmpId < 0) {
+                                const cache = this.getCache(op.options.table);
+                                const item = cache.getById(tmpId);
+                                cache.delete(tmpId); // Delete old item
+                                if (item) {
+                                    // Update the id
+                                    item.id = result.updatedIds[tmpId];
+                                    // Make sure the item is registered
+                                    cache.insert(item);
+                                }
                             }
-                        }
-                        break;
-                    default:
-                        break;
+                            break;
+                        default:
+                            break;
+                    }
                 }
+            } catch (e) {
+                console.error(e);
+                this._cacheDirty = true;
+                this._fireStateChanged({ dirty: true });
+            } finally {
+                this._fireStateChanged({ uploading: this._state.uploading - 1 });
             }
-        } catch (e) {
-            console.error(e);
-            this._cacheDirty = true;
-            this._fireStateChanged({ dirty: true });
-        } finally {
-            this._fireStateChanged({ uploading: false });
-        }
+        });
     }
 
     //#endregion
