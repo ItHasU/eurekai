@@ -96,6 +96,7 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
 
     /** Fetch data */
     public async fetch(...contexts: Contexts[]): Promise<void> {
+        this._fireStateChanged({ downloading: this._state.downloading + 1 });
         try {
             if (this._cacheDirty) {
                 // Clear all
@@ -121,7 +122,6 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
             }
 
             if (contextsToFetch.length > 0) {
-                this._fireStateChanged({ downloading: this._state.downloading + 1 });
                 for (const filter of contextsToFetch) {
                     const result = await this._adapter.fetch(filter);
                     // Merge loaded items with current cache
@@ -134,7 +134,6 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
                         }
                     }
                 }
-                this._fireStateChanged({ downloading: this._state.downloading - 1 });
             }
             // All done, cache is ok
             this._cacheDirty = false;
@@ -143,6 +142,8 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
             this._cacheDirty = true;
             this._fireStateChanged({ dirty: true });
             throw e;
+        } finally {
+            this._fireStateChanged({ downloading: this._state.downloading - 1 });
         }
     }
 
@@ -200,8 +201,8 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
      */
     public async submit(transaction: SQLTransaction<Tables>): Promise<void> {
         this._fireStateChanged({ uploading: this._state.uploading + 1 });
-        await this._submitQueue.run(async () => {
-            try {
+        try {
+            await this._submitQueue.run(async () => {
                 // -- Call submit on the connector --
                 const result = await this._adapter.submit(transaction.operations);
                 // -- Once done, update local DTO --
@@ -225,14 +226,14 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
                             break;
                     }
                 }
-            } catch (e) {
-                console.error(e);
-                this._cacheDirty = true;
-                this._fireStateChanged({ dirty: true });
-            } finally {
-                this._fireStateChanged({ uploading: this._state.uploading - 1 });
-            }
-        });
+            });
+        } catch (e) {
+            console.error(e);
+            this._cacheDirty = true;
+            this._fireStateChanged({ dirty: true });
+        } finally {
+            this._fireStateChanged({ uploading: this._state.uploading - 1 });
+        }
     }
 
     //#endregion
