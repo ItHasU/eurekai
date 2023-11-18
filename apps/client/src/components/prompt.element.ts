@@ -169,6 +169,12 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> implements Even
                 this.refresh();
             });
         });
+        this._bindClick("addPreferredButton", async () => {
+            await StaticDataProvider.sqlHandler.withTransaction(tr => {
+                generateNextPictures(StaticDataProvider.sqlHandler, tr, this.data, null);
+            });
+            this.refresh();
+        });
         this._bindClick("clone", () => EventHandlerImpl.fire(this._eventData, "clone", { prompt: this.data }));
         this._bindClick("delete", async () => {
             await StaticDataProvider.sqlHandler.withTransaction((tr) => {
