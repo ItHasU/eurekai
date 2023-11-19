@@ -2,7 +2,7 @@ import { apiCall } from "@dagda/client/api";
 import { generateFetchFunction, generateSubmitFunction } from "@dagda/client/sql/client.adapter";
 import { SQLHandler } from "@dagda/shared/sql/handler";
 import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api";
-import { AppContexts, AppTables, appContextEquals } from "@eurekai/shared/src/types";
+import { APP_FOREIGN_KEYS, AppContexts, AppTables, appContextEquals } from "@eurekai/shared/src/types";
 
 /** A global class containing static methods accessible from all the components */
 export class StaticDataProvider {
@@ -17,7 +17,7 @@ export class StaticDataProvider {
                 contextEquals: appContextEquals,
                 fetch: generateFetchFunction(),
                 submit: generateSubmitFunction()
-            });
+            }, APP_FOREIGN_KEYS);
         }
         return this._sqlHandler;
     }
@@ -72,3 +72,5 @@ export class StaticDataProvider {
     //#endregion
 
 }
+
+(window as any)["data"] = StaticDataProvider;

@@ -1,6 +1,6 @@
 import { submit } from "@dagda/server/sql/sqlite.adapter";
 import { SQLHandler } from "@dagda/shared/sql/handler";
-import { AppContexts, AppTables, appContextEquals } from "@eurekai/shared/src/types";
+import { APP_FOREIGN_KEYS, AppContexts, AppTables, appContextEquals } from "@eurekai/shared/src/types";
 import { DiffusersRegistry } from "./diffusers";
 import { getEnvNumber } from "./modules/config";
 import { initDatabaseHelper } from "./modules/db";
@@ -14,7 +14,7 @@ async function main(): Promise<void> {
         contextEquals: appContextEquals,
         fetch: filter => sqlFetch(db, filter),
         submit: transactionData => submit(db, transactionData)
-    });
+    }, APP_FOREIGN_KEYS);
 
     // -- Initialize the models -----------------------------------------------
     try {

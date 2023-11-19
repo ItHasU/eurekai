@@ -89,7 +89,7 @@ export class PicturesPage extends AbstractPageElement {
             if (promptForPicture == null) {
                 // Prompt is not from the project since the map
                 // only contains prompts from the project
-            } else if (promptForPicture.prompt.projectId !== projectId) {
+            } else if (!StaticDataProvider.sqlHandler.isSameId(promptForPicture.prompt.projectId, projectId)) {
                 // Prompt is not from project 
                 // (should never happen since prompt in map are already filtered)
             } else {
@@ -98,7 +98,7 @@ export class PicturesPage extends AbstractPageElement {
             }
         }
         // TODO Preferred seeds
-        const preferredSeeds: Set<number> = new Set(StaticDataProvider.sqlHandler.getItems("seeds").filter(s => s.projectId === projectId).map(s => s.seed));
+        const preferredSeeds: Set<number> = new Set(StaticDataProvider.sqlHandler.getItems("seeds").filter(s => StaticDataProvider.sqlHandler.isSameId(s.projectId, projectId)).map(s => s.seed));
 
         // -- Render per prompt -----------------------------------------------
         // Sort prompts per order index (inverted)

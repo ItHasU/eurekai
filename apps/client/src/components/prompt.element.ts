@@ -1,6 +1,6 @@
 import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "@dagda/shared/tools/events";
 import { ModelInfo } from "@eurekai/shared/src/models.api";
-import { generateNextPictures } from "@eurekai/shared/src/pictures.data";
+import { deletePicture, generateNextPictures } from "@eurekai/shared/src/pictures.data";
 import { ComputationStatus, ProjectDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { diff_match_patch } from "diff-match-patch";
 import { StaticDataProvider } from "src/tools/dataProvider";
@@ -62,7 +62,7 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> implements Even
         this.rejectedCount = 0;
         this.acceptedCount = 0;
         for (const picture of StaticDataProvider.sqlHandler.getItems("pictures")) {
-            if (picture.promptId !== this.data.id) {
+            if (!StaticDataProvider.sqlHandler.isSameId(picture.promptId, this.data.id)) {
                 continue;
             }
             switch (picture.status) {
@@ -95,7 +95,7 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> implements Even
         let previousPrompt: PromptDTO | null = null;
         // -- Search for the previous prompt --
         for (const prompt of StaticDataProvider.sqlHandler.getItems("prompts")) {
-            if (prompt.projectId !== this.data.projectId) {
+            if (StaticDataProvider.sqlHandler.isSameId(prompt.projectId, this.data.projectId)) {
                 // Pas le prompt du bon projet
                 continue;
             }
@@ -179,8 +179,8 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> implements Even
         this._bindClick("delete", async () => {
             await StaticDataProvider.sqlHandler.withTransaction((tr) => {
                 for (const picture of StaticDataProvider.sqlHandler.getItems("pictures")) {
-                    if (picture.promptId === this.data.id) {
-                        tr.delete("pictures", picture.id);
+                    if (StaticDataProvider.sqlHandler.isSameId(picture.promptId, this.data.id)) {
+                        deletePicture(StaticDataProvider.sqlHandler, tr, picture);
                     }
                 }
                 tr.delete("prompts", this.data.id);
@@ -192,7 +192,7 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> implements Even
             const selectedProject = await showSelect<ProjectDTO>(projects, {
                 valueKey: "id",
                 displayString: "name",
-                selected: projects.find(p => p.id === this.data.projectId)
+                selected: projects.find(p => StaticDataProvider.sqlHandler.isSameId(p.id, this.data.projectId))
             });
             if (selectedProject != null && selectedProject.id != this.data.projectId) {
                 await StaticDataProvider.sqlHandler.withTransaction((tr) => {

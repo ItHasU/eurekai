@@ -2,7 +2,7 @@ import { Queue } from "@dagda/shared/tools/queue";
 import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "../tools/events";
 import { SQLCache, SQLCacheHandler } from "./cache";
 import { OperationType, SQLTransaction } from "./transaction";
-import { SQLAdapter, TablesDefinition } from "./types";
+import { ForeignKeys, SQLAdapter, TablesDefinition } from "./types";
 
 export type SQLEvents = {
     "state": {
@@ -40,11 +40,13 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
 
     /** Current state of the temporary id counter */
     protected _nextId: number = 0;
+    /** History of updated ids */
+    protected _updatedIds: { [originalId: number]: number } = {};
 
     /** Queue for submit of transactions */
     protected _submitQueue: Queue<void> = new Queue(void (0));
 
-    constructor(protected _adapter: SQLAdapter<Tables, Contexts>) { }
+    constructor(protected _adapter: SQLAdapter<Tables, Contexts>, protected _foreignKeys: ForeignKeys<Tables>) { }
 
     //#region Events ----------------------------------------------------------
 
@@ -203,24 +205,38 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
         this._fireStateChanged({ uploading: this._state.uploading + 1 });
         try {
             await this._submitQueue.run(async () => {
-                // -- Call submit on the connector --
-                const result = await this._adapter.submit(transaction.operations);
-                // -- Once done, update local DTO --
+                // -- Make sure to update the ids before sending --
                 for (const op of transaction.operations) {
                     switch (op.type) {
                         case OperationType.INSERT:
-                            const tmpId = op.options.item.id;
-                            if (tmpId < 0) {
-                                const cache = this.getCache(op.options.table);
-                                const item = cache.getById(tmpId);
-                                cache.delete(tmpId); // Delete old item
-                                if (item) {
-                                    // Update the id
-                                    item.id = result.updatedIds[tmpId];
-                                    // Make sure the item is registered
-                                    cache.insert(item);
-                                }
-                            }
+                            this._updateIds(op.options.table, op.options.item, { skipId: true });
+                            break;
+                        case OperationType.UPDATE:
+                            this._updateIds(op.options.table, op.options.values as any);
+                            break;
+                        case OperationType.DELETE:
+                            op.options.id = this.getUpdatedId(op.options.id)!;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                // -- Call submit on the connector --
+                const result = await this._adapter.submit(transaction.operations);
+                // -- Store updated ids --
+                // This needs to be done before updating the items
+                for (const originalId in result.updatedIds) {
+                    const updatedId = result.updatedIds[originalId];
+                    if (updatedId == null) {
+                        continue;
+                    }
+                    this._updatedIds[originalId] = updatedId;
+                }
+                // -- Update local items --
+                for (const op of transaction.operations) {
+                    switch (op.type) {
+                        case OperationType.INSERT:
+                            this._updateIds(op.options.table, op.options.item);
                             break;
                         default:
                             break;
@@ -238,4 +254,67 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
 
     //#endregion
 
+    //#region Id handling -----------------------------------------------------
+
+    /** 
+     * @returns true if ids match.
+     * This function compare ids and temporary ids.
+     * There is no verification if the ids are from the same table.
+     */
+    public isSameId(id1: number | null | undefined, id2: number | null | undefined): boolean {
+        return this.getUpdatedId(id1) == this.getUpdatedId(id2);
+    }
+
+    public getUpdatedId(id: number | null | undefined): number | null | undefined {
+        if (id == null) {
+            return null;
+        } else {
+            return this._updatedIds[id] ?? id;
+        }
+    }
+
+    protected _updateIds<TableName extends keyof Tables>(
+        table: TableName,
+        item: Partial<Tables[TableName]>,
+        options?: {
+            /** If enabled, won't update the id field, for insertion */
+            skipId?: boolean
+        }
+    ): void {
+        // -- Update fields ---------------------------------------------------
+        for (const field in item) {
+            if (field === "id") {
+                if (options?.skipId) {
+                    // Don't update the id yet
+                } else {
+                    const tmpId = item.id;
+                    if (tmpId != null && tmpId < 0) {
+                        const cache = this.getCache(table);
+                        const item = cache.getById(tmpId);
+                        cache.delete(tmpId); // Delete old item
+                        if (item) {
+                            // Update the id
+                            item.id = this.getUpdatedId(tmpId)!;
+                            // Make sure the item is registered
+                            cache.insert(item);
+                        }
+                    }
+                }
+            } else {
+                const foreignKeys = this._foreignKeys[table];
+                const foreignTable: boolean = (foreignKeys as any)[field];
+                if (foreignTable) {
+                    const tmpId = item[field] as number | null | undefined;
+                    if (tmpId != null && tmpId < 0) {
+                        if (item) {
+                            // Update the id
+                            item[field] = this.getUpdatedId(tmpId) as any;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    //#endregion
 }

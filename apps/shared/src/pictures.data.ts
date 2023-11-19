@@ -10,13 +10,13 @@ export function generateNextPictures(handler: SQLHandler<AppTables, AppContexts>
     // -- Get a list of preferred seeds --
     const missingPreferredSeeds: Set<number> = new Set();
     for (const seed of handler.getItems("seeds")) {
-        if (seed.projectId === prompt.projectId) {
+        if (handler.isSameId(seed.projectId, prompt.projectId)) {
             missingPreferredSeeds.add(seed.seed);
         }
     }
 
     for (const picture of handler.getItems("pictures")) {
-        if (picture.promptId === prompt.id && picture.status !== ComputationStatus.ERROR) {
+        if (handler.isSameId(picture.promptId, prompt.id) && picture.status !== ComputationStatus.ERROR) {
             missingPreferredSeeds.delete(picture.seed);
         }
     }
@@ -46,7 +46,7 @@ export function generateNextPictures(handler: SQLHandler<AppTables, AppContexts>
 
 export function isPreferredSeed(handler: SQLHandler<AppTables, AppContexts>, projectId: number, seed: number): boolean {
     for (const preferredSeed of handler.getItems("seeds")) {
-        if (preferredSeed.projectId === projectId && preferredSeed.seed === seed) {
+        if (handler.isSameId(preferredSeed.projectId, projectId) && preferredSeed.seed === seed) {
             return true;
         }
     }
@@ -54,7 +54,7 @@ export function isPreferredSeed(handler: SQLHandler<AppTables, AppContexts>, pro
 }
 
 export function togglePreferredSeed(handler: SQLHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables>, projectId: number, seed: number): void {
-    const alreadyExisting = handler.getItems("seeds").find(preferredSeed => preferredSeed.projectId === projectId && preferredSeed.seed === seed);
+    const alreadyExisting = handler.getItems("seeds").find(preferredSeed => handler.isSameId(preferredSeed.projectId, projectId) && preferredSeed.seed === seed);
     if (alreadyExisting == null) {
         // Not found, create it
         tr.insert("seeds", {
@@ -65,5 +65,15 @@ export function togglePreferredSeed(handler: SQLHandler<AppTables, AppContexts>,
     } else {
         // Found, delete it
         tr.delete("seeds", alreadyExisting.id);
+    }
+}
+
+export function deletePicture(handler: SQLHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables>, picture: PictureDTO): void {
+    tr.delete("pictures", picture.id);
+    if (picture.attachmentId) {
+        tr.delete("attachments", picture.attachmentId);
+    }
+    if (picture.highresAttachmentId) {
+        tr.delete("attachments", picture.highresAttachmentId)
     }
 }
