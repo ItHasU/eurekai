@@ -95,7 +95,7 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> implements Even
         let previousPrompt: PromptDTO | null = null;
         // -- Search for the previous prompt --
         for (const prompt of StaticDataProvider.sqlHandler.getItems("prompts")) {
-            if (StaticDataProvider.sqlHandler.isSameId(prompt.projectId, this.data.projectId)) {
+            if (!StaticDataProvider.sqlHandler.isSameId(prompt.projectId, this.data.projectId)) {
                 // Pas le prompt du bon projet
                 continue;
             }
