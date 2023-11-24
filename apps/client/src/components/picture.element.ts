@@ -77,30 +77,20 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         const button_both = this._getElementByRef("both")!;
 
         if (this.data.attachmentId == null) {
+            img_sd.remove();
             button_sd.remove();
             button_both.remove();
         }
+        else {
+            img_sd.src = `/attachment/${this.data.attachmentId}`;
+        }
         if (this.data.highresAttachmentId == null) {
+            img_hd.remove();
             button_hd.remove();
             button_both.remove();
+        } else {
+            img_hd.src = `/attachment/${this.data.highresAttachmentId}`;
         }
-        // Use an observer to detect when the image is displayed on screen
-        const observer = new IntersectionObserver(async (entries) => {
-            if (entries.length > 0 && entries[0].target === containerDiv && entries[0].isIntersecting) {
-                // If displayed, load the image
-                if (this.data.attachmentId != null) {
-                    img_sd.src = `/attachment/${this.data.attachmentId}`;
-                }
-                if (this.data.highresAttachmentId != null) {
-                    img_hd.src = `/attachment/${this.data.highresAttachmentId}`;
-                }
-            } else {
-                // If hidden, unload the images
-                img_sd.removeAttribute("src");
-                img_hd.removeAttribute("src");
-            }
-        });
-        observer.observe(containerDiv);
 
         // -- Handle swipe --
         // Handle accept / reject swipe moves
