@@ -41,6 +41,8 @@ export class PictureElement extends AbstractDTOElement<PictureDTO> {
         setAsFeatured: () => void
     }) {
         super(data, require("./picture.element.html").default);
+        // Preload the image, it will only be displayed when element is visible
+        new Image().src = `/api/attachment/${this.data.attachmentId}`;
     }
 
     public get isWaitingEvaluation(): boolean {
