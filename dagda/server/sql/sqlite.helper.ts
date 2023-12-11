@@ -1,7 +1,6 @@
 import { ForeignKeys, TablesDefinition } from "@dagda/shared/sql/types";
 import { WorkerRequest, WorkerResponse } from "@dagda/shared/sql/worker";
 import { Pool } from "@dagda/shared/tools/pool";
-import { cpus } from "node:os";
 import { Worker } from "node:worker_threads";
 
 /** Values accepted by SQLite */
@@ -119,8 +118,8 @@ export class SQLWorker implements SQLRunner {
     }
 
     protected _onError(e: any): void {
-        console.error("Error from the worker");
-        console.error(e);
+        console.debug("Error from the worker");
+        console.debug(e);
         for (const entry of this._pendingRequests.entries()) {
             entry[1].reject(e);
         }
@@ -136,9 +135,10 @@ export class SQLiteHelper<Tables extends TablesDefinition> implements SQLRunner 
 
     protected _queue: Pool<SQLRunner>;
 
-    constructor(filename: string, protected _foreignKeys: ForeignKeys<Tables>) {
+    constructor(filename: string, protected _options: { workersCount: number }, protected _foreignKeys: ForeignKeys<Tables>) {
+        const cpusCount = Math.max(1, this._options.workersCount);
         const workers: SQLWorker[] = [];
-        for (const cpu of cpus()) {
+        for (let i = 0; i < cpusCount; i++) {
             workers.push(new SQLWorker(filename));
         }
         this._queue = new Pool<SQLRunner>(workers);
@@ -157,12 +157,18 @@ export class SQLiteHelper<Tables extends TablesDefinition> implements SQLRunner 
         } as { [fields in keyof Required<T>]: string };
 
         await this.withTransaction(async runner => {
-            await this._createTableIfNeeded(runner, tableName, fieldTypesFull);
+            try {
+                await this._createTableIfNeeded(runner, tableName, fieldTypesFull);
+            } catch (e) {
+                // Ignore error
+                console.log(`Table ${tableName as string} already exists`)
+            }
             for (const fieldName in fieldTypesFull) {
                 try {
                     await this._createFieldIfNeeded(runner, tableName, fieldName as keyof Required<T>, fieldTypesFull[fieldName]);
                 } catch (e) {
                     // We don't care if the request fails, there is no IF NOT EXISTS for column creation
+                    console.log(`Field ${tableName as string}.${fieldName} already exists`);
                 }
             }
         });

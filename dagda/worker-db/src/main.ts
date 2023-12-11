@@ -34,7 +34,7 @@ class DatabaseWrapper {
                     break;
             }
         } catch (e) {
-            console.error(e);
+            // console.debug(e);
             response.data = undefined;
             response.error = String(e);
         }

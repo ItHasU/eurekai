@@ -1,9 +1,14 @@
 import { SQLiteHelper } from "@dagda/server/sql/sqlite.helper";
+import { getEnvNumber } from "@dagda/server/tools/config";
 import { APP_FOREIGN_KEYS, AppTables } from "@eurekai/shared/src/types";
+import { cpus } from "node:os";
+import { ENV_VARIABLES_NUMBER } from "./config";
 
 /** Build a SqliteHelper and initialize tables if needed */
 export async function initDatabaseHelper(filename: string): Promise<SQLiteHelper<AppTables>> {
-    const helper = new SQLiteHelper<AppTables>(filename, APP_FOREIGN_KEYS);
+    const helper = new SQLiteHelper<AppTables>(filename, {
+        workersCount: getEnvNumber<ENV_VARIABLES_NUMBER>("SQLITE_WORKERS", cpus().length)
+    }, APP_FOREIGN_KEYS);
 
     // -- Initialize tables ---------------------------------------------------
     await helper.initTable("projects", {

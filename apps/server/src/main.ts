@@ -1,8 +1,9 @@
 import { submit } from "@dagda/server/sql/sqlite.adapter";
+import { getEnvNumber } from "@dagda/server/tools/config";
 import { SQLHandler } from "@dagda/shared/sql/handler";
 import { APP_FOREIGN_KEYS, AppContexts, AppTables, appContextEquals } from "@eurekai/shared/src/types";
 import { DiffusersRegistry } from "./diffusers";
-import { getEnvNumber } from "./modules/config";
+import { ENV_VARIABLES_NUMBER } from "./modules/config";
 import { initDatabaseHelper } from "./modules/db";
 import { Generator } from "./modules/generator";
 import { initHTTPServer, sqlFetch } from "./modules/server";
@@ -33,7 +34,7 @@ async function main(): Promise<void> {
     new Generator(handler);
 
     // -- Initialize HTTP server ----------------------------------------------
-    const port = getEnvNumber("PORT");
+    const port = getEnvNumber<ENV_VARIABLES_NUMBER>("PORT");
     await initHTTPServer(db, port);
 
     console.log(`Server started, connect to http://localhost:${port}/`);

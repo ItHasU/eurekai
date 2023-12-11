@@ -1,4 +1,5 @@
-import { getEnvString } from "src/modules/config";
+import { getEnvString } from "@dagda/server/tools/config";
+import { ENV_VARIABLES_STR } from "src/modules/config";
 import { AbstractDiffuser } from "./diffuser";
 import { getAllModels } from "./impl/automatic1111.tools";
 
@@ -12,7 +13,7 @@ export class DiffusersRegistry {
         DiffusersRegistry._models.clear();
 
         // -- Fetch A1111 models --
-        const automatic1111_apiUrl = getEnvString("API_URL");
+        const automatic1111_apiUrl = getEnvString<ENV_VARIABLES_STR>("API_URL");
         if (automatic1111_apiUrl != null) {
             const a1111_models = await getAllModels(automatic1111_apiUrl);
             for (const model of a1111_models) {
