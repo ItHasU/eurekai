@@ -17,9 +17,14 @@ export class DiffusersRegistry {
         if (automatic1111_apiUrl != null) {
             const a1111_models = await getAllModels(automatic1111_apiUrl);
             for (const model of a1111_models) {
-                DiffusersRegistry._models.set(model.getModelInfo().uid, model);
+                DiffusersRegistry.push(model);
             }
         }
+    }
+
+    /** Register a diffuser */
+    public static push(model: AbstractDiffuser): void {
+        DiffusersRegistry._models.set(model.getModelInfo().uid, model);
     }
 
     /** Get the model corresponding to the given title or undefined if not found */
