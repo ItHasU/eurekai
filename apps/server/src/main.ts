@@ -1,9 +1,8 @@
 import { submit } from "@dagda/server/sql/sqlite.adapter";
-import { getEnvNumber, getEnvString } from "@dagda/server/tools/config";
+import { getEnvNumber } from "@dagda/server/tools/config";
 import { SQLHandler } from "@dagda/shared/sql/handler";
 import { APP_FOREIGN_KEYS, AppContexts, AppTables, appContextEquals } from "@eurekai/shared/src/types";
 import { DiffusersRegistry } from "./diffusers";
-import { ReplicateSDXL } from "./diffusers/impl/replicateSDXL";
 import { ENV_VARIABLES_NUMBER } from "./modules/config";
 import { initDatabaseHelper } from "./modules/db";
 import { Generator } from "./modules/generator";
@@ -23,13 +22,6 @@ async function main(): Promise<void> {
         await DiffusersRegistry.fetchAllModels();
     } catch (e) {
         console.error("Failed to fetch models, retry later manually");
-    }
-
-    try {
-        const REPLICATE_API_TOKEN = getEnvString("REPLICATE_TOKEN");
-        DiffusersRegistry.push(new ReplicateSDXL(REPLICATE_API_TOKEN))
-    } catch (e) {
-        console.error("Failed to initialize replicate client");
     }
 
     const models = DiffusersRegistry.getModels();

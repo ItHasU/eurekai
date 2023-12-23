@@ -3,12 +3,14 @@ import Replicate from "replicate";
 import { fetch } from "undici";
 import { AbstractDiffuser, ImageDescription } from "../diffuser";
 
+export type ModelIdentifier = `${string}/${string}` | `${string}/${string}:${string}`;
+
 /** Diffuser implementation using the Replicate WebService */
 export class ReplicateSDXL extends AbstractDiffuser {
 
     protected _replicate: Replicate;
 
-    public constructor(token: string) {
+    public constructor(token: string, protected _model: ModelIdentifier) {
         super();
         this._replicate = new Replicate({
             auth: token
@@ -18,8 +20,8 @@ export class ReplicateSDXL extends AbstractDiffuser {
     /** @inheritdoc */
     public override getModelInfo(): ModelInfo {
         return {
-            uid: "replicate_sdxl",
-            displayName: "Replicate SDXL",
+            uid: `replicate_${this._model}`,
+            displayName: `[Replicate] ${this._model.replace(/\:.*/, "")}`,
             size: 1024
         };
     }
@@ -28,7 +30,7 @@ export class ReplicateSDXL extends AbstractDiffuser {
     public override async txt2img(options: ImageDescription, highres: boolean): Promise<string> {
         // -- Call tge API --
         const output = await this._replicate.run(
-            "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
+            this._model,
             {
                 input: {
                     prompt: options.prompt,
