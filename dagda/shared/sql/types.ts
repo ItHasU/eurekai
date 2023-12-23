@@ -47,7 +47,7 @@ export interface SQLAdapter<Tables extends TablesDefinition, Contexts> {
     fetch(context: Contexts): Promise<Data<Tables>>;
 
     /** Submit changes in the transaction */
-    submit(transactionData: SQLTransactionData<Tables>, modifiedContexts: Contexts[]): Promise<SQLTransactionResult>;
+    submit(transactionData: SQLTransactionData<Tables, Contexts>): Promise<SQLTransactionResult>;
 }
 
 //#endregion

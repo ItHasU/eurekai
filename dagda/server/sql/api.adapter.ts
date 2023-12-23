@@ -10,13 +10,13 @@ import { SQLiteHelper } from "./sqlite.helper";
  * Register SQLAdapter API on the server.
  * You only need to provide the fetch function as submit is generic.
  */
-export function registerAdapterAPI<Tables extends TablesDefinition, Context>(
+export function registerAdapterAPI<Tables extends TablesDefinition, Contexts>(
     app: Application,
     helper: SQLiteHelper<Tables>,
-    fetch: (helper: SQLiteHelper<Tables>, filter: Context) => Promise<Data<Tables>>
+    fetch: (helper: SQLiteHelper<Tables>, filter: Contexts) => Promise<Data<Tables>>
 ): void {
-    registerAPI<SQLAdapterAPI<Tables, Context>>(app, SQL_URL, {
-        submit: (transactionData: SQLTransactionData<Tables>) => submit<Tables>(helper, transactionData),
+    registerAPI<SQLAdapterAPI<Tables, Contexts>>(app, SQL_URL, {
+        submit: (transactionData: SQLTransactionData<Tables, Contexts>) => submit<Tables, Contexts>(helper, transactionData),
         fetch: fetch.bind(null, helper)
     });
 }

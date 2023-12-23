@@ -30,7 +30,10 @@ export type SQLOperation<Tables extends TablesDefinition, TableName extends keyo
     | BaseOperation<OperationType.UPDATE, UpdateOptions<TableName>>
     | BaseOperation<OperationType.DELETE, DeleteOptions<TableName>>;
 
-export type SQLTransactionData<Tables extends TablesDefinition> = SQLOperation<Tables, keyof Tables>[];
+export type SQLTransactionData<Tables extends TablesDefinition, Contexts> = {
+    operations: SQLOperation<Tables, keyof Tables>[];
+    contexts: Contexts[];
+};
 
 export interface SQLTransactionResult {
     updatedIds: { [temporaryId: number]: number };

@@ -15,6 +15,7 @@ export class StaticDataProvider {
         if (this._sqlHandler == null) {
             this._sqlHandler = new SQLHandler<AppTables, AppContexts>({
                 contextEquals: appContextEquals,
+                contextIntersects: appContextEquals,
                 fetch: generateFetchFunction(),
                 submit: generateSubmitFunction()
             }, APP_FOREIGN_KEYS);

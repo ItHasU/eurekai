@@ -3,12 +3,12 @@ import { BaseDTO, ForeignKeys, TablesDefinition } from "@dagda/shared/sql/types"
 import { SQLValue, SQLiteHelper, sqlValue } from "./sqlite.helper";
 
 /** Transaction submit implementation for SQLite */
-export function submit<Tables extends TablesDefinition>(_helper: SQLiteHelper<Tables>, transactionData: SQLTransactionData<Tables>): Promise<SQLTransactionResult> {
+export function submit<Tables extends TablesDefinition, Contexts>(_helper: SQLiteHelper<Tables>, transactionData: SQLTransactionData<Tables, Contexts>): Promise<SQLTransactionResult> {
     return _helper.withRunner(async runner => {
         const result: SQLTransactionResult = {
             updatedIds: {}
         }
-        for (const operation of transactionData) {
+        for (const operation of transactionData.operations) {
             switch (operation.type) {
                 case OperationType.INSERT: {
                     _updateForeignKeys(_helper.foreignKeys, result, operation.options.table, operation.options.item);

@@ -6,7 +6,7 @@ import { AppContexts, AppTables, ComputationStatus, PictureDTO, PromptDTO } from
  * Generate a certain amount of images 
  * If requested quantity is null, will generate for all preferred seeds
  */
-export function generateNextPictures(handler: SQLHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables>, prompt: PromptDTO, count: number | null): void {
+export function generateNextPictures(handler: SQLHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, prompt: PromptDTO, count: number | null): void {
     // -- Get a list of preferred seeds --
     const missingPreferredSeeds: Set<number> = new Set();
     for (const seed of handler.getItems("seeds")) {
@@ -53,7 +53,7 @@ export function isPreferredSeed(handler: SQLHandler<AppTables, AppContexts>, pro
     return false;
 }
 
-export function togglePreferredSeed(handler: SQLHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables>, projectId: number, seed: number): void {
+export function togglePreferredSeed(handler: SQLHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, projectId: number, seed: number): void {
     const alreadyExisting = handler.getItems("seeds").find(preferredSeed => handler.isSameId(preferredSeed.projectId, projectId) && preferredSeed.seed === seed);
     if (alreadyExisting == null) {
         // Not found, create it
@@ -68,7 +68,7 @@ export function togglePreferredSeed(handler: SQLHandler<AppTables, AppContexts>,
     }
 }
 
-export function deletePicture(handler: SQLHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables>, picture: PictureDTO): void {
+export function deletePicture(handler: SQLHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, picture: PictureDTO): void {
     tr.delete("pictures", picture.id);
     if (picture.attachmentId) {
         tr.delete("attachments", picture.attachmentId);

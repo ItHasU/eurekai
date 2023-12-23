@@ -283,7 +283,11 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
                     }
                 }
                 // -- Call submit on the connector --
-                const result = await this._adapter.submit(transaction.operations, transaction.contexts);
+                const result = await this._adapter.submit({
+                    // Only serialize the serializable entries
+                    operations: transaction.operations,
+                    contexts: transaction.contexts
+                });
                 // -- Store updated ids --
                 // This needs to be done before updating the items
                 for (const originalId in result.updatedIds) {

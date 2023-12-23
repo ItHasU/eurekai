@@ -13,6 +13,7 @@ async function main(): Promise<void> {
     const db = await initDatabaseHelper("./eurekai.db");
     const handler = new SQLHandler<AppTables, AppContexts>({
         contextEquals: appContextEquals,
+        contextIntersects: appContextEquals,
         fetch: filter => sqlFetch(db, filter),
         submit: transactionData => submit(db, transactionData)
     }, APP_FOREIGN_KEYS);
