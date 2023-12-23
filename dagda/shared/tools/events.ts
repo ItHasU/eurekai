@@ -2,7 +2,7 @@
  * Utility class passed to listeners 
  * It contains the event payload and can be use to control the workflow of event listeners.
  */
-class Event<EventData> {
+export class Event<EventData> {
     constructor(public readonly data: EventData) { }
 }
 

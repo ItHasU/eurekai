@@ -49,6 +49,13 @@ export class Generator {
                         tr.update("pictures", picture, {
                             status: ComputationStatus.ERROR
                         });
+                        // Manually add the context so clients get notified
+                        tr.contexts.push({
+                            type: "project",
+                            options: {
+                                projectId: prompt.projectId
+                            }
+                        });
                     });
                     // Pass to the next image
                     continue;
@@ -63,7 +70,6 @@ export class Generator {
                         negative_prompt: prompt.negative_prompt,
                         seed: picture.seed
                     };
-                    console.log(img);
                     const imageData = await diffuser.txt2img(img, false);
 
                     // For debugging purpose, write image to disk
@@ -78,6 +84,13 @@ export class Generator {
                         tr.update("pictures", picture, {
                             status: ComputationStatus.DONE,
                             attachmentId: attachment.id
+                        });
+                        // Manually add the context so clients get notified
+                        tr.contexts.push({
+                            type: "project",
+                            options: {
+                                projectId: prompt.projectId
+                            }
                         });
                     })
                 } catch (e) {

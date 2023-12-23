@@ -1,5 +1,6 @@
 import { Queue } from "@dagda/shared/tools/queue";
-import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "../tools/events";
+import { Event, EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "../tools/events";
+import { NotificationHelper } from "../tools/notification.helper";
 import { SQLCache, SQLCacheHandler } from "./cache";
 import { OperationType, SQLTransaction } from "./transaction";
 import { ForeignKeys, SQLAdapter, TablesDefinition } from "./types";
@@ -23,6 +24,10 @@ export type SQLEvents = {
         dirty: boolean
     }
 }
+
+export type ContextEvents<Contexts> = {
+    "contextChanged": Contexts[];
+};
 
 interface ContextState<Contexts> {
     /** Loaded context */
@@ -59,7 +64,12 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
     /** Queue for submit of transactions */
     protected _submitQueue: Queue<void> = new Queue(void (0));
 
-    constructor(protected _adapter: SQLAdapter<Tables, Contexts>, protected _foreignKeys: ForeignKeys<Tables>) { }
+    constructor(protected _adapter: SQLAdapter<Tables, Contexts>, protected _foreignKeys: ForeignKeys<Tables>) {
+        // When a notification is received mark my cache as dirty
+        NotificationHelper.on<ContextEvents<Contexts>>("contextChanged", (event: Event<ContextEvents<Contexts>["contextChanged"]>) => {
+            this.markCacheDirty(...event.data);
+        });
+    }
 
     //#region Events ----------------------------------------------------------
 
@@ -107,7 +117,10 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
                 for (const loadedContext of this._loadedContexts) {
                     if (this._adapter.contextIntersects(context, loadedContext.context)) {
                         loadedContext.dirty = true;
-                        hasDirtyContext = true;
+                        if (loadedContext.active) {
+                            // Only trigger a dirty state if the context is active
+                            hasDirtyContext = true;
+                        }
                     }
                 }
             }
@@ -283,11 +296,14 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
                     }
                 }
                 // -- Call submit on the connector --
+                // Perform the action on the database
                 const result = await this._adapter.submit({
                     // Only serialize the serializable entries
                     operations: transaction.operations,
                     contexts: transaction.contexts
                 });
+                // Trigger context changed event to notify other clients
+                NotificationHelper.broadcast<ContextEvents<Contexts>>("contextChanged", transaction.contexts);
                 // -- Store updated ids --
                 // This needs to be done before updating the items
                 for (const originalId in result.updatedIds) {

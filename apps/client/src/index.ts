@@ -3,6 +3,8 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import "bootstrap/dist/css/bootstrap.css";
 
 import { SQLStatusComponent } from "@dagda/client/sql/status.component";
+import { ClientNotificationImpl } from "@dagda/client/tools/notification.impl";
+import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
 import { PictureElement } from "./components/picture.element";
 import { PromptElement } from "./components/prompt.element";
 import { PromptEditor } from "./editors/prompt.editor";
@@ -65,6 +67,9 @@ class App {
             window.requestAnimationFrame(step);
         }
         window.requestAnimationFrame(step);
+
+        // -- Notification helper --
+        NotificationHelper.set(new ClientNotificationImpl());
     }
 
     protected _bindPage(buttonId: string, pageConstructor: PageConstructor): void {
@@ -89,48 +94,6 @@ class App {
         document.body.classList.toggle("locked", locked);
     }
 
-    // protected _refreshNotificationsCount(notifications: Notification[]): void {
-    //     const notificationCountSpan = document.getElementById("notificationCountSpan");
-    //     if (notificationCountSpan == null) {
-    //         return;
-    //     }
-
-    //     let newCount = 0;
-    //     let newHighresCount = 0;
-    //     let errorsCount = 0;
-    //     let unknownCount = 0;
-    //     for (const notification of notifications) {
-    //         switch (notification.kind) {
-    //             case NotificationKind.IMAGE_NEW:
-    //                 newCount++;
-    //                 break;
-    //             case NotificationKind.IMAGE_NEW_HIGHRES:
-    //                 newHighresCount++;
-    //                 break;
-    //             case NotificationKind.IMAGE_ERROR:
-    //                 errorsCount++;
-    //                 break;
-    //             default:
-    //                 unknownCount++;
-    //                 break;
-    //         }
-    //     }
-
-    //     notificationCountSpan.classList.remove("bg-danger", "bg-secondary", "bg-success");
-    //     if (errorsCount > 0) {
-    //         notificationCountSpan.innerText = "" + errorsCount;
-    //         notificationCountSpan.classList.add("bg-primary");
-    //     } else if (newCount > 0 || newHighresCount > 0) {
-    //         notificationCountSpan.innerText = `${newCount}+${newHighresCount}`;
-    //         notificationCountSpan.classList.add("bg-success");
-    //     } else if (unknownCount > 0) {
-    //         notificationCountSpan.innerText = "" + unknownCount;
-    //         notificationCountSpan.classList.add("bg-secondary");
-    //     } else {
-    //         notificationCountSpan.innerText = "-";
-    //         notificationCountSpan.classList.add("bg-secondary");
-    //     }
-    // }
 }
 
 /** Singleton of the App */

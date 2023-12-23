@@ -1,7 +1,9 @@
 import { registerAPI } from "@dagda/server/api";
 import { registerAdapterAPI } from "@dagda/server/sql/api.adapter";
 import { SQLiteHelper } from "@dagda/server/sql/sqlite.helper";
+import { ServerNotificationImpl } from "@dagda/server/tools/notification.impl";
 import { Data } from "@dagda/shared/sql/types";
+import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
 import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api";
 import { AppContexts, AppTables, AttachmentDTO, ComputationStatus, PictureDTO, ProjectDTO, PromptDTO, SeedDTO, f, t } from "@eurekai/shared/src/types";
 import express, { Application } from "express";
@@ -48,7 +50,10 @@ export async function initHTTPServer(db: SQLiteHelper<AppTables>, port: number):
     });
 
     // -- Listen --
-    app.listen(port);
+    const server = app.listen(port);
+
+    // -- Register websocket notification --
+    NotificationHelper.set(new ServerNotificationImpl(server));
 }
 
 /** 
