@@ -37,11 +37,17 @@ export interface SQLAdapter<Tables extends TablesDefinition, Contexts> {
      */
     contextEquals(newContext: Contexts, oldContext: Contexts): boolean;
 
+    /** 
+     * @returns true if the new context intersects the old context.
+     * MUST BE executable locally without a promise for quick performances.
+     */
+    contextIntersects(newContext: Contexts, oldContext: Contexts): boolean;
+
     /** Fetch data corresponding to filter */
     fetch(context: Contexts): Promise<Data<Tables>>;
 
     /** Submit changes in the transaction */
-    submit(transactionData: SQLTransactionData<Tables>): Promise<SQLTransactionResult>;
+    submit(transactionData: SQLTransactionData<Tables>, modifiedContexts: Contexts[]): Promise<SQLTransactionResult>;
 }
 
 //#endregion

@@ -24,6 +24,20 @@ export type SQLEvents = {
     }
 }
 
+interface ContextState<Contexts> {
+    /** Loaded context */
+    context: Contexts,
+    /** 
+     * Is the loaded context currently active ?
+     * If true, the context will be marked as dirty on other clients on next transaction.
+     */
+    active: boolean,
+    /**
+     * Is the cache dirty ?
+     * Will be true if another client has modified a data matching the context.
+     */
+    dirty: boolean
+}
 
 /** 
  * Utility class allowing to fetch data, store them in a cache and submit modifications.  
@@ -31,10 +45,9 @@ export type SQLEvents = {
  */
 export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQLCacheHandler<Tables>, EventHandler<SQLEvents> {
 
-    /** List of filters loaded */
-    protected _loadedContexts: Contexts[] = [];
-    /** If true, the cache will be erased on next fetch. */
-    protected _cacheDirty: boolean = false;
+    /** List of contexts loaded */
+    protected _loadedContexts: ContextState<Contexts>[] = [];
+
     /** One cache per table */
     protected _caches: { [TableName in keyof Tables]?: SQLCache<Tables[TableName]> } = {};
 
@@ -80,11 +93,40 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
     //#region Cache -----------------------------------------------------------
 
     /** Force cache clear on next fetch */
-    public markCacheDirty(): void {
-        this._cacheDirty = true;
+    public markCacheDirty(...contexts: Contexts[]): void {
+        let hasDirtyContext = false;
+        if (contexts.length === 0) {
+            // Mark all contexts as dirty
+            for (const context of this._loadedContexts) {
+                context.dirty = true;
+                hasDirtyContext = true;
+            }
+        } else {
+            // Only mark contexts intersecting with the provided contexts as dirty
+            for (const context of contexts) {
+                for (const loadedContext of this._loadedContexts) {
+                    if (this._adapter.contextIntersects(context, loadedContext.context)) {
+                        loadedContext.dirty = true;
+                        hasDirtyContext = true;
+                    }
+                }
+            }
+        }
+
         this._fireStateChanged({
-            dirty: true
+            dirty: hasDirtyContext
         });
+    }
+
+    /** Get the list of active contexts (either dirty or not) */
+    public getActiveContexts(): Contexts[] {
+        const activeContexts: Contexts[] = [];
+        for (const context of this._loadedContexts) {
+            if (context.active) {
+                activeContexts.push(context.context);
+            }
+        }
+        return activeContexts;
     }
 
     /** Get or build an empty cache */
@@ -97,51 +139,70 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
     }
 
     /** Fetch data */
-    public async fetch(...contexts: Contexts[]): Promise<void> {
+    public async fetch(...contextsToLoad: Contexts[]): Promise<void> {
         this._fireStateChanged({ downloading: this._state.downloading + 1 });
         try {
-            if (this._cacheDirty) {
-                // Clear all
-                this._loadedContexts = [];
-                this._caches = {};
-            }
+            // -- Make a list of contexts to fetch --
+            const contextsToFetch: Set<Contexts> = new Set();
+            const statesToMarkActiveAndNotDirty: Set<ContextState<Contexts>> = new Set();
 
-            // -- Keep filters that needs to be fetched --
-            const contextsToFetch: Contexts[] = [];
-            for (const newContext of contexts) {
-                let hasContext = false;
-                for (const oldContext of this._loadedContexts) {
-                    hasContext = this._adapter.contextEquals(newContext, oldContext);
-                    if (hasContext) {
-                        break;
-                    }
-                }
-                if (!hasContext) {
-                    // Context is not found
-                    this._loadedContexts.push(newContext);
-                    contextsToFetch.push(newContext);
-                }
-            }
-
-            if (contextsToFetch.length > 0) {
-                for (const filter of contextsToFetch) {
-                    const result = await this._adapter.fetch(filter);
-                    // Merge loaded items with current cache
-                    for (const [table, items] of Object.entries(result)) {
-                        const cache = this.getCache(table);
-                        // Here it is important to insert all items instead of set
-                        // because we want to complete the cache
-                        for (const item of items) {
-                            cache.insert(item); // Add or override previous value
+            for (const contextToLoad of contextsToLoad) {
+                // Seek for existing context matching the context to load
+                let contextAlreadyExisting = false;
+                for (const existingState of this._loadedContexts) {
+                    if (this._adapter.contextEquals(contextToLoad, existingState.context)) {
+                        contextAlreadyExisting = true;
+                        statesToMarkActiveAndNotDirty.add(existingState);
+                        if (existingState.dirty) {
+                            // Context is loaded but dirty
+                            contextsToFetch.add(contextToLoad);
                         }
                     }
                 }
+
+                if (!contextAlreadyExisting) {
+                    // We don't have any context matching the context to load
+                    // We need to fetch it
+                    contextsToFetch.add(contextToLoad);
+                    const newState: ContextState<Contexts> = {
+                        context: contextToLoad,
+                        active: false,
+                        dirty: false
+                    };
+                    this._loadedContexts.push(newState);
+                    statesToMarkActiveAndNotDirty.add(newState);
+                }
             }
+
+            // -- Fetch the missing contexts --
+            for (const context of contextsToFetch) {
+                const result = await this._adapter.fetch(context);
+                // Merge loaded items with current cache
+                for (const [table, items] of Object.entries(result)) {
+                    const cache = this.getCache(table);
+                    // Here it is important to insert all items instead of set
+                    // because we want to complete the cache
+                    for (const item of items) {
+                        cache.insert(item); // Add or override previous value
+                    }
+                }
+            }
+
+            // -- Once all contexts are loaded, mark them as active and not dirty --
+            for (const state of this._loadedContexts) {
+                if (statesToMarkActiveAndNotDirty.has(state)) {
+                    state.active = true;
+                    state.dirty = false;
+                } else {
+                    state.active = false;
+                    // Keep dirty as-is
+                }
+            }
+
             // All done, cache is ok
-            this._cacheDirty = false;
             this._fireStateChanged({ dirty: false });
         } catch (e) {
-            this._cacheDirty = true;
+            this._loadedContexts = [];
             this._fireStateChanged({ dirty: true });
             throw e;
         } finally {
@@ -179,9 +240,9 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
      * 
      * The function will resolve once the transaction is submitted, but before the server has responded.
      */
-    public async withTransaction(f: (transaction: SQLTransaction<Tables>) => Promise<void> | void) {
+    public async withTransaction(f: (transaction: SQLTransaction<Tables, Contexts>) => Promise<void> | void) {
         // -- Create transaction and run f() --
-        const tr = new SQLTransaction<Tables>(this);
+        const tr = new SQLTransaction<Tables, Contexts>(this, this.getActiveContexts());
         try {
             await f(tr);
         } catch (e) {
@@ -201,7 +262,7 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
      * Submit the transaction to the connector.
      * Once the result is received, the cache is updated
      */
-    public async submit(transaction: SQLTransaction<Tables>): Promise<void> {
+    public async submit(transaction: SQLTransaction<Tables, Contexts>): Promise<void> {
         this._fireStateChanged({ uploading: this._state.uploading + 1 });
         try {
             await this._submitQueue.run(async () => {
@@ -222,7 +283,7 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
                     }
                 }
                 // -- Call submit on the connector --
-                const result = await this._adapter.submit(transaction.operations);
+                const result = await this._adapter.submit(transaction.operations, transaction.contexts);
                 // -- Store updated ids --
                 // This needs to be done before updating the items
                 for (const originalId in result.updatedIds) {
@@ -245,8 +306,8 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
             });
         } catch (e) {
             console.error(e);
-            this._cacheDirty = true;
-            this._fireStateChanged({ dirty: true });
+            this.markCacheDirty();
+            throw e;
         } finally {
             this._fireStateChanged({ uploading: this._state.uploading - 1 });
         }

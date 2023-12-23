@@ -41,7 +41,7 @@ export interface SQLTransactionResult {
  * The transaction will apply changes to DTO but changes will only be applied in 
  * database only after the submission.
  */
-export class SQLTransaction<Tables extends TablesDefinition> {
+export class SQLTransaction<Tables extends TablesDefinition, Contexts> {
 
     //#region Temporary ids ---------------------------------------------------
 
@@ -59,7 +59,7 @@ export class SQLTransaction<Tables extends TablesDefinition> {
     /** List of operations performed */
     public readonly operations: SQLOperation<Tables, keyof Tables>[] = [];
 
-    constructor(protected _cacheHandler: SQLCacheHandler<Tables>) { }
+    constructor(protected _cacheHandler: SQLCacheHandler<Tables>, public readonly contexts: Contexts[]) { }
 
     /** 
      * Insert an item in the database.
