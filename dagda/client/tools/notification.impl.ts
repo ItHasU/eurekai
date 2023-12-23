@@ -8,7 +8,7 @@ export class ClientNotificationImpl<Notifications extends Record<string, unknown
     public constructor() {
         super();
 
-        this._socket = new WebSocket(`ws://${window.location.host}`);
+        this._socket = new WebSocket(`ws${window.location.protocol.endsWith("s") ? "s" : ""}://${window.location.host}`);
         this._socket.onmessage = async (event) => {
             // Convert the blob to a string
             const str = typeof event.data === "string" ? event.data : (await (event.data as Blob).text());
