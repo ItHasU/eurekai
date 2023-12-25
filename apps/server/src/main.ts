@@ -1,4 +1,4 @@
-import { submit } from "@dagda/server/sql/sqlite.adapter";
+import { submit } from "@dagda/server/sql/sql.adapter";
 import { getEnvNumber } from "@dagda/server/tools/config";
 import { SQLHandler } from "@dagda/shared/sql/handler";
 import { APP_FOREIGN_KEYS, AppContexts, AppTables, appContextEquals } from "@eurekai/shared/src/types";

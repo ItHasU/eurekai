@@ -3,6 +3,8 @@ import { ForeignKeys, TablesDefinition } from "@dagda/shared/sql/types";
 /** Values accepted by SQLite */
 export type SQLValue = number | string | BigInt | Buffer | null;
 
+export type BaseRow = object;
+
 /** 
  * Convert value to a compatible SQLite value.
  * @throws If the value cannot be converted.
@@ -40,7 +42,7 @@ export interface SQLConnection {
      * @param params The parameters to be used in the query.
      * @returns A promise that resolves to an array of rows.
      */
-    all<Row extends Record<string, SQLValue>>(query: string, ...params: SQLValue[]): Promise<Row[]>;
+    all<Row extends BaseRow>(query: string, ...params: SQLValue[]): Promise<Row[]>;
 
     /**
      * Retrieves a single item from the database if it exists.
@@ -48,7 +50,7 @@ export interface SQLConnection {
      * @param params The parameters to be used in the query.
      * @returns A promise that resolves to the row if found, or null if not found.
      */
-    get<Row extends Record<string, SQLValue>>(query: string, ...params: SQLValue[]): Promise<Row | null>;
+    get<Row extends BaseRow>(query: string, ...params: SQLValue[]): Promise<Row | null>;
 
     /**
      * Inserts an item into the database.
@@ -71,7 +73,7 @@ export interface SQLConnection {
 /**
  * Abstract class for a pool of SQL connections.
  */
-export abstract class AbstractSQLRunner<Tables extends TablesDefinition, C extends SQLConnection = SQLConnection> {
+export abstract class AbstractSQLRunner<Tables extends TablesDefinition, C extends SQLConnection = SQLConnection> implements SQLConnection {
 
     constructor(protected _foreignKeys: ForeignKeys<Tables>) { }
 
@@ -104,13 +106,13 @@ export abstract class AbstractSQLRunner<Tables extends TablesDefinition, C exten
     public async withTransaction<T>(callback: (connection: SQLConnection) => Promise<T>): Promise<T> {
         return this.withReservedConnection(async (connection: SQLConnection) => {
             try {
-                await connection.run("BEGIN");
+                await connection.run("BEGIN;");
                 const result = await callback(connection);
-                await connection.run("COMMIT");
+                await connection.run("COMMIT;");
                 return result;
             } catch (e) {
                 // Rollback the transaction and forward the error
-                await connection.run("ROLLBACK");
+                await connection.run("ROLLBACK;");
                 throw e;
             }
         });
@@ -139,6 +141,8 @@ export abstract class AbstractSQLRunner<Tables extends TablesDefinition, C exten
                 console.log(`Table ${tableName as string} may already exists`);
                 console.error(e);
             }
+        });
+        await this.withTransaction(async (connection: SQLConnection) => {
             for (const fieldName in fieldTypesFull) {
                 try {
                     await this._createFieldIfNeeded(connection, tableName, fieldName as keyof Required<T>, fieldTypesFull[fieldName]);
@@ -152,12 +156,36 @@ export abstract class AbstractSQLRunner<Tables extends TablesDefinition, C exten
     }
 
     protected _createTableIfNeeded<TN extends keyof Tables, T extends Tables[TN] = Tables[TN]>(connection: SQLConnection, tableName: TN, fieldTypes: { [fields in keyof Required<T>]: string }): Promise<void> {
-        return connection.run(`CREATE TABLE IF NOT EXISTS ${tableName as string} (${Object.entries(fieldTypes).map(([fieldName, fieldType]) => `"${fieldName}" ${fieldType}`).join(", ")})`);
+        return connection.run(`CREATE TABLE IF NOT EXISTS ${tableName as string} (${Object.entries(fieldTypes).map(([fieldName, fieldType]) => `"${fieldName}" ${fieldType}`).join(", ")});`);
     }
 
     /** @returns true if column was created */
     protected _createFieldIfNeeded<TN extends keyof Tables, T extends Tables[TN] = Tables[TN]>(connection: SQLConnection, tableName: TN, fieldName: keyof Required<T>, fieldType: string): Promise<boolean> {
-        return connection.run(`ALTER TABLE ${tableName as string} ADD COLUMN "${fieldName as string}" ${fieldType}`).catch(() => false).then(() => true);
+        return connection.run(`ALTER TABLE ${tableName as string} ADD COLUMN "${fieldName as string}" ${fieldType};`).catch(() => false).then(() => true);
+    }
+
+    //#endregion
+
+    //#region SQLConnection implementation ------------------------------------
+
+    /** @inheritdoc */
+    public all<Row extends BaseRow>(query: string, ...params: SQLValue[]): Promise<Row[]> {
+        return this.withReservedConnection(connection => connection.all<Row>(query, ...params));
+    }
+
+    /** @inheritdoc */
+    public get<Row extends BaseRow>(query: string, ...params: SQLValue[]): Promise<Row | null> {
+        return this.withReservedConnection(connection => connection.get<Row>(query, ...params));
+    }
+
+    /** @inheritdoc */
+    public insert(query: string, ...params: SQLValue[]): Promise<number | null> {
+        return this.withReservedConnection(connection => connection.insert(query, ...params));
+    }
+
+    /** @inheritdoc */
+    public run(query: string, ...params: SQLValue[]): Promise<void> {
+        return this.withReservedConnection(connection => connection.run(query, ...params));
     }
 
     //#endregion

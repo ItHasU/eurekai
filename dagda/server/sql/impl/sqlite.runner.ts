@@ -1,7 +1,7 @@
 import { ForeignKeys, TablesDefinition } from "@dagda/shared/sql/types";
 import { WorkerRequest, WorkerResponse } from "@dagda/shared/sql/worker";
 import { Worker } from "node:worker_threads";
-import { AbstractSQLRunner, SQLConnection, SQLValue } from "../runner";
+import { AbstractSQLRunner, BaseRow, SQLConnection, SQLValue } from "../runner";
 
 
 /** Implementation of a runner using a worker */
@@ -21,7 +21,7 @@ export class SQLiteConnection implements SQLConnection {
     //#region Select ----------------------------------------------------------
 
     /** Get a list of items */
-    public all<Row>(query: string, ...params: SQLValue[]): Promise<Row[]> {
+    public all<Row extends BaseRow>(query: string, ...params: SQLValue[]): Promise<Row[]> {
         try {
             return this._call({ id: 0, method: "all", query, params });
         } catch (e) {
@@ -31,7 +31,7 @@ export class SQLiteConnection implements SQLConnection {
     }
 
     /** Get one item if it exists */
-    public get<Row>(query: string, ...params: SQLValue[]): Promise<Row | null> {
+    public get<Row extends BaseRow>(query: string, ...params: SQLValue[]): Promise<Row | null> {
         try {
             return this._call({ id: 0, method: "get", query, params });
         } catch (e) {

@@ -1,23 +1,20 @@
-import { SQLiteHelper } from "@dagda/server/sql/sqlite.helper";
-import { getEnvNumber } from "@dagda/server/tools/config";
+import { PGRunner } from "@dagda/server/sql/impl/pg.runner";
+import { getEnvString } from "@dagda/server/tools/config";
 import { APP_FOREIGN_KEYS, AppTables } from "@eurekai/shared/src/types";
-import { cpus } from "node:os";
-import { ENV_VARIABLES_NUMBER } from "./config";
+import { ENV_VARIABLES_STR } from "./config";
 
 /** Build a SqliteHelper and initialize tables if needed */
-export async function initDatabaseHelper(filename: string): Promise<SQLiteHelper<AppTables>> {
-    const helper = new SQLiteHelper<AppTables>(filename, {
-        workersCount: getEnvNumber<ENV_VARIABLES_NUMBER>("SQLITE_WORKERS", cpus().length)
-    }, APP_FOREIGN_KEYS);
+export async function initDatabaseHelper(filename: string): Promise<PGRunner<AppTables>> {
+    const runner = new PGRunner<AppTables>(APP_FOREIGN_KEYS, getEnvString<ENV_VARIABLES_STR>("DATABASE_URL"));
 
     // -- Initialize tables ---------------------------------------------------
-    await helper.initTable("projects", {
+    await runner.initTable("projects", {
         "name": "TEXT",
         "featuredAttachmentId": "INTEGER NULL",
-        "lockable": "INTEGER DEFAULT FALSE", // FALSE = 0
-        "pinned": "INTEGER DEFAULT FALSE"    // FALSE = 0
+        "lockable": "BOOLEAN DEFAULT FALSE", // FALSE = 0
+        "pinned": "BOOLEAN DEFAULT FALSE"    // FALSE = 0
     });
-    await helper.initTable("prompts", {
+    await runner.initTable("prompts", {
         "projectId": "INTEGER",
         "orderIndex": "INTEGER",
         "width": "INTEGER",
@@ -26,7 +23,7 @@ export async function initDatabaseHelper(filename: string): Promise<SQLiteHelper
         "prompt": "TEXT",
         "negative_prompt": "TEXT"
     });
-    await helper.initTable("pictures", {
+    await runner.initTable("pictures", {
         promptId: "INTEGER",
         seed: "INTEGER",
         status: "INTEGER",
@@ -34,13 +31,13 @@ export async function initDatabaseHelper(filename: string): Promise<SQLiteHelper
         highresStatus: "INTEGER",
         highresAttachmentId: "INTEGER NULL"
     });
-    await helper.initTable("attachments", {
+    await runner.initTable("attachments", {
         data: "TEXT"
     });
-    await helper.initTable("seeds", {
+    await runner.initTable("seeds", {
         projectId: "INTEGER",
         seed: "INTEGER"
     });
 
-    return helper;
+    return runner;
 }

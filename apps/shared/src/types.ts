@@ -199,7 +199,7 @@ export interface AttachmentDTO {
 //#region Database tools ------------------------------------------------------
 
 export function t(tableName: TableName): string {
-    return tableName;
+    return `"${tableName}"`;
 }
 export function f<TableName extends keyof AppTables>(table: TableName, field: keyof AppTables[TableName]): string {
     return `"${table}"."${field as string}"`;

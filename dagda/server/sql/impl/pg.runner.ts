@@ -1,6 +1,6 @@
 import { ForeignKeys, TablesDefinition } from "@dagda/shared/sql/types";
 import { Client, Pool, PoolClient } from "pg";
-import { AbstractSQLRunner, SQLConnection, SQLValue } from "../runner";
+import { AbstractSQLRunner, BaseRow, SQLConnection, SQLValue } from "../runner";
 
 /**
  * A SQL connection for PostgreSQL.
@@ -10,14 +10,14 @@ export class PGConnection implements SQLConnection {
     constructor(public readonly client: Client | PoolClient) { }
 
     /** @inheritdoc */
-    public async all<Row extends Record<string, SQLValue>>(query: string, ...params: SQLValue[]): Promise<Row[]> {
+    public async all<Row extends BaseRow>(query: string, ...params: SQLValue[]): Promise<Row[]> {
         console.debug("pg.all()", query, params);
         const result = await this.client.query<Row>(query, params);
         return result.rows;
     }
 
     /** @inheritdoc */
-    public async get<Row extends Record<string, SQLValue>>(query: string, ...params: SQLValue[]): Promise<Row | null> {
+    public async get<Row extends BaseRow>(query: string, ...params: SQLValue[]): Promise<Row | null> {
         console.debug("pg.get()", query, params);
         const result = await this.client.query<Row>(query, params);
         if (result.rowCount === 0) {

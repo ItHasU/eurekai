@@ -1,6 +1,6 @@
 import { registerAPI } from "@dagda/server/api";
 import { registerAdapterAPI } from "@dagda/server/sql/api.adapter";
-import { SQLiteHelper } from "@dagda/server/sql/sqlite.helper";
+import { AbstractSQLRunner } from "@dagda/server/sql/runner";
 import { ServerNotificationImpl } from "@dagda/server/tools/notification.impl";
 import { Data } from "@dagda/shared/sql/types";
 import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
@@ -11,7 +11,7 @@ import { resolve } from "node:path";
 import { DiffusersRegistry } from "src/diffusers";
 
 /** Initialize an Express app and register the routes */
-export async function initHTTPServer(db: SQLiteHelper<AppTables>, port: number): Promise<void> {
+export async function initHTTPServer(db: AbstractSQLRunner<AppTables>, port: number): Promise<void> {
     const app = express();
     app.use(express.json());
 
@@ -60,25 +60,25 @@ export async function initHTTPServer(db: SQLiteHelper<AppTables>, port: number):
  * Fetch function for the app.  
  * This function must return the records that match the filter
  */
-export async function sqlFetch(helper: SQLiteHelper<AppTables>, filter: AppContexts): Promise<Data<AppTables>> {
+export async function sqlFetch(helper: AbstractSQLRunner<AppTables>, filter: AppContexts): Promise<Data<AppTables>> {
     switch (filter.type) {
         case "projects":
             return {
-                projects: await helper.all<ProjectDTO>("SELECT * FROM projects")
+                projects: await helper.all<ProjectDTO>(`SELECT * FROM ${t("projects")}`)
             };
         case "project":
             return {
-                projects: await helper.all<ProjectDTO>("SELECT * FROM projects WHERE id=?", filter.options.projectId),
-                prompts: await helper.all<PromptDTO>("SELECT * FROM prompts WHERE projectId=?", filter.options.projectId),
-                pictures: await helper.all<PictureDTO>("SELECT pictures.* FROM pictures JOIN prompts ON pictures.promptId = prompts.id WHERE prompts.projectId = ?", filter.options.projectId),
+                projects: await helper.all<ProjectDTO>(`SELECT * FROM ${t("projects")} WHERE ${f("projects", "id")} = $1`, filter.options.projectId),
+                prompts: await helper.all<PromptDTO>(`SELECT * FROM ${t("prompts")} WHERE ${f("prompts", "projectId")} = $2`, filter.options.projectId),
+                pictures: await helper.all<PictureDTO>(`SELECT ${t("pictures")}.* FROM ${t("pictures")} JOIN ${t("prompts")} ON ${f("pictures", "promptId")} = ${f("prompts", "id")} WHERE ${f("prompts", "projectId")} = $1`, filter.options.projectId),
                 // attachments: not fetch using cache but through a custom route
-                seeds: await helper.all<SeedDTO>(`SELECT * FROM ${t("seeds")} WHERE ${f("seeds", "projectId")}=?`, filter.options.projectId)
+                seeds: await helper.all<SeedDTO>(`SELECT * FROM ${t("seeds")} WHERE ${f("seeds", "projectId")} = $1`, filter.options.projectId)
             }
         case "pending":
             return {
-                projects: await helper.all<ProjectDTO>("SELECT * FROM projects"),
-                prompts: await helper.all<PromptDTO>("SELECT prompts.* FROM pictures LEFT JOIN prompts ON prompts.id = pictures.promptId WHERE pictures.status = ?", ComputationStatus.PENDING),
-                pictures: await helper.all<PictureDTO>("SELECT pictures.* FROM pictures WHERE pictures.status = ?", ComputationStatus.PENDING)
+                projects: await helper.all<ProjectDTO>(`SELECT * FROM ${t("projects")}`),
+                prompts: await helper.all<PromptDTO>(`SELECT ${t("prompts")}.* FROM ${t("pictures")} LEFT JOIN ${t("prompts")} ON ${f("prompts", "id")} = ${f("pictures", "promptId")} WHERE ${f("pictures", "status")} = $1`, ComputationStatus.PENDING),
+                pictures: await helper.all<PictureDTO>(`SELECT ${t("pictures")}.* FROM ${t("pictures")} WHERE ${f("pictures", "status")} = $1`, ComputationStatus.PENDING)
             }
         default:
             return {};
