@@ -37,7 +37,7 @@
                 "${workspaceFolder}/**/*.js",
                 "!**/node_modules/**"
             ],
-            "program": "${workspaceFolder}/others/test-sql/dist/main.js",
+            "program": "${workspaceFolder}/dagda/tests/pg/dist/main.js",
             "envFile": "${workspaceFolder}/.env"
         }
     ]

@@ -48,11 +48,11 @@
 			],
 		},
 		{
-			"label": "Watch test-sql",
-			"detail": "webpack - others/test-sql",
+			"label": "Watch test pg",
+			"detail": "webpack - test pg",
 			"type": "npm",
 			"script": "w",
-			"path": "others/test-sql",
+			"path": "dagda/tests/pg",
 			"group": "build",
 			"problemMatcher": [
 				"$tsc"

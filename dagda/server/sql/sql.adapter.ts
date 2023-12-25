@@ -1,17 +1,17 @@
 import { OperationType, SQLTransactionData, SQLTransactionResult } from "@dagda/shared/sql/transaction";
 import { BaseDTO, ForeignKeys, TablesDefinition } from "@dagda/shared/sql/types";
-import { SQLValue, SQLiteHelper, sqlValue } from "./sqlite.helper";
+import { AbstractSQLRunner, SQLConnection, SQLValue, sqlValue } from "./runner";
 
 /** Transaction submit implementation for SQLite */
-export function submit<Tables extends TablesDefinition, Contexts>(_helper: SQLiteHelper<Tables>, transactionData: SQLTransactionData<Tables, Contexts>): Promise<SQLTransactionResult> {
-    return _helper.withRunner(async runner => {
+export function submit<Tables extends TablesDefinition, Contexts>(runner: AbstractSQLRunner<Tables, SQLConnection>, transactionData: SQLTransactionData<Tables, Contexts>): Promise<SQLTransactionResult> {
+    return runner.withTransaction(async (connection: SQLConnection) => {
         const result: SQLTransactionResult = {
             updatedIds: {}
         }
         for (const operation of transactionData.operations) {
             switch (operation.type) {
                 case OperationType.INSERT: {
-                    _updateForeignKeys(_helper.foreignKeys, result, operation.options.table, operation.options.item);
+                    _updateForeignKeys(runner.foreignKeys, result, operation.options.table, operation.options.item);
                     const columnNames = [];
                     const values: SQLValue[] = [];
                     for (const key in operation.options.item) {
@@ -23,12 +23,14 @@ export function submit<Tables extends TablesDefinition, Contexts>(_helper: SQLit
                         values.push(sqlValue(operation.options.item[key]));
                     }
                     const query = `INSERT INTO ${operation.options.table as string} (${columnNames.join(",")}) VALUES (${columnNames.map(_ => "?").join(",")})`;
-                    const newId = await runner.insert(query, ...values);
-                    result.updatedIds[operation.options.item.id] = newId;
+                    const newId = await connection.insert(query, ...values);
+                    if (newId != null) {
+                        result.updatedIds[operation.options.item.id] = newId;
+                    }
                     break;
                 }
                 case OperationType.UPDATE: {
-                    _updateForeignKeys(_helper.foreignKeys, result, operation.options.table, operation.options.values as any);
+                    _updateForeignKeys(runner.foreignKeys, result, operation.options.table, operation.options.values as any);
                     const columnNames = [];
                     const values: SQLValue[] = [];
                     for (const key in operation.options.values) {
@@ -41,12 +43,12 @@ export function submit<Tables extends TablesDefinition, Contexts>(_helper: SQLit
                     }
                     values.push(_getUpdatedId(result, operation.options.id));
                     const query = `UPDATE ${operation.options.table as string} SET ${columnNames.join(",")} WHERE id=?`;
-                    await runner.run(query, ...values);
+                    await connection.run(query, ...values);
                     break;
                 }
                 case OperationType.DELETE: {
                     const query = `DELETE FROM ${operation.options.table as string} WHERE id=?`;
-                    await runner.run(query, _getUpdatedId(result, operation.options.id));
+                    await connection.run(query, _getUpdatedId(result, operation.options.id));
                     break;
                 }
                 default:

@@ -3,8 +3,8 @@ import { SQLTransactionData } from "@dagda/shared/sql/transaction";
 import { Data, TablesDefinition } from "@dagda/shared/sql/types";
 import { Application } from "express";
 import { registerAPI } from "../api";
-import { submit } from "./sqlite.adapter";
-import { SQLiteHelper } from "./sqlite.helper";
+import { AbstractSQLRunner, SQLConnection } from "./runner";
+import { submit } from "./sql.adapter";
 
 /** 
  * Register SQLAdapter API on the server.
@@ -12,8 +12,8 @@ import { SQLiteHelper } from "./sqlite.helper";
  */
 export function registerAdapterAPI<Tables extends TablesDefinition, Contexts>(
     app: Application,
-    helper: SQLiteHelper<Tables>,
-    fetch: (helper: SQLiteHelper<Tables>, filter: Contexts) => Promise<Data<Tables>>
+    helper: AbstractSQLRunner<Tables, SQLConnection>,
+    fetch: (helper: AbstractSQLRunner<Tables, SQLConnection>, filter: Contexts) => Promise<Data<Tables>>
 ): void {
     registerAPI<SQLAdapterAPI<Tables, Contexts>>(app, SQL_URL, {
         submit: (transactionData: SQLTransactionData<Tables, Contexts>) => submit<Tables, Contexts>(helper, transactionData),

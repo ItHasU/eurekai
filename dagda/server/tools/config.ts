@@ -1,6 +1,6 @@
 import { env } from "node:process";
 
-export function getEnvString<ENV_VARIABLES_STR extends string>(key: ENV_VARIABLES_STR): string {
+export function getEnvString<ENV_VARIABLES_STR extends string = string>(key: ENV_VARIABLES_STR): string {
     const value = env[key];
     if (value == null) {
         throw `Missing environment property: ${key}`;
