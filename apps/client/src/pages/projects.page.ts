@@ -1,4 +1,3 @@
-import { BooleanEnum } from "@eurekai/shared/src/types";
 import { APP } from "src";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { ProjectElement } from "../components/project.element";
@@ -35,9 +34,9 @@ export class ProjectsPage extends AbstractPageElement {
                 await StaticDataProvider.sqlHandler.withTransaction((tr) => {
                     tr.insert("projects", {
                         id: 0,
-                        lockable: BooleanEnum.FALSE,
+                        lockable: false,
                         name,
-                        pinned: BooleanEnum.FALSE
+                        pinned: false
                     });
                 });
                 await this.refresh();
@@ -64,25 +63,25 @@ export class ProjectsPage extends AbstractPageElement {
             const element = new ProjectElement(project, {
                 pin: async () => {
                     await StaticDataProvider.sqlHandler.withTransaction((tr) => {
-                        tr.update("projects", project, { pinned: BooleanEnum.TRUE });
+                        tr.update("projects", project, { pinned: true });
                     });
                     this.refresh();
                 },
                 unpin: async () => {
                     await StaticDataProvider.sqlHandler.withTransaction((tr) => {
-                        tr.update("projects", project, { pinned: BooleanEnum.FALSE });
+                        tr.update("projects", project, { pinned: false });
                     });
                     this.refresh();
                 },
                 lock: async () => {
                     await StaticDataProvider.sqlHandler.withTransaction((tr) => {
-                        tr.update("projects", project, { lockable: BooleanEnum.TRUE });
+                        tr.update("projects", project, { lockable: true });
                     });
                     this.refresh();
                 },
                 unlock: async () => {
                     await StaticDataProvider.sqlHandler.withTransaction((tr) => {
-                        tr.update("projects", project, { lockable: BooleanEnum.FALSE });
+                        tr.update("projects", project, { lockable: false });
                     });
                     this.refresh();
                 }
@@ -92,7 +91,7 @@ export class ProjectsPage extends AbstractPageElement {
                 StaticDataProvider.setSelectedProject(project.id);
                 APP.setPage(PicturesPage);
             });
-            if (project.pinned === BooleanEnum.TRUE) {
+            if (project.pinned === true) {
                 this._projectsPinnedDiv.appendChild(element);
             } else {
                 this._projectsArchivedDiv.appendChild(element);

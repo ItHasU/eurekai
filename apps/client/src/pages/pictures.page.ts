@@ -1,5 +1,5 @@
 import { generateNextPictures, isPreferredSeed, togglePreferredSeed } from "@eurekai/shared/src/pictures.data";
-import { BooleanEnum, ComputationStatus, PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
+import { ComputationStatus, PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { PictureElement } from "src/components/picture.element";
 import { PromptElement } from "src/components/prompt.element";
 import { PromptEditor } from "src/editors/prompt.editor";
@@ -147,7 +147,7 @@ export class PicturesPage extends AbstractPageElement {
                 const item = new PictureElement(picture, {
                     prompt,
                     isPreferredSeed: isPreferredSeed(StaticDataProvider.sqlHandler, projectId, picture.seed),
-                    isLockable: project.lockable === BooleanEnum.TRUE,
+                    isLockable: project.lockable === true,
                     accept: async () => {
                         await StaticDataProvider.sqlHandler.withTransaction(tr => {
                             tr.update("pictures", picture, {

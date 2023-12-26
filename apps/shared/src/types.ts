@@ -52,12 +52,6 @@ export const APP_FOREIGN_KEYS: ForeignKeys<AppTables> = {
 
 //#region Custom field types --------------------------------------------------
 
-/** Numeric true/false */
-export enum BooleanEnum {
-    FALSE = 0,
-    TRUE = 1
-}
-
 /** State of computation of images */
 export enum ComputationStatus {
     /**
@@ -104,9 +98,9 @@ export interface ProjectDTO {
      * - project will be hidden on the front page,
      * - pictures will be blurred.
      */
-    lockable: BooleanEnum;
+    lockable: boolean;
     /** Pinned projects appear first of the front page */
-    pinned: BooleanEnum;
+    pinned: boolean;
 }
 
 /** An extended version of the project with properties computed directly from the database */
