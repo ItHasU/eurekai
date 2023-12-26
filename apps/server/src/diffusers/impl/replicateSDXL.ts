@@ -35,9 +35,9 @@ export class ReplicateSDXL extends AbstractDiffuser {
                 input: {
                     prompt: options.prompt,
                     negative_prompt: options.negative_prompt ?? "",
-                    width: options.width,
-                    height: options.height,
-                    seed: options.seed,
+                    width: +options.width,
+                    height: +options.height,
+                    seed: +options.seed,
 
                     guidance_scale: 7,
                     scheduler: "KarrasDPM",

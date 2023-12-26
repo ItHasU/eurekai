@@ -30,7 +30,7 @@ export async function initHTTPServer(db: AbstractSQLRunner<AppTables>, port: num
         // Send attachment as a png image from the base 64 string
         const id = +req.params.id;
         try {
-            const attachment = await db.get<AttachmentDTO>(`SELECT * FROM ${t("attachments")} WHERE ${f("attachments", "id")}=?`, id);
+            const attachment = await db.get<AttachmentDTO>(`SELECT * FROM ${t("attachments")} WHERE ${f("attachments", "id")}=$1`, id);
             if (!attachment) {
                 res.status(404).send(`Attachment ${id} not found`);
             } else {
@@ -69,7 +69,7 @@ export async function sqlFetch(helper: AbstractSQLRunner<AppTables>, filter: App
         case "project":
             return {
                 projects: await helper.all<ProjectDTO>(`SELECT * FROM ${t("projects")} WHERE ${f("projects", "id")} = $1`, filter.options.projectId),
-                prompts: await helper.all<PromptDTO>(`SELECT * FROM ${t("prompts")} WHERE ${f("prompts", "projectId")} = $2`, filter.options.projectId),
+                prompts: await helper.all<PromptDTO>(`SELECT * FROM ${t("prompts")} WHERE ${f("prompts", "projectId")} = $1`, filter.options.projectId),
                 pictures: await helper.all<PictureDTO>(`SELECT ${t("pictures")}.* FROM ${t("pictures")} JOIN ${t("prompts")} ON ${f("pictures", "promptId")} = ${f("prompts", "id")} WHERE ${f("prompts", "projectId")} = $1`, filter.options.projectId),
                 // attachments: not fetch using cache but through a custom route
                 seeds: await helper.all<SeedDTO>(`SELECT * FROM ${t("seeds")} WHERE ${f("seeds", "projectId")} = $1`, filter.options.projectId)
