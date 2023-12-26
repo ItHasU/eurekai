@@ -1,5 +1,6 @@
 import { SQLEvents, SQLHandler } from "@dagda/shared/sql/handler";
 import { TablesDefinition } from "@dagda/shared/sql/types";
+import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
 
 /** 
  * A simple component to display communication status of the SQLHandler.
@@ -11,6 +12,7 @@ export class SQLStatusComponent<Tables extends TablesDefinition, Contexts> exten
     protected _uploadIcon: HTMLElement;
     protected _uploadCountSpan: HTMLSpanElement;
     protected _refreshIcon: HTMLElement;
+    protected _disconnectedIcon: HTMLElement;
 
     constructor(handler: SQLHandler<Tables, Contexts>) {
         super();
@@ -19,9 +21,13 @@ export class SQLStatusComponent<Tables extends TablesDefinition, Contexts> exten
         this._uploadIcon = this.querySelector(`i[ref="uploadIcon"]`)!;
         this._uploadCountSpan = this.querySelector(`span[ref="uploadCountSpan"]`)!;
         this._refreshIcon = this.querySelector(`i[ref="refreshIcon"]`)!;
+        this._disconnectedIcon = this.querySelector(`i[ref="disconnectedIcon"]`)!;
 
         handler.on("state", (event) => {
             this._refresh(event.data);
+        });
+        NotificationHelper.on("connected", (event) => {
+            this._disconnectedIcon.classList.toggle("d-none", !!event.data);
         });
     }
 
