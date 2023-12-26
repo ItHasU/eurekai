@@ -5,7 +5,7 @@ type SocketEvents = {
 }
 
 /** Notification server based on websocket protocol */
-export class ClientNotificationImpl<Notifications extends SocketEvents> extends AbstractNotificationImpl<Notifications> {
+export class ClientNotificationImpl<Notifications extends SocketEvents & Record<string, unknown>> extends AbstractNotificationImpl<Notifications> {
 
     protected _socket: WebSocket | null = null;
 
