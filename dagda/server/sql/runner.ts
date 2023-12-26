@@ -1,7 +1,7 @@
 import { ForeignKeys, TablesDefinition } from "@dagda/shared/sql/types";
 
 /** Values accepted by SQLite */
-export type SQLValue = number | string | BigInt | Buffer | null;
+export type SQLValue = boolean | number | string | BigInt | Buffer | null;
 
 export type BaseRow = object;
 
@@ -17,12 +17,12 @@ export function sqlValue(value: any): SQLValue {
         case "number":
         case "bigint":
         case "string":
+        case "boolean":
             // Returned as-is
             return value;
         case "object":
             // Stringify
             return JSON.stringify(value);
-        case "boolean":
         case "symbol":
         case "function":
         default:
