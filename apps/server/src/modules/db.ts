@@ -1,10 +1,13 @@
 import { PGRunner } from "@dagda/server/sql/impl/pg.runner";
 import { getEnvString } from "@dagda/server/tools/config";
 import { APP_FOREIGN_KEYS, AppTables } from "@eurekai/shared/src/types";
+import * as pg from "pg";
 import { ENV_VARIABLES_STR } from "./config";
 
 /** Build a SqliteHelper and initialize tables if needed */
 export async function initDatabaseHelper(filename: string): Promise<PGRunner<AppTables>> {
+    pg.types.setTypeParser(20 /* BIGINT */, parseInt);
+
     const runner = new PGRunner<AppTables>(APP_FOREIGN_KEYS, getEnvString<ENV_VARIABLES_STR>("DATABASE_URL"));
 
     // -- Initialize tables ---------------------------------------------------
@@ -25,7 +28,7 @@ export async function initDatabaseHelper(filename: string): Promise<PGRunner<App
     });
     await runner.initTable("pictures", {
         promptId: "INTEGER",
-        seed: "INTEGER",
+        seed: "BIGINT",
         status: "INTEGER",
         attachmentId: "INTEGER NULL",
         highresStatus: "INTEGER",
@@ -36,7 +39,7 @@ export async function initDatabaseHelper(filename: string): Promise<PGRunner<App
     });
     await runner.initTable("seeds", {
         projectId: "INTEGER",
-        seed: "INTEGER"
+        seed: "BIGINT"
     });
 
     return runner;
