@@ -43,7 +43,7 @@ export class ReplicateSDXL extends AbstractDiffuser {
                     scheduler: "KarrasDPM",
                     disable_safety_checker: true,
                     ...highres ? {
-                        num_inference_steps: highres ? 60 : 15,
+                        num_inference_steps: highres ? 60 : 20,
                         refine: "base_image_refiner",
                         refine_steps: 30
                     } : {
