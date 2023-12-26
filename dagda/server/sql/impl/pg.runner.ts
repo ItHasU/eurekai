@@ -11,35 +11,45 @@ export class PGConnection implements SQLConnection {
 
     /** @inheritdoc */
     public async all<Row extends BaseRow>(query: string, ...params: SQLValue[]): Promise<Row[]> {
-        console.debug("pg.all()", query, params);
-        const result = await this.client.query<Row>(query, params);
-        return result.rows;
+        try {
+            const result = await this.client.query<Row>(query, params);
+            return result.rows;
+        } catch (error) {
+            console.error("Failed pg.all()", query, params);
+            console.error(error);
+            throw error;
+        }
     }
 
     /** @inheritdoc */
     public async get<Row extends BaseRow>(query: string, ...params: SQLValue[]): Promise<Row | null> {
-        console.debug("pg.get()", query, params);
-        const result = await this.client.query<Row>(query, params);
-        if (result.rowCount === 0) {
-            // No item found, no problem
-            return null;
-        } else if (result.rowCount === 1) {
-            // Item was found, return it
-            return result.rows[0];
-        } else {
-            // Too many items
-            throw new Error(`Expected 0 or 1 row, got ${result.rowCount} rows`);
+        try {
+            const result = await this.client.query<Row>(query, params);
+            if (result.rowCount === 0) {
+                // No item found, no problem
+                return null;
+            } else if (result.rowCount === 1) {
+                // Item was found, return it
+                return result.rows[0];
+            } else {
+                // Too many items
+                throw new Error(`Expected 0 or 1 row, got ${result.rowCount} rows`);
+            }
+        }
+        catch (error) {
+            console.error("Failed pg.get()", query, params);
+            console.error(error);
+            throw error;
         }
     }
 
     /** @inheritdoc */
     public async insert(query: string, ...params: SQLValue[]): Promise<number | null> {
-        console.debug("pg.insert()", query, params);
-        // First, perform the insert
-        await this.client.query(query, params);
-
-        // Then retrieve the id of the inserted row
         try {
+            // First, perform the insert
+            await this.client.query(query, params);
+
+            // Then retrieve the id of the inserted row
             const result = await this.client.query<{ id: number }>("SELECT LASTVAL() AS id");
             if (result.rowCount !== 1) {
                 return null; // Failed to get an id
@@ -47,7 +57,8 @@ export class PGConnection implements SQLConnection {
                 return result.rows[0].id;
             }
         } catch (error) {
-            // An error occurred while retrieving the id
+            console.error("Failed pg.insert()", query, params);
+            console.error(error);
             throw error;
         }
     }
@@ -55,7 +66,13 @@ export class PGConnection implements SQLConnection {
     /** @inheritdoc */
     public async run(query: string, ...params: SQLValue[]): Promise<void> {
         console.debug("pg.run()", query, params);
-        await this.client.query(query, params);
+        try {
+            await this.client.query(query, params);
+        } catch (error) {
+            console.error("Failed pg.run()", query, params);
+            console.error(error);
+            throw error;
+        }
     }
 
 }
