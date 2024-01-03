@@ -3,7 +3,7 @@ import { JSStaticType, JSTypes } from "@dagda/shared/typings/javascript.types";
 export class TypeHandler<
     DBFieldTypes extends string,
     Types extends Record<string, TypeDefinition<JSTypes, JSTypes, DBFieldTypes>>,
-    Tables extends Record<string, Record<string, keyof Types>>
+    Tables extends Record<string, Record<string, { type: keyof Types, identity?: true, optional?: true }>>
 > {
 
     constructor(protected readonly _types: Types, protected readonly _tables: Tables) {
@@ -23,7 +23,7 @@ export class TypeHandler<
     }
 
     /** Use this property to get the list of types associated to table names */
-    public get dtos(): { [Table in keyof Tables]: { [K in keyof Tables[Table]]: NamedType<Tables[Table][K], Types[Tables[Table][K]]> } } {
+    public get dtos(): { [Table in keyof Tables]: { [K in keyof Tables[Table]]: NamedType<Tables[Table][K]["type"], Types[Tables[Table][K]["type"]]> } } {
         return undefined as any;
     }
 
@@ -37,16 +37,40 @@ export class TypeHandler<
         return Object.keys(this._tables[table]);
     }
 
-    public getFieldType<T extends keyof Tables, F extends keyof Tables[T]>(table: T, field: F): Types[Tables[T][F]] {
-        return this._types[this._tables[table][field]];
+    public getFieldType<T extends keyof Tables, F extends keyof Tables[T]>(table: T, field: F): Types[Tables[T][F]["type"]] {
+        return this._types[this._tables[table][field]["type"]];
     }
 
+    public isFieldIdentity<T extends keyof Tables, F extends keyof Tables[T]>(table: T, field: F): boolean {
+        return this._tables[table][field]["identity"] === true;
+    }
+
+    public isFieldOptional<T extends keyof Tables, F extends keyof Tables[T]>(table: T, field: F): boolean {
+        return this._tables[table][field]["optional"] === true;
+    }
 }
 
 export class PGTypeHandler<
     Types extends Record<string, TypeDefinition<JSTypes, JSTypes, PGTypes>>,
-    Tables extends Record<string, Record<string, keyof Types>>
+    Tables extends Record<string, Record<string, { type: keyof Types, identity?: true, optional?: true }>>
 > extends TypeHandler<PGTypes, Types, Tables> {
+    public generateCreateTableSQL<T extends keyof Tables>(table: T): string {
+        const fields = this.getTableFields(table);
+        const fieldDefs = fields.map(field => {
+            const type = this.getFieldType(table, field);
+            let fieldCreation = `${field as string} ${type.dbTypeName}`;
+            if (this.isFieldIdentity(table, field)) {
+                fieldCreation += " PRIMARY KEY GENERATED ALWAYS AS IDENTITY";
+            }
+            if (this.isFieldOptional(table, field)) {
+                fieldCreation += " NULL";
+            } else {
+                fieldCreation += " NOT NULL";
+            }
+            return fieldCreation;
+        });
+        return `CREATE TABLE IF NOT EXISTS ${table as string} (\n${fieldDefs.join(",\n")}\n);`;
+    }
 }
 
 type TypeDefinition<JSType extends JSTypes, DBType extends JSTypes, DBTypeNames extends string> = {
@@ -71,7 +95,7 @@ const APP_TYPES = new PGTypeHandler({
     "PROJECT_ID": {
         rawType: JSTypes.number,
         dbType: JSTypes.string, // As it is stored as a BigInt, we will retrieve it as a string
-        dbTypeName: "SERIAL"
+        dbTypeName: "INTEGER"
     },
     "PROMPT_ID": {
         rawType: JSTypes.number,
@@ -102,14 +126,14 @@ const APP_TYPES = new PGTypeHandler({
     })
 }, {
     projects: {
-        id: "PROJECT_ID",
-        name: "TEXT"
+        id: { type: "PROJECT_ID", identity: true },
+        name: { type: "TEXT" }
     },
     prompts: {
-        id: "PROMPT_ID",
-        projectId: "PROJECT_ID",
-        prompt: "TEXT",
-        negativePrompt: "TEXT"
+        id: { type: "PROMPT_ID", identity: true },
+        projectId: { type: "PROJECT_ID" },
+        prompt: { type: "TEXT" },
+        negativePrompt: { type: "TEXT", optional: true }
     }
 });
 
@@ -142,10 +166,11 @@ const prompt: PromptDTO = {
 const tables = APP_TYPES.getTables();
 console.log(tables);
 for (const table of APP_TYPES.getTables()) {
-    const fields = APP_TYPES.getTableFields(table);
-    console.log(table, ":", fields);
-    for (const field of fields) {
-        const type = APP_TYPES.getFieldType(table, field);
-        console.log(`${table}.${field}: ${type.dbTypeName}`);
-    }
+    console.log("----------------------------------------");
+    console.log(APP_TYPES.generateCreateTableSQL(table));
+    // const fields = APP_TYPES.getTableFields(table);
+    // for (const field of fields) {
+    //     const type = APP_TYPES.getFieldType(table, field);
+    //     console.log(`${table}.${field}: ${type.dbTypeName}`);
+    // }
 }
