@@ -96,6 +96,18 @@ export class TypeHandler<
         return this._tables[table][field]["optional"] === true;
     }
 
+    public getFieldForeignTable<T extends keyof Tables, F extends keyof Tables[T]>(table: T, field: F): keyof Tables | null {
+        return this._tables[table][field]["foreignTable"] ?? null;
+    }
+
+    public getTableForeignKeys<T extends keyof Tables>(table: T): { [K in keyof Tables[T]]: (keyof Tables) | null } {
+        const foreignKeys: { [K in keyof Tables[T]]: (keyof Tables) | null } = {} as any;
+        for (const field of this.getTableFields(table)) {
+            foreignKeys[field] = this.getFieldForeignTable(table, field);
+        }
+        return foreignKeys;
+    }
+
     //#endregion
 
     //#region Validation methods

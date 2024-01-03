@@ -1,6 +1,7 @@
 import { SQLHandler } from "@dagda/shared/sql/handler";
 import { SQLTransaction } from "@dagda/shared/sql/transaction";
-import { AppContexts, AppTables, ComputationStatus, PictureDTO, PromptDTO } from "./types";
+import { asNamed } from "@dagda/shared/typings/named.types";
+import { AppContexts, AppTables, ComputationStatus, PictureDTO, ProjectId, PromptDTO, Seed } from "./types";
 
 /** 
  * Generate a certain amount of images 
@@ -8,7 +9,7 @@ import { AppContexts, AppTables, ComputationStatus, PictureDTO, PromptDTO } from
  */
 export function generateNextPictures(handler: SQLHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, prompt: PromptDTO, count: number | null): void {
     // -- Get a list of preferred seeds --
-    const missingPreferredSeeds: Set<number> = new Set();
+    const missingPreferredSeeds: Set<Seed> = new Set();
     for (const seed of handler.getItems("seeds")) {
         if (handler.isSameId(seed.projectId, prompt.projectId)) {
             missingPreferredSeeds.add(seed.seed);
@@ -29,11 +30,13 @@ export function generateNextPictures(handler: SQLHandler<AppTables, AppContexts>
 
     for (let i = 0; i < count; i++) {
         const newPicture: PictureDTO = {
-            id: 0,
+            id: asNamed(0),
             promptId: prompt.id,
             seed: [...missingPreferredSeeds.values()][0] ?? Math.floor(Math.random() * Number.MAX_SAFE_INTEGER),
-            status: ComputationStatus.PENDING,
-            highresStatus: ComputationStatus.NONE
+            status: asNamed(ComputationStatus.PENDING),
+            attachmentId: null,
+            highresStatus: asNamed(ComputationStatus.NONE),
+            highresAttachmentId: null
         };
 
         // Remove seed has it has already been handled
@@ -53,12 +56,12 @@ export function isPreferredSeed(handler: SQLHandler<AppTables, AppContexts>, pro
     return false;
 }
 
-export function togglePreferredSeed(handler: SQLHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, projectId: number, seed: number): void {
+export function togglePreferredSeed(handler: SQLHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, projectId: ProjectId, seed: Seed): void {
     const alreadyExisting = handler.getItems("seeds").find(preferredSeed => handler.isSameId(preferredSeed.projectId, projectId) && preferredSeed.seed === seed);
     if (alreadyExisting == null) {
         // Not found, create it
         tr.insert("seeds", {
-            id: 0,
+            id: asNamed(0),
             projectId,
             seed
         });
