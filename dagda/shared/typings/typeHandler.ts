@@ -96,6 +96,10 @@ export class TypeHandler<
         return this._tables[table][field]["optional"] === true;
     }
 
+    public isFieldForeign<T extends keyof Tables, F extends keyof Tables[T]>(table: T, field: F): boolean {
+        return this._tables[table][field]["foreignTable"] != null;
+    }
+
     public getFieldForeignTable<T extends keyof Tables, F extends keyof Tables[T]>(table: T, field: F): keyof Tables | null {
         return this._tables[table][field]["foreignTable"] ?? null;
     }
@@ -104,6 +108,17 @@ export class TypeHandler<
         const foreignKeys: { [K in keyof Tables[T]]: (keyof Tables) | null } = {} as any;
         for (const field of this.getTableFields(table)) {
             foreignKeys[field] = this.getFieldForeignTable(table, field);
+        }
+        return foreignKeys;
+    }
+
+    public getForeignKeys(): { [T in keyof Tables]: { [K in keyof Tables[T]]: boolean } } {
+        const foreignKeys: { [T in keyof Tables]: { [K in keyof Tables[T]]: boolean } } = {} as any;
+        for (const table of this.getTables()) {
+            foreignKeys[table] = {} as any;
+            for (const field of this.getTableFields(table)) {
+                foreignKeys[table][field] = this.isFieldForeign(table, field);
+            }
         }
         return foreignKeys;
     }

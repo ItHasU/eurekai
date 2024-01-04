@@ -1,3 +1,4 @@
+import { asNamed } from "@dagda/shared/typings/named.types";
 import { generateNextPictures, isPreferredSeed, togglePreferredSeed } from "@eurekai/shared/src/pictures.data";
 import { ComputationStatus, PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { PictureElement } from "src/components/picture.element";
@@ -151,7 +152,7 @@ export class PicturesPage extends AbstractPageElement {
                     accept: async () => {
                         await StaticDataProvider.sqlHandler.withTransaction(tr => {
                             tr.update("pictures", picture, {
-                                status: ComputationStatus.ACCEPTED
+                                status: asNamed(ComputationStatus.ACCEPTED)
                             });
                         });
                         item.refresh();
@@ -161,7 +162,7 @@ export class PicturesPage extends AbstractPageElement {
                     reject: async () => {
                         await StaticDataProvider.sqlHandler.withTransaction(tr => {
                             tr.update("pictures", picture, {
-                                status: ComputationStatus.REJECTED
+                                status: asNamed(ComputationStatus.REJECTED)
                             });
                         });
                         item.refresh();
@@ -321,7 +322,7 @@ export class PicturesPage extends AbstractPageElement {
         const prompt = this._promptEditor.getPrompt();
         const projectId = StaticDataProvider.getSelectedProject();
         if (projectId != null) {
-            let orderIndex = 1;
+            let orderIndex: number = 1;
             for (const prompt of StaticDataProvider.sqlHandler.getItems("prompts")) {
                 if (prompt.projectId === projectId) {
                     orderIndex = Math.max(orderIndex, prompt.orderIndex + 1);
@@ -330,9 +331,9 @@ export class PicturesPage extends AbstractPageElement {
             await StaticDataProvider.sqlHandler.withTransaction((tr) => {
                 const newPrompt = tr.insert("prompts", {
                     ...prompt,
-                    id: 0,
+                    id: asNamed(0),
                     projectId,
-                    orderIndex
+                    orderIndex: asNamed(orderIndex)
                 });
                 // Create pictures for all preferred seeds
                 generateNextPictures(StaticDataProvider.sqlHandler, tr, newPrompt, null);

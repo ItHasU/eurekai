@@ -1,4 +1,5 @@
 import { apiCall } from "@dagda/client/api";
+import { asNamed } from "@dagda/shared/typings/named.types";
 import { MODELS_URL, ModelsAPI } from "@eurekai/shared/src/models.api";
 import { PromptDTO } from "@eurekai/shared/src/types";
 import { htmlStringToElement } from "src/components/tools";
@@ -113,12 +114,11 @@ export class PromptEditor extends HTMLElement {
 
         // -- Build object --
         return {
-            prompt: positivePrompt,
-            negative_prompt: negativePrompt ? negativePrompt : undefined,
-
-            width,
-            height,
-            model
+            prompt: asNamed(positivePrompt),
+            negative_prompt: negativePrompt ? asNamed(negativePrompt) : undefined,
+            width: asNamed(width),
+            height: asNamed(height),
+            model: asNamed(model)
         };
     }
 

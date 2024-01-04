@@ -5,7 +5,7 @@ import { ServerNotificationImpl } from "@dagda/server/tools/notification.impl";
 import { Data } from "@dagda/shared/sql/types";
 import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
 import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api";
-import { AppContexts, AppTables, AttachmentDTO, ComputationStatus, PictureDTO, ProjectDTO, PromptDTO, SeedDTO, f, t } from "@eurekai/shared/src/types";
+import { APP_MODEL, AppContexts, AppTables, AttachmentDTO, ComputationStatus, PictureDTO, ProjectDTO, PromptDTO, SeedDTO } from "@eurekai/shared/src/types";
 import express, { Application } from "express";
 import { resolve } from "node:path";
 import { DiffusersRegistry } from "src/diffusers";
@@ -30,7 +30,7 @@ export async function initHTTPServer(db: AbstractSQLRunner<AppTables>, port: num
         // Send attachment as a png image from the base 64 string
         const id = +req.params.id;
         try {
-            const attachment = await db.get<AttachmentDTO>(`SELECT * FROM ${t("attachments")} WHERE ${f("attachments", "id")}=$1`, id);
+            const attachment = await db.get<AttachmentDTO>(`SELECT * FROM ${APP_MODEL.qt("attachments")} WHERE ${APP_MODEL.qf("attachments", "id")}=$1`, id);
             if (!attachment) {
                 res.status(404).send(`Attachment ${id} not found`);
             } else {
@@ -64,21 +64,21 @@ export async function sqlFetch(helper: AbstractSQLRunner<AppTables>, filter: App
     switch (filter.type) {
         case "projects":
             return {
-                projects: await helper.all<ProjectDTO>(`SELECT * FROM ${t("projects")}`)
+                projects: await helper.all<ProjectDTO>(`SELECT * FROM ${APP_MODEL.qt("projects")}`)
             };
         case "project":
             return {
-                projects: await helper.all<ProjectDTO>(`SELECT * FROM ${t("projects")} WHERE ${f("projects", "id")} = $1`, filter.options.projectId),
-                prompts: await helper.all<PromptDTO>(`SELECT * FROM ${t("prompts")} WHERE ${f("prompts", "projectId")} = $1`, filter.options.projectId),
-                pictures: await helper.all<PictureDTO>(`SELECT ${t("pictures")}.* FROM ${t("pictures")} JOIN ${t("prompts")} ON ${f("pictures", "promptId")} = ${f("prompts", "id")} WHERE ${f("prompts", "projectId")} = $1`, filter.options.projectId),
+                projects: await helper.all<ProjectDTO>(`SELECT * FROM ${APP_MODEL.qt("projects")} WHERE ${APP_MODEL.qf("projects", "id")} = $1`, filter.options.projectId),
+                prompts: await helper.all<PromptDTO>(`SELECT * FROM ${APP_MODEL.qt("prompts")} WHERE ${APP_MODEL.qf("prompts", "projectId")} = $1`, filter.options.projectId),
+                pictures: await helper.all<PictureDTO>(`SELECT ${APP_MODEL.qt("pictures")}.* FROM ${APP_MODEL.qt("pictures")} JOIN ${APP_MODEL.qt("prompts")} ON ${APP_MODEL.qf("pictures", "promptId")} = ${APP_MODEL.qf("prompts", "id")} WHERE ${APP_MODEL.qf("prompts", "projectId")} = $1`, filter.options.projectId),
                 // attachments: not fetch using cache but through a custom route
-                seeds: await helper.all<SeedDTO>(`SELECT * FROM ${t("seeds")} WHERE ${f("seeds", "projectId")} = $1`, filter.options.projectId)
+                seeds: await helper.all<SeedDTO>(`SELECT * FROM ${APP_MODEL.qt("seeds")} WHERE ${APP_MODEL.qf("seeds", "projectId")} = $1`, filter.options.projectId)
             }
         case "pending":
             return {
-                projects: await helper.all<ProjectDTO>(`SELECT * FROM ${t("projects")}`),
-                prompts: await helper.all<PromptDTO>(`SELECT ${t("prompts")}.* FROM ${t("pictures")} LEFT JOIN ${t("prompts")} ON ${f("prompts", "id")} = ${f("pictures", "promptId")} WHERE ${f("pictures", "status")} = $1`, ComputationStatus.PENDING),
-                pictures: await helper.all<PictureDTO>(`SELECT ${t("pictures")}.* FROM ${t("pictures")} WHERE ${f("pictures", "status")} = $1`, ComputationStatus.PENDING)
+                projects: await helper.all<ProjectDTO>(`SELECT * FROM ${APP_MODEL.qt("projects")}`),
+                prompts: await helper.all<PromptDTO>(`SELECT ${APP_MODEL.qt("prompts")}.* FROM ${APP_MODEL.qt("pictures")} LEFT JOIN ${APP_MODEL.qt("prompts")} ON ${APP_MODEL.qf("prompts", "id")} = ${APP_MODEL.qf("pictures", "promptId")} WHERE ${APP_MODEL.qf("pictures", "status")} = $1`, ComputationStatus.PENDING),
+                pictures: await helper.all<PictureDTO>(`SELECT ${APP_MODEL.qt("pictures")}.* FROM ${APP_MODEL.qt("pictures")} WHERE ${APP_MODEL.qf("pictures", "status")} = $1`, ComputationStatus.PENDING)
             }
         default:
             return {};

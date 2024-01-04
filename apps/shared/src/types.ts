@@ -67,6 +67,11 @@ export const APP_MODEL = new PGTypeHandler({
         dbType: JSTypes.boolean,
         dbTypeName: "BOOLEAN"
     },
+    INDEX: {
+        rawType: JSTypes.number,
+        dbType: JSTypes.number,
+        dbTypeName: "INTEGER"
+    },
     TEXT: {
         rawType: JSTypes.string,
         dbType: JSTypes.string,
@@ -115,21 +120,21 @@ export const APP_MODEL = new PGTypeHandler({
     prompts: {
         id: { type: "PROMPT_ID", identity: true },
         projectId: { type: "PROJECT_ID", foreignTable: "projects" },
-        orderIndex: { type: "TEXT" },
+        orderIndex: { type: "INDEX" },
         width: { type: "PIXELS" },
         height: { type: "PIXELS" },
         model: { type: "MODEL_NAME" },
         prompt: { type: "TEXT" },
-        negativePrompt: { type: "TEXT", optional: true }
+        negative_prompt: { type: "TEXT", optional: true }
     },
     pictures: {
         id: { type: "PICTURE_ID", identity: true },
         promptId: { type: "PROMPT_ID", foreignTable: "prompts" },
         seed: { type: "SEED" },
         status: { type: "COMPUTATION_STATUS" },
-        attachmentId: { type: "ATTACHMENT_ID", optional: true },
+        attachmentId: { type: "ATTACHMENT_ID", optional: true, foreignTable: "attachments" },
         highresStatus: { type: "COMPUTATION_STATUS" },
-        highresAttachmentId: { type: "ATTACHMENT_ID", optional: true },
+        highresAttachmentId: { type: "ATTACHMENT_ID", optional: true, foreignTable: "attachments" },
     },
     attachments: {
         id: { type: "ATTACHMENT_ID", identity: true },

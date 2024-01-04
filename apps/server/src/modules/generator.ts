@@ -1,4 +1,5 @@
 import { SQLHandler } from "@dagda/shared/sql/handler";
+import { asNamed } from "@dagda/shared/typings/named.types";
 import { AppContexts, AppTables, ComputationStatus } from "@eurekai/shared/src/types";
 import { DiffusersRegistry } from "src/diffusers";
 import { ImageDescription } from "src/diffusers/diffuser";
@@ -33,7 +34,7 @@ export class Generator {
                     console.error(`Failed to get prompt for picture ${picture.id}`);
                     await this._handler.withTransaction((tr) => {
                         tr.update("pictures", picture, {
-                            status: ComputationStatus.ERROR
+                            status: asNamed(ComputationStatus.ERROR)
                         });
                     });
                     // Pass to the next image
@@ -47,7 +48,7 @@ export class Generator {
                     console.error(`Failed to get the diffuser named ${prompt.model} for picture ${picture.id}`);
                     await this._handler.withTransaction((tr) => {
                         tr.update("pictures", picture, {
-                            status: ComputationStatus.ERROR
+                            status: asNamed(ComputationStatus.ERROR)
                         });
                         // Manually add the context so clients get notified
                         tr.contexts.push({
@@ -67,7 +68,7 @@ export class Generator {
                         width: prompt.width,
                         height: prompt.height,
                         prompt: prompt.prompt,
-                        negative_prompt: prompt.negative_prompt,
+                        negative_prompt: prompt.negative_prompt ?? "",
                         seed: picture.seed
                     };
                     const imageData = await diffuser.txt2img(img, false);
@@ -78,11 +79,11 @@ export class Generator {
                     // -- Save --
                     await this._handler.withTransaction((tr) => {
                         const attachment = tr.insert("attachments", {
-                            id: 0,
-                            data: imageData
+                            id: asNamed(0),
+                            data: asNamed(imageData)
                         });
                         tr.update("pictures", picture, {
-                            status: ComputationStatus.DONE,
+                            status: asNamed(ComputationStatus.DONE),
                             attachmentId: attachment.id
                         });
                         // Manually add the context so clients get notified
@@ -98,7 +99,7 @@ export class Generator {
                     console.error(e);
                     await this._handler.withTransaction((tr) => {
                         tr.update("pictures", picture, {
-                            status: ComputationStatus.ERROR
+                            status: asNamed(ComputationStatus.ERROR)
                         });
                     })
                 }

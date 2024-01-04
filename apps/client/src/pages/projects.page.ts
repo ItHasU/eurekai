@@ -1,3 +1,4 @@
+import { asNamed } from "@dagda/shared/typings/named.types";
 import { APP } from "src";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { ProjectElement } from "../components/project.element";
@@ -33,10 +34,11 @@ export class ProjectsPage extends AbstractPageElement {
             if (name) {
                 await StaticDataProvider.sqlHandler.withTransaction((tr) => {
                     tr.insert("projects", {
-                        id: 0,
-                        lockable: false,
-                        name,
-                        pinned: false
+                        id: asNamed(0),
+                        lockable: asNamed(false),
+                        name: asNamed(name),
+                        pinned: asNamed(true),
+                        featuredAttachmentId: null
                     });
                 });
                 await this.refresh();
@@ -63,25 +65,25 @@ export class ProjectsPage extends AbstractPageElement {
             const element = new ProjectElement(project, {
                 pin: async () => {
                     await StaticDataProvider.sqlHandler.withTransaction((tr) => {
-                        tr.update("projects", project, { pinned: true });
+                        tr.update("projects", project, { pinned: asNamed(true) });
                     });
                     this.refresh();
                 },
                 unpin: async () => {
                     await StaticDataProvider.sqlHandler.withTransaction((tr) => {
-                        tr.update("projects", project, { pinned: false });
+                        tr.update("projects", project, { pinned: asNamed(false) });
                     });
                     this.refresh();
                 },
                 lock: async () => {
                     await StaticDataProvider.sqlHandler.withTransaction((tr) => {
-                        tr.update("projects", project, { lockable: true });
+                        tr.update("projects", project, { lockable: asNamed(true) });
                     });
                     this.refresh();
                 },
                 unlock: async () => {
                     await StaticDataProvider.sqlHandler.withTransaction((tr) => {
-                        tr.update("projects", project, { lockable: false });
+                        tr.update("projects", project, { lockable: asNamed(false) });
                     });
                     this.refresh();
                 }
