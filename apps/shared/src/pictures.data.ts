@@ -1,13 +1,13 @@
-import { SQLHandler } from "@dagda/shared/sql/handler";
+import { EntitiesHandler } from "@dagda/shared/entities/handler";
+import { asNamed } from "@dagda/shared/entities/named.types";
 import { SQLTransaction } from "@dagda/shared/sql/transaction";
-import { asNamed } from "@dagda/shared/typings/named.types";
-import { AppContexts, AppTables, ComputationStatus, PictureDTO, ProjectId, PromptDTO, Seed } from "./types";
+import { AppContexts, AppTables, ComputationStatus, PictureEntity, ProjectId, PromptEntity, Seed } from "./entities";
 
 /** 
  * Generate a certain amount of images 
  * If requested quantity is null, will generate for all preferred seeds
  */
-export function generateNextPictures(handler: SQLHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, prompt: PromptDTO, count: number | null): void {
+export function generateNextPictures(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, prompt: PromptEntity, count: number | null): void {
     // -- Get a list of preferred seeds --
     const missingPreferredSeeds: Set<Seed> = new Set();
     for (const seed of handler.getItems("seeds")) {
@@ -29,7 +29,7 @@ export function generateNextPictures(handler: SQLHandler<AppTables, AppContexts>
     }
 
     for (let i = 0; i < count; i++) {
-        const newPicture: PictureDTO = {
+        const newPicture: PictureEntity = {
             id: asNamed(0),
             promptId: prompt.id,
             seed: [...missingPreferredSeeds.values()][0] ?? Math.floor(Math.random() * Number.MAX_SAFE_INTEGER),
@@ -47,7 +47,7 @@ export function generateNextPictures(handler: SQLHandler<AppTables, AppContexts>
     }
 }
 
-export function isPreferredSeed(handler: SQLHandler<AppTables, AppContexts>, projectId: number, seed: number): boolean {
+export function isPreferredSeed(handler: EntitiesHandler<AppTables, AppContexts>, projectId: ProjectId, seed: number): boolean {
     for (const preferredSeed of handler.getItems("seeds")) {
         if (handler.isSameId(preferredSeed.projectId, projectId) && preferredSeed.seed === seed) {
             return true;
@@ -56,7 +56,7 @@ export function isPreferredSeed(handler: SQLHandler<AppTables, AppContexts>, pro
     return false;
 }
 
-export function togglePreferredSeed(handler: SQLHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, projectId: ProjectId, seed: Seed): void {
+export function togglePreferredSeed(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, projectId: ProjectId, seed: Seed): void {
     const alreadyExisting = handler.getItems("seeds").find(preferredSeed => handler.isSameId(preferredSeed.projectId, projectId) && preferredSeed.seed === seed);
     if (alreadyExisting == null) {
         // Not found, create it
@@ -71,7 +71,7 @@ export function togglePreferredSeed(handler: SQLHandler<AppTables, AppContexts>,
     }
 }
 
-export function deletePicture(handler: SQLHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, picture: PictureDTO): void {
+export function deletePicture(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, picture: PictureEntity): void {
     tr.delete("pictures", picture.id);
     if (picture.attachmentId) {
         tr.delete("attachments", picture.attachmentId);

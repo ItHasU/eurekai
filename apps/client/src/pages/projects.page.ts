@@ -1,4 +1,4 @@
-import { asNamed } from "@dagda/shared/typings/named.types";
+import { asNamed } from "@dagda/shared/entities/named.types";
 import { APP } from "src";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { ProjectElement } from "../components/project.element";
@@ -32,7 +32,7 @@ export class ProjectsPage extends AbstractPageElement {
         this._bindClickForRef("projectNewButton", async () => {
             const name = this._nameInput.value;
             if (name) {
-                await StaticDataProvider.sqlHandler.withTransaction((tr) => {
+                await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
                     tr.insert("projects", {
                         id: asNamed(0),
                         lockable: asNamed(false),
@@ -48,10 +48,10 @@ export class ProjectsPage extends AbstractPageElement {
 
     /** @inheritdoc */
     public override async _refresh(): Promise<void> {
-        await StaticDataProvider.sqlHandler.fetch({ type: "projects", options: void (0) });
+        await StaticDataProvider.entitiesHandler.fetch({ type: "projects", options: void (0) });
 
         // -- Fetch projects --
-        const projects = StaticDataProvider.sqlHandler.getItems("projects");
+        const projects = StaticDataProvider.entitiesHandler.getItems("projects");
         projects.sort((a, b) => -(a.id - b.id));
 
         // -- Render projects --
@@ -64,25 +64,25 @@ export class ProjectsPage extends AbstractPageElement {
         for (const project of projects) {
             const element = new ProjectElement(project, {
                 pin: async () => {
-                    await StaticDataProvider.sqlHandler.withTransaction((tr) => {
+                    await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
                         tr.update("projects", project, { pinned: asNamed(true) });
                     });
                     this.refresh();
                 },
                 unpin: async () => {
-                    await StaticDataProvider.sqlHandler.withTransaction((tr) => {
+                    await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
                         tr.update("projects", project, { pinned: asNamed(false) });
                     });
                     this.refresh();
                 },
                 lock: async () => {
-                    await StaticDataProvider.sqlHandler.withTransaction((tr) => {
+                    await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
                         tr.update("projects", project, { lockable: asNamed(true) });
                     });
                     this.refresh();
                 },
                 unlock: async () => {
-                    await StaticDataProvider.sqlHandler.withTransaction((tr) => {
+                    await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
                         tr.update("projects", project, { lockable: asNamed(false) });
                     });
                     this.refresh();

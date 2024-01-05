@@ -1,5 +1,5 @@
-import { asNamed } from "entities/named.types";
 import { EntitiesCacheHandler } from "../entities/cache";
+import { asNamed } from "../entities/named.types";
 import { BaseEntity, TablesDefinition } from "../entities/types";
 
 export enum OperationType {

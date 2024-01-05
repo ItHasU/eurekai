@@ -1,4 +1,4 @@
-import { ComputationStatus, PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
+import { ComputationStatus, PictureEntity, PromptEntity } from "@eurekai/shared/src/entities";
 import { AbstractDTOElement } from "./abstract.dto.element";
 
 enum SwipeMode {
@@ -25,12 +25,12 @@ const ICON_HIGHRES_DONE = "bi-badge-hd-fill";
 
 const ACTION_SWIPE_MARGIN = 0.2;
 
-export class PictureElement extends AbstractDTOElement<PictureDTO> {
+export class PictureElement extends AbstractDTOElement<PictureEntity> {
 
     protected _swipeMode: SwipeMode = SwipeMode.NONE;
 
-    constructor(data: PictureDTO, public readonly _options: {
-        prompt: PromptDTO | undefined,
+    constructor(data: PictureEntity, public readonly _options: {
+        prompt: PromptEntity | undefined,
         /** Pass true so image can be blurred if app is locked */
         isLockable: boolean,
         isPreferredSeed: boolean,

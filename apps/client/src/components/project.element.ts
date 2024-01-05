@@ -1,9 +1,9 @@
-import { ProjectDTO } from "@eurekai/shared/src/types";
+import { ProjectEntity } from "@eurekai/shared/src/entities";
 import { AbstractDTOElement } from "./abstract.dto.element";
 
-export class ProjectElement extends AbstractDTOElement<ProjectDTO> {
+export class ProjectElement extends AbstractDTOElement<ProjectEntity> {
 
-    constructor(project: ProjectDTO, protected _options: {
+    constructor(project: ProjectEntity, protected _options: {
         pin: () => void;
         unpin: () => void;
         lock: () => void;

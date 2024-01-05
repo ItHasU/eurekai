@@ -4,7 +4,7 @@ import { OperationType, SQLTransactionData, SQLTransactionResult } from "@dagda/
 import { AbstractSQLRunner, SQLConnection, SQLValue, sqlValue } from "./runner";
 
 /** Transaction submit implementation for SQLite */
-export function submit<Tables extends TablesDefinition, Contexts>(runner: AbstractSQLRunner<SQLConnection>, transactionData: SQLTransactionData<Tables, Contexts>): Promise<SQLTransactionResult> {
+export function submit<Tables extends TablesDefinition, Contexts>(runner: AbstractSQLRunner<any, any, SQLConnection>, transactionData: SQLTransactionData<Tables, Contexts>): Promise<SQLTransactionResult> {
     return runner.withTransaction(async (connection: SQLConnection) => {
         const result: SQLTransactionResult = {
             updatedIds: {}

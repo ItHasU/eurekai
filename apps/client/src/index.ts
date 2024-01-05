@@ -38,9 +38,9 @@ class App {
     constructor() {
         // -- SQLHandler --
         this._statusPlaceholder = document.getElementById("statusPlaceholder") as HTMLSpanElement;
-        this._statusPlaceholder.append(new SQLStatusComponent(StaticDataProvider.sqlHandler));
+        this._statusPlaceholder.append(new SQLStatusComponent(StaticDataProvider.entitiesHandler));
         this._statusPlaceholder.addEventListener("click", async () => {
-            StaticDataProvider.sqlHandler.markCacheDirty();
+            StaticDataProvider.entitiesHandler.markCacheDirty();
             if (this._currentPage) {
                 await this._currentPage.refresh();
             }

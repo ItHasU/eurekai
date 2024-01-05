@@ -3,8 +3,9 @@ import { OperationType, SQLTransaction } from "../sql/transaction";
 import { Event, EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "../tools/events";
 import { NotificationHelper } from "../tools/notification.helper";
 import { EntitiesCache, EntitiesCacheHandler } from "./cache";
+import { EntitiesModel } from "./model";
 import { Named, asNamed } from "./named.types";
-import { ContextEvents, EntitiesEvents, ForeignKeys, SQLAdapter, TablesDefinition } from "./types";
+import { ContextEvents, EntitiesEvents, SQLAdapter, TablesDefinition } from "./types";
 
 /** Internal structure to represent the current state of a context in the handler */
 interface ContextState<Contexts> {
@@ -42,7 +43,7 @@ export class EntitiesHandler<Tables extends TablesDefinition, Contexts> implemen
     /** Queue for submit of transactions */
     protected _submitQueue: Queue<void> = new Queue(void (0));
 
-    constructor(protected _adapter: SQLAdapter<Tables, Contexts>, protected _foreignKeys: ForeignKeys<Tables>) {
+    constructor(protected _model: EntitiesModel<any, any>, protected _adapter: SQLAdapter<Tables, Contexts>) {
         // When a notification is received mark my cache as dirty
         NotificationHelper.on<ContextEvents<Contexts>>("contextChanged", (event: Event<ContextEvents<Contexts>["contextChanged"]>) => {
             this.markCacheDirty(...event.data);
@@ -360,7 +361,7 @@ export class EntitiesHandler<Tables extends TablesDefinition, Contexts> implemen
                     }
                 }
             } else {
-                const foreignKeys = this._foreignKeys[table];
+                const foreignKeys = this._model.getForeignKeys();
                 const foreignTable: boolean = (foreignKeys as any)[field];
                 if (foreignTable) {
                     const tmpId = item[field] as number | null | undefined;

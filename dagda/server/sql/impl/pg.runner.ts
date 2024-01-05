@@ -1,3 +1,4 @@
+import { EntitiesModel, TableDefinitions, TypeDefinitions } from "@dagda/shared/entities/model";
 import { Client, Pool, PoolClient } from "pg";
 import { AbstractSQLRunner, BaseRow, SQLConnection, SQLValue } from "../runner";
 
@@ -77,12 +78,12 @@ export class PGConnection implements SQLConnection {
 }
 
 /** PostgreSQL pool handler */
-export class PGRunner extends AbstractSQLRunner<PGConnection> {
+export class PGRunner<Types extends TypeDefinitions, Tables extends TableDefinitions<Types, Tables>> extends AbstractSQLRunner<Types, Tables, PGConnection> {
 
     protected readonly _pool: Pool;
 
-    constructor(connectionString: string) {
-        super();
+    constructor(model: EntitiesModel<Types, Tables>, connectionString: string) {
+        super(model);
         this._pool = new Pool({ connectionString });
     }
 

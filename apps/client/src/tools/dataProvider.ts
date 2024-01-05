@@ -1,26 +1,26 @@
 import { apiCall } from "@dagda/client/api";
 import { generateFetchFunction, generateSubmitFunction } from "@dagda/client/sql/client.adapter";
-import { SQLHandler } from "@dagda/shared/sql/handler";
+import { EntitiesHandler } from "@dagda/shared/entities/handler";
+import { APP_MODEL, AppContexts, AppTables, ProjectId, appContextEquals } from "@eurekai/shared/src/entities";
 import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api";
-import { APP_MODEL, AppContexts, AppTables, ProjectId, appContextEquals } from "@eurekai/shared/src/types";
 
 /** A global class containing static methods accessible from all the components */
 export class StaticDataProvider {
 
     //#region SQL Handler -----------------------------------------------------
 
-    protected static _sqlHandler: SQLHandler<AppTables, AppContexts> | null;
+    protected static _entitiesHandler: EntitiesHandler<AppTables, AppContexts> | null;
 
-    public static get sqlHandler(): SQLHandler<AppTables, AppContexts> {
-        if (this._sqlHandler == null) {
-            this._sqlHandler = new SQLHandler<AppTables, AppContexts>({
+    public static get entitiesHandler(): EntitiesHandler<AppTables, AppContexts> {
+        if (this._entitiesHandler == null) {
+            this._entitiesHandler = new EntitiesHandler<AppTables, AppContexts>(APP_MODEL, {
                 contextEquals: appContextEquals,
                 contextIntersects: appContextEquals,
                 fetch: generateFetchFunction(),
                 submit: generateSubmitFunction()
-            }, APP_MODEL.getForeignKeys());
+            });
         }
-        return this._sqlHandler;
+        return this._entitiesHandler;
     }
 
     //#endregion

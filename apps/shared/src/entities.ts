@@ -71,7 +71,7 @@ export const APP_MODEL = new EntitiesModel({
     MODEL_NAME: EntitiesModel.type({
         rawType: JSTypes.string
     }),
-    COMPUTATION_STATUS: EntitiesModel.type<ComputationStatus, JSTypes.custom>({
+    COMPUTATION_STATUS: EntitiesModel.type<JSTypes.custom, ComputationStatus>({
         rawType: JSTypes.custom
     }),
     BASE64_DATA: {
@@ -126,7 +126,7 @@ export type Seed = typeof APP_MODEL.types["SEED"];
 
 //#region Entities types ------------------------------------------------------
 
-export type AppTableName = typeof APP_MODEL.tables;
+export type AppTables = typeof APP_MODEL.tables;
 
 /** 
  * A project gather prompts with a common theme

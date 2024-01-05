@@ -1,3 +1,5 @@
+import { EntitiesModel, TableDefinitions, TypeDefinitions } from "@dagda/shared/entities/model";
+
 /** Values accepted by SQLite */
 export type SQLValue = boolean | number | string | BigInt | Buffer | null;
 
@@ -71,9 +73,9 @@ export interface SQLConnection {
 /**
  * Abstract class for a pool of SQL connections.
  */
-export abstract class AbstractSQLRunner<C extends SQLConnection = SQLConnection> implements SQLConnection {
+export abstract class AbstractSQLRunner<Types extends TypeDefinitions, Tables extends TableDefinitions<Types, Tables>, C extends SQLConnection = SQLConnection> implements SQLConnection {
 
-    constructor() { }
+    constructor(protected _model: EntitiesModel<Types, Tables>) { }
 
     //#region Reserved connections --------------------------------------------
 
@@ -109,6 +111,20 @@ export abstract class AbstractSQLRunner<C extends SQLConnection = SQLConnection>
                 throw e;
             }
         });
+    }
+
+    //#endregion
+
+    //#region Quotation tools -------------------------------------------------
+
+    /** Quoted table name */
+    public qt(table: keyof Tables): string {
+        return `"${table as string}"`;
+    }
+
+    /** Quoted field from a table */
+    public qf<Table extends keyof Tables>(table: Table, field: keyof Tables[Table], withTable: boolean = true): string {
+        return (withTable ? `"${table as string}".` : "") + `"${field as string}"`;
     }
 
     //#endregion

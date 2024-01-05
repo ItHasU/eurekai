@@ -1,6 +1,6 @@
-import { asNamed } from "@dagda/shared/typings/named.types";
+import { asNamed } from "@dagda/shared/entities/named.types";
+import { ComputationStatus, PictureEntity, PromptEntity } from "@eurekai/shared/src/entities";
 import { generateNextPictures, isPreferredSeed, togglePreferredSeed } from "@eurekai/shared/src/pictures.data";
-import { ComputationStatus, PictureDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { PictureElement } from "src/components/picture.element";
 import { PromptElement } from "src/components/prompt.element";
 import { PromptEditor } from "src/editors/prompt.editor";
@@ -59,7 +59,7 @@ export class PicturesPage extends AbstractPageElement {
         }
 
         // -- Async part ------------------------------------------------------
-        await StaticDataProvider.sqlHandler.fetch({
+        await StaticDataProvider.entitiesHandler.fetch({
             type: "project",
             options: {
                 projectId
@@ -72,25 +72,25 @@ export class PicturesPage extends AbstractPageElement {
 
         // -- Prepare data ----------------------------------------------------
         // Project
-        const project = StaticDataProvider.sqlHandler.getCache("projects").getById(projectId)
+        const project = StaticDataProvider.entitiesHandler.getCache("projects").getById(projectId)
         if (project == null) {
             // Nothing to display
             return;
         }
         // Prompts for the project (there might be others in cache)
-        const prompts = StaticDataProvider.sqlHandler.getCache("prompts").getItems().filter(prompt => prompt.projectId === projectId);
-        const promptsMap: { [id: number]: { prompt: PromptDTO, pictures: PictureDTO[] } } = {};
+        const prompts = StaticDataProvider.entitiesHandler.getCache("prompts").getItems().filter(prompt => prompt.projectId === projectId);
+        const promptsMap: { [id: number]: { prompt: PromptEntity, pictures: PictureEntity[] } } = {};
         for (const prompt of prompts) {
             promptsMap[prompt.id] = { prompt, pictures: [] };
         }
         // Pictures for the project (the ones associated to prompts of the project)
-        const pictures: PictureDTO[] = [];
-        for (const picture of StaticDataProvider.sqlHandler.getCache("pictures").getItems()) {
+        const pictures: PictureEntity[] = [];
+        for (const picture of StaticDataProvider.entitiesHandler.getCache("pictures").getItems()) {
             const promptForPicture = promptsMap[picture.promptId];
             if (promptForPicture == null) {
                 // Prompt is not from the project since the map
                 // only contains prompts from the project
-            } else if (!StaticDataProvider.sqlHandler.isSameId(promptForPicture.prompt.projectId, projectId)) {
+            } else if (!StaticDataProvider.entitiesHandler.isSameId(promptForPicture.prompt.projectId, projectId)) {
                 // Prompt is not from project 
                 // (should never happen since prompt in map are already filtered)
             } else {
@@ -99,7 +99,7 @@ export class PicturesPage extends AbstractPageElement {
             }
         }
         // TODO Preferred seeds
-        const preferredSeeds: Set<number> = new Set(StaticDataProvider.sqlHandler.getItems("seeds").filter(s => StaticDataProvider.sqlHandler.isSameId(s.projectId, projectId)).map(s => s.seed));
+        const preferredSeeds: Set<number> = new Set(StaticDataProvider.entitiesHandler.getItems("seeds").filter(s => StaticDataProvider.entitiesHandler.isSameId(s.projectId, projectId)).map(s => s.seed));
 
         // -- Render per prompt -----------------------------------------------
         // Sort prompts per order index (inverted)
@@ -119,7 +119,7 @@ export class PicturesPage extends AbstractPageElement {
         });
 
         // -- Get the filter --
-        let filter: (picture: PictureDTO) => boolean = this._getFilter(preferredSeeds);
+        let filter: (picture: PictureEntity) => boolean = this._getFilter(preferredSeeds);
 
         for (const prompt of prompts) {
             // -- Add a line break --
@@ -147,10 +147,10 @@ export class PicturesPage extends AbstractPageElement {
                 // -- Add the picture --
                 const item = new PictureElement(picture, {
                     prompt,
-                    isPreferredSeed: isPreferredSeed(StaticDataProvider.sqlHandler, projectId, picture.seed),
+                    isPreferredSeed: isPreferredSeed(StaticDataProvider.entitiesHandler, projectId, picture.seed),
                     isLockable: project.lockable === true,
                     accept: async () => {
-                        await StaticDataProvider.sqlHandler.withTransaction(tr => {
+                        await StaticDataProvider.entitiesHandler.withTransaction(tr => {
                             tr.update("pictures", picture, {
                                 status: asNamed(ComputationStatus.ACCEPTED)
                             });
@@ -160,7 +160,7 @@ export class PicturesPage extends AbstractPageElement {
                         scrollToNextSibling(item);
                     },
                     reject: async () => {
-                        await StaticDataProvider.sqlHandler.withTransaction(tr => {
+                        await StaticDataProvider.entitiesHandler.withTransaction(tr => {
                             tr.update("pictures", picture, {
                                 status: asNamed(ComputationStatus.REJECTED)
                             });
@@ -170,10 +170,10 @@ export class PicturesPage extends AbstractPageElement {
                         scrollToNextSibling(item);
                     },
                     toggleSeed: async () => {
-                        await StaticDataProvider.sqlHandler.withTransaction(tr => {
-                            togglePreferredSeed(StaticDataProvider.sqlHandler, tr, projectId, picture.seed);
+                        await StaticDataProvider.entitiesHandler.withTransaction(tr => {
+                            togglePreferredSeed(StaticDataProvider.entitiesHandler, tr, projectId, picture.seed);
                         });
-                        item._options.isPreferredSeed = isPreferredSeed(StaticDataProvider.sqlHandler, projectId, picture.seed);
+                        item._options.isPreferredSeed = isPreferredSeed(StaticDataProvider.entitiesHandler, projectId, picture.seed);
                         item.refresh();
                     },
                     toggleHighres: async () => {
@@ -198,7 +198,7 @@ export class PicturesPage extends AbstractPageElement {
                         item.refresh();
                     },
                     setAsFeatured: async () => {
-                        await StaticDataProvider.sqlHandler.withTransaction(tr => {
+                        await StaticDataProvider.entitiesHandler.withTransaction(tr => {
                             tr.update("projects", project, {
                                 featuredAttachmentId: picture.attachmentId
                             });
@@ -222,8 +222,8 @@ export class PicturesPage extends AbstractPageElement {
         this._picturesDiv.scrollTo(0, 0);
     }
 
-    protected _getFilter(preferredSeeds: Set<number>): (picture: PictureDTO) => boolean {
-        let filter: (picture: PictureDTO) => boolean = function () { return true };
+    protected _getFilter(preferredSeeds: Set<number>): (picture: PictureEntity) => boolean {
+        let filter: (picture: PictureEntity) => boolean = function () { return true };
         const filterIndex = this._picturesFilterSelect.value;
         switch (filterIndex) {
             case "all":
@@ -282,13 +282,13 @@ export class PicturesPage extends AbstractPageElement {
             return;
         }
         const projectPromptIds: Set<number> = new Set();
-        for (const prompt of StaticDataProvider.sqlHandler.getItems("prompts")) {
+        for (const prompt of StaticDataProvider.entitiesHandler.getItems("prompts")) {
             if (prompt.projectId === projectId) {
                 projectPromptIds.add(prompt.id);
             }
         }
-        await StaticDataProvider.sqlHandler.withTransaction((tr) => {
-            for (const picture of StaticDataProvider.sqlHandler.getItems("pictures")) {
+        await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
+            for (const picture of StaticDataProvider.entitiesHandler.getItems("pictures")) {
                 if (!projectPromptIds.has(picture.promptId)) {
                     continue;
                 }
@@ -307,7 +307,7 @@ export class PicturesPage extends AbstractPageElement {
         this.refresh();
     }
 
-    protected _openPromptPanel(prompt?: PromptDTO): void {
+    protected _openPromptPanel(prompt?: PromptEntity): void {
         // -- Set fields --
         this._promptEditor.setPrompt(prompt);
         // -- Display the panel --
@@ -323,12 +323,12 @@ export class PicturesPage extends AbstractPageElement {
         const projectId = StaticDataProvider.getSelectedProject();
         if (projectId != null) {
             let orderIndex: number = 1;
-            for (const prompt of StaticDataProvider.sqlHandler.getItems("prompts")) {
+            for (const prompt of StaticDataProvider.entitiesHandler.getItems("prompts")) {
                 if (prompt.projectId === projectId) {
                     orderIndex = Math.max(orderIndex, prompt.orderIndex + 1);
                 }
             }
-            await StaticDataProvider.sqlHandler.withTransaction((tr) => {
+            await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
                 const newPrompt = tr.insert("prompts", {
                     ...prompt,
                     id: asNamed(0),
@@ -336,7 +336,7 @@ export class PicturesPage extends AbstractPageElement {
                     orderIndex: asNamed(orderIndex)
                 });
                 // Create pictures for all preferred seeds
-                generateNextPictures(StaticDataProvider.sqlHandler, tr, newPrompt, null);
+                generateNextPictures(StaticDataProvider.entitiesHandler, tr, newPrompt, null);
             });
             await this.refresh();
         }

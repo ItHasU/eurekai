@@ -1,7 +1,7 @@
 import { submit } from "@dagda/server/sql/sql.adapter";
 import { getEnvNumber } from "@dagda/server/tools/config";
-import { SQLHandler } from "@dagda/shared/sql/handler";
-import { APP_MODEL, AppContexts, AppTables, appContextEquals } from "@eurekai/shared/src/types";
+import { EntitiesHandler } from "@dagda/shared/entities/handler";
+import { APP_MODEL, AppContexts, AppTables, appContextEquals } from "@eurekai/shared/src/entities";
 import { DiffusersRegistry } from "./diffusers";
 import { ENV_VARIABLES_NUMBER } from "./modules/config";
 import { initDatabaseHelper } from "./modules/db";
@@ -10,13 +10,13 @@ import { initHTTPServer, sqlFetch } from "./modules/server";
 
 async function main(): Promise<void> {
     // -- Initialize db -------------------------------------------------------
-    const db = await initDatabaseHelper("./eurekai.db");
-    const handler = new SQLHandler<AppTables, AppContexts>({
+    const db = await initDatabaseHelper();
+    const handler = new EntitiesHandler<AppTables, AppContexts>(APP_MODEL, {
         contextEquals: appContextEquals,
         contextIntersects: appContextEquals,
         fetch: filter => sqlFetch(db, filter),
         submit: transactionData => submit(db, transactionData)
-    }, APP_MODEL.getForeignKeys());
+    });
 
     // -- Initialize the models -----------------------------------------------
     try {

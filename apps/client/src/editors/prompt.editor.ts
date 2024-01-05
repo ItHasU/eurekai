@@ -1,7 +1,7 @@
 import { apiCall } from "@dagda/client/api";
-import { asNamed } from "@dagda/shared/typings/named.types";
+import { asNamed } from "@dagda/shared/entities/named.types";
+import { PromptEntity } from "@eurekai/shared/src/entities";
 import { MODELS_URL, ModelsAPI } from "@eurekai/shared/src/models.api";
-import { PromptDTO } from "@eurekai/shared/src/types";
 import { htmlStringToElement } from "src/components/tools";
 import { StaticDataProvider } from "src/tools/dataProvider";
 
@@ -95,7 +95,7 @@ export class PromptEditor extends HTMLElement {
 
     //#region Prompt set/get --------------------------------------------------
 
-    public setPrompt(prompt?: PromptDTO): void {
+    public setPrompt(prompt?: PromptEntity): void {
         // -- Set all fields to passed prompt --
         this._positiveInput.value = prompt?.prompt ?? "";
         this._negativeInput.value = prompt?.negative_prompt ?? "";
@@ -104,7 +104,7 @@ export class PromptEditor extends HTMLElement {
         this._modelsSelect.value = prompt?.model ?? "";
     }
 
-    public getPrompt(): Omit<PromptDTO, "id" | "projectId" | "orderIndex"> {
+    public getPrompt(): Omit<PromptEntity, "id" | "projectId" | "orderIndex"> {
         // -- Read values --
         const positivePrompt = this._positiveInput.value;
         const negativePrompt = this._negativeInput.value;

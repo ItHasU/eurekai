@@ -1,13 +1,13 @@
-import { SQLHandler } from "@dagda/shared/sql/handler";
-import { asNamed } from "@dagda/shared/typings/named.types";
-import { AppContexts, AppTables, ComputationStatus } from "@eurekai/shared/src/types";
+import { EntitiesHandler } from "@dagda/shared/entities/handler";
+import { asNamed } from "@dagda/shared/entities/named.types";
+import { AppContexts, AppTables, ComputationStatus } from "@eurekai/shared/src/entities";
 import { DiffusersRegistry } from "src/diffusers";
 import { ImageDescription } from "src/diffusers/diffuser";
 
 export class Generator {
     protected _stopOnNextTimeout: boolean = false;
 
-    constructor(protected _handler: SQLHandler<AppTables, AppContexts>) {
+    constructor(protected _handler: EntitiesHandler<AppTables, AppContexts>) {
         this._scheduleNextIfNeeded();
     }
 

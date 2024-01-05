@@ -1,7 +1,7 @@
 import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "@dagda/shared/tools/events";
+import { ComputationStatus, ProjectEntity, PromptEntity } from "@eurekai/shared/src/entities";
 import { ModelInfo } from "@eurekai/shared/src/models.api";
 import { deletePicture, generateNextPictures } from "@eurekai/shared/src/pictures.data";
-import { ComputationStatus, ProjectDTO, PromptDTO } from "@eurekai/shared/src/types";
 import { diff_match_patch } from "diff-match-patch";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { AbstractDTOElement } from "./abstract.dto.element";
@@ -11,11 +11,11 @@ const DIFF = new diff_match_patch();
 
 export type PromptEvents = {
     /** Triggered when the user asks for a clone */
-    clone: { prompt: PromptDTO };
+    clone: { prompt: PromptEntity };
     /** Triggered when prompt needs to be deleted from the current view */
-    delete: { prompt: PromptDTO };
+    delete: { prompt: PromptEntity };
 }
-export class PromptElement extends AbstractDTOElement<PromptDTO> implements EventHandler<PromptEvents> {
+export class PromptElement extends AbstractDTOElement<PromptEntity> implements EventHandler<PromptEvents> {
 
     protected model: ModelInfo | null;
 
@@ -39,7 +39,7 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> implements Even
     protected negativePromptAddedCount: number = 0;
     protected negativePromptDiff: string = "";
 
-    constructor(data: PromptDTO) {
+    constructor(data: PromptEntity) {
         super(data, require("./prompt.element.html").default);
         this.model = StaticDataProvider.getModelFromCache(data.model);
     }
@@ -61,8 +61,8 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> implements Even
         this.doneCount = 0;
         this.rejectedCount = 0;
         this.acceptedCount = 0;
-        for (const picture of StaticDataProvider.sqlHandler.getItems("pictures")) {
-            if (!StaticDataProvider.sqlHandler.isSameId(picture.promptId, this.data.id)) {
+        for (const picture of StaticDataProvider.entitiesHandler.getItems("pictures")) {
+            if (!StaticDataProvider.entitiesHandler.isSameId(picture.promptId, this.data.id)) {
                 continue;
             }
             switch (picture.status) {
@@ -92,10 +92,10 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> implements Even
         this.rejectedPercent = this.rejectedCount / total * 100;
 
         // -- Prepare diff ----------------------------------------------------
-        let previousPrompt: PromptDTO | null = null;
+        let previousPrompt: PromptEntity | null = null;
         // -- Search for the previous prompt --
-        for (const prompt of StaticDataProvider.sqlHandler.getItems("prompts")) {
-            if (!StaticDataProvider.sqlHandler.isSameId(prompt.projectId, this.data.projectId)) {
+        for (const prompt of StaticDataProvider.entitiesHandler.getItems("prompts")) {
+            if (!StaticDataProvider.entitiesHandler.isSameId(prompt.projectId, this.data.projectId)) {
                 // Pas le prompt du bon projet
                 continue;
             }
@@ -163,24 +163,24 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> implements Even
             const count = countButton.attributes.getNamedItem("data-count")?.value ?? 1;
             countButton.innerHTML += `+${count}`;
             countButton.addEventListener("click", async () => {
-                await StaticDataProvider.sqlHandler.withTransaction(tr => {
-                    generateNextPictures(StaticDataProvider.sqlHandler, tr, this.data, +count);
+                await StaticDataProvider.entitiesHandler.withTransaction(tr => {
+                    generateNextPictures(StaticDataProvider.entitiesHandler, tr, this.data, +count);
                 });
                 this.refresh();
             });
         });
         this._bindClick("addPreferredButton", async () => {
-            await StaticDataProvider.sqlHandler.withTransaction(tr => {
-                generateNextPictures(StaticDataProvider.sqlHandler, tr, this.data, null);
+            await StaticDataProvider.entitiesHandler.withTransaction(tr => {
+                generateNextPictures(StaticDataProvider.entitiesHandler, tr, this.data, null);
             });
             this.refresh();
         });
         this._bindClick("clone", () => EventHandlerImpl.fire(this._eventData, "clone", { prompt: this.data }));
         this._bindClick("delete", async () => {
-            await StaticDataProvider.sqlHandler.withTransaction((tr) => {
-                for (const picture of StaticDataProvider.sqlHandler.getItems("pictures")) {
-                    if (StaticDataProvider.sqlHandler.isSameId(picture.promptId, this.data.id)) {
-                        deletePicture(StaticDataProvider.sqlHandler, tr, picture);
+            await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
+                for (const picture of StaticDataProvider.entitiesHandler.getItems("pictures")) {
+                    if (StaticDataProvider.entitiesHandler.isSameId(picture.promptId, this.data.id)) {
+                        deletePicture(StaticDataProvider.entitiesHandler, tr, picture);
                     }
                 }
                 tr.delete("prompts", this.data.id);
@@ -188,14 +188,14 @@ export class PromptElement extends AbstractDTOElement<PromptDTO> implements Even
             EventHandlerImpl.fire(this._eventData, "delete", { prompt: this.data });
         });
         this._bindClick("move", async () => {
-            const projects = StaticDataProvider.sqlHandler.getItems("projects");
-            const selectedProject = await showSelect<ProjectDTO>(projects, {
+            const projects = StaticDataProvider.entitiesHandler.getItems("projects");
+            const selectedProject = await showSelect<ProjectEntity>(projects, {
                 valueKey: "id",
                 displayString: "name",
-                selected: projects.find(p => StaticDataProvider.sqlHandler.isSameId(p.id, this.data.projectId))
+                selected: projects.find(p => StaticDataProvider.entitiesHandler.isSameId(p.id, this.data.projectId))
             });
             if (selectedProject != null && selectedProject.id != this.data.projectId) {
-                await StaticDataProvider.sqlHandler.withTransaction((tr) => {
+                await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
                     tr.update("prompts", this.data, { projectId: selectedProject.id });
                 });
                 EventHandlerImpl.fire(this._eventData, "delete", { prompt: this.data });

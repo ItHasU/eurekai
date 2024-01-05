@@ -12,8 +12,8 @@ import { submit } from "./sql.adapter";
  */
 export function registerAdapterAPI<Tables extends TablesDefinition, Contexts>(
     app: Application,
-    helper: AbstractSQLRunner<SQLConnection>,
-    fetch: (helper: AbstractSQLRunner<SQLConnection>, filter: Contexts) => Promise<Data<Tables>>
+    helper: AbstractSQLRunner<any, any, SQLConnection>,
+    fetch: (helper: AbstractSQLRunner<any, any, SQLConnection>, filter: Contexts) => Promise<Data<Tables>>
 ): void {
     registerAPI<SQLAdapterAPI<Tables, Contexts>>(app, SQL_URL, {
         submit: (transactionData: SQLTransactionData<Tables, Contexts>) => submit<Tables, Contexts>(helper, transactionData),

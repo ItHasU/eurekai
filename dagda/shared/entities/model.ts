@@ -20,7 +20,7 @@ export type TypeDefinition<RawType extends JSTypes, Custom> = {
  */
 export type FieldDefinition<Types, Tables> = {
     type: keyof Types;
-    identity?: true;
+    identity?: boolean;
     optional?: true;
     foreignTable?: keyof Tables;
 }
@@ -30,6 +30,12 @@ export type IdFieldDefinition<Types, Tables> = {
     identity: true
 };
 
+export type TypeDefinitions = Record<string, TypeDefinition<JSTypes, any>>;
+export type TableDefinitions<Types, Tables> = Record<keyof Tables, {
+    id: IdFieldDefinition<Types, Tables>;
+    [key: string]: FieldDefinition<Types, Tables>;
+}>
+
 /** 
  * This class handles all information for the data used in the application.
  * You should not fill Types and Tables directly, they are computed by TypeScript from the parameters passed to the constructor.
@@ -38,11 +44,8 @@ export type IdFieldDefinition<Types, Tables> = {
  * @param Tables are for the entities themselves.
  */
 export class EntitiesModel<
-    Types extends Record<string, TypeDefinition<any, JSTypes>>,
-    Tables extends Record<string, {
-        id: IdFieldDefinition<Types, Tables>;
-        [key: string]: FieldDefinition<Types, Tables>;
-    }>
+    Types extends TypeDefinitions,
+    Tables extends TableDefinitions<Types, Tables>
 > {
 
     /**
@@ -89,7 +92,7 @@ export class EntitiesModel<
 
     /** Get the list of tables */
     public getTableNames(): (keyof Tables)[] {
-        return Object.keys(this._tables);
+        return Object.keys(this._tables) as (keyof Tables)[];
     }
 
     /** Get the list of fields for a table */
