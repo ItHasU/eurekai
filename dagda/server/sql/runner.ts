@@ -75,7 +75,11 @@ export interface SQLConnection {
  */
 export abstract class AbstractSQLRunner<Types extends TypeDefinitions, Tables extends TableDefinitions<Types, Tables>, C extends SQLConnection = SQLConnection> implements SQLConnection {
 
-    constructor(protected _model: EntitiesModel<Types, Tables>) { }
+    constructor(protected _modelProvider: () => EntitiesModel<Types, Tables>) { }
+
+    public get model(): EntitiesModel<Types, Tables> {
+        return this._modelProvider();
+    }
 
     //#region Reserved connections --------------------------------------------
 

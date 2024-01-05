@@ -10,9 +10,10 @@ export function submit<Tables extends TablesDefinition, Contexts>(runner: Abstra
             updatedIds: {}
         }
         for (const operation of transactionData.operations) {
+            const foreignKeys = runner.model.getForeignKeys() as any;
             switch (operation.type) {
                 case OperationType.INSERT: {
-                    // _updateForeignKeys(runner.foreignKeys, result, operation.options.table, operation.options.item);
+                    _updateForeignKeys(foreignKeys, result, operation.options.table, operation.options.item);
                     const columnNames = [];
                     const values: SQLValue[] = [];
                     for (const key in operation.options.item) {
@@ -32,7 +33,7 @@ export function submit<Tables extends TablesDefinition, Contexts>(runner: Abstra
                     break;
                 }
                 case OperationType.UPDATE: {
-                    // _updateForeignKeys(runner.foreignKeys, result, operation.options.table, operation.options.values as any);
+                    _updateForeignKeys(foreignKeys, result, operation.options.table as string, operation.options.values as any);
                     const columnNameEqualValues = [];
                     const values: SQLValue[] = [];
                     let paramIndex = 1;

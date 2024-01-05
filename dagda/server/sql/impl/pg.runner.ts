@@ -82,8 +82,8 @@ export class PGRunner<Types extends TypeDefinitions, Tables extends TableDefinit
 
     protected readonly _pool: Pool;
 
-    constructor(model: EntitiesModel<Types, Tables>, connectionString: string) {
-        super(model);
+    constructor(modelProvider: () => EntitiesModel<Types, Tables>, connectionString: string) {
+        super(modelProvider);
         this._pool = new Pool({ connectionString });
     }
 

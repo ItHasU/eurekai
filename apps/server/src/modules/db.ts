@@ -8,7 +8,7 @@ import { ENV_VARIABLES_STR } from "./config";
 export async function initDatabaseHelper(): Promise<PGRunner<any, any>> {
     pg.types.setTypeParser(20 /* BIGINT */, parseInt);
 
-    const runner = new PGRunner(APP_MODEL, getEnvString<ENV_VARIABLES_STR>("DATABASE_URL"));
+    const runner = new PGRunner(() => APP_MODEL, getEnvString<ENV_VARIABLES_STR>("DATABASE_URL"));
 
     // -- Initialize tables --
     // FIXME: Use TypeHandler to get the scripts to execute

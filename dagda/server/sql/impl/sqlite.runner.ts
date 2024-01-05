@@ -122,8 +122,8 @@ export class SQLiteConnection implements SQLConnection {
 /** Helper for SQLite database */
 export class SQLiteRunner<Types extends TypeDefinitions, Tables extends TableDefinitions<Types, Tables>> extends AbstractSQLRunner<Types, Tables, SQLiteConnection> {
 
-    constructor(model: EntitiesModel<Types, Tables>, protected _filename: string) {
-        super(model);
+    constructor(modelProvider: () => EntitiesModel<Types, Tables>, protected _filename: string) {
+        super(modelProvider);
     }
 
     //#region Implementation of AbstractSQLRunner -----------------------------
