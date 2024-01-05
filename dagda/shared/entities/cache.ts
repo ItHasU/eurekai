@@ -1,10 +1,12 @@
+import { BaseEntity, TablesDefinition } from "./types";
 
+/** Cache for fetched entities from a table */
+export class EntitiesCache<Entity extends BaseEntity> {
 
-export class EntityCache<Entity> {
     /** List of items */
     private readonly _items: Map<number, Entity> = new Map();
 
-    constructor(protected _idField: string) { }
+    constructor() { }
 
     public getById(id: number): Entity | undefined {
         return this._items.get(id);
@@ -17,12 +19,12 @@ export class EntityCache<Entity> {
     public setItems(items: Entity[]): void {
         this._items.clear();
         for (const item of items) {
-            this._items.set((item as any)[this._idField], item);
+            this._items.set(item.id, item);
         }
     }
 
     public insert(item: Entity): void {
-        this._items.set((item as any)[this._idField], item);
+        this._items.set(item.id, item);
     }
 
     public delete(id: number): void {
@@ -31,8 +33,9 @@ export class EntityCache<Entity> {
 
 }
 
-export interface SQLCacheHandler<Tables extends TablesDefinition> {
+/** Gather caches for all tables */
+export interface EntitiesCacheHandler<Tables extends TablesDefinition> {
 
     /** Get or build an empty cache */
-    getCache<TableName extends keyof Tables>(tableName: TableName): SQLCache<Tables[TableName]>
+    getCache<TableName extends keyof Tables>(tableName: TableName): EntitiesCache<Tables[TableName]>
 }

@@ -1,6 +1,6 @@
+import { Data, TablesDefinition } from "@dagda/shared/entities/types";
 import { SQLAdapterAPI, SQL_URL } from "@dagda/shared/sql/api";
 import { SQLTransactionData } from "@dagda/shared/sql/transaction";
-import { Data, TablesDefinition } from "@dagda/shared/sql/types";
 import { Application } from "express";
 import { registerAPI } from "../api";
 import { AbstractSQLRunner, SQLConnection } from "./runner";

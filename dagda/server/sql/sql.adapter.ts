@@ -1,5 +1,6 @@
+import { asNamed } from "@dagda/shared/entities/named.types";
+import { BaseEntity, ForeignKeys, TablesDefinition } from "@dagda/shared/entities/types";
 import { OperationType, SQLTransactionData, SQLTransactionResult } from "@dagda/shared/sql/transaction";
-import { BaseDTO, ForeignKeys, TablesDefinition } from "@dagda/shared/sql/types";
 import { AbstractSQLRunner, SQLConnection, SQLValue, sqlValue } from "./runner";
 
 /** Transaction submit implementation for SQLite */
@@ -71,7 +72,7 @@ function _updateForeignKeys<Tables extends TablesDefinition, TableName extends k
     const tableForeignKeys = foreignKeys[table];
     for (const key in tableForeignKeys) {
         if (tableForeignKeys[key]) {
-            const temporaryId = item[key as keyof Tables[TableName]] as BaseDTO["id"];
+            const temporaryId = item[key as keyof Tables[TableName]] as BaseEntity["id"];
             if (temporaryId == null) {
                 continue;
             }
@@ -85,7 +86,7 @@ function _updateForeignKeys<Tables extends TablesDefinition, TableName extends k
  * Get id updated after insert. If id is positive, it is returned as-is.
  * @throws If id is negative and cannot be updated
  */
-function _getUpdatedId(result: SQLTransactionResult, id: BaseDTO["id"]): BaseDTO["id"] {
+function _getUpdatedId(result: SQLTransactionResult, id: BaseEntity["id"]): BaseEntity["id"] {
     if (id >= 0) {
         return id;
     } else {
@@ -93,7 +94,7 @@ function _getUpdatedId(result: SQLTransactionResult, id: BaseDTO["id"]): BaseDTO
         if (newId == null) {
             throw new Error(`Failed to update ${id}`);
         }
-        return result.updatedIds[id] ?? id;
+        return asNamed(result.updatedIds[id] ?? id);
     }
 }
 

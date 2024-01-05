@@ -1,5 +1,6 @@
-import { SQLCacheHandler } from "./cache";
-import { BaseDTO, TablesDefinition } from "./types";
+import { asNamed } from "entities/named.types";
+import { EntitiesCacheHandler } from "../entities/cache";
+import { BaseEntity, TablesDefinition } from "../entities/types";
 
 export enum OperationType {
     INSERT = 1,
@@ -14,13 +15,13 @@ export interface InsertOptions<TableName, DTO> {
 
 export interface UpdateOptions<TableName> {
     table: TableName;
-    id: BaseDTO["id"];
+    id: BaseEntity["id"];
     values: Record<string, unknown | null>;
 }
 
 export interface DeleteOptions<TableName> {
     table: TableName;
-    id: BaseDTO["id"];
+    id: BaseEntity["id"];
 }
 
 export type BaseOperation<OT extends OperationType, Options> = { type: OT, options: Options };
@@ -62,7 +63,7 @@ export class SQLTransaction<Tables extends TablesDefinition, Contexts> {
     /** List of operations performed */
     public readonly operations: SQLOperation<Tables, keyof Tables>[] = [];
 
-    constructor(protected _cacheHandler: SQLCacheHandler<Tables>, public readonly contexts: Contexts[]) { }
+    constructor(protected _cacheHandler: EntitiesCacheHandler<Tables>, public readonly contexts: Contexts[]) { }
 
     /** 
      * Insert an item in the database.
@@ -70,7 +71,7 @@ export class SQLTransaction<Tables extends TablesDefinition, Contexts> {
      */
     public insert<TableName extends keyof Tables>(table: TableName, item: Tables[TableName]): Tables[TableName] {
         // -- Perform the action on the cache --
-        item.id = SQLTransaction._getNextTemporaryId();
+        item.id = asNamed(SQLTransaction._getNextTemporaryId());
         this._cacheHandler.getCache(table).insert(item);
 
         // -- Store the operation --
@@ -115,7 +116,7 @@ export class SQLTransaction<Tables extends TablesDefinition, Contexts> {
             type: OperationType.DELETE,
             options: {
                 table,
-                id: id
+                id: asNamed(id)
             }
         });
     }

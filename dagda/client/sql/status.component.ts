@@ -1,5 +1,5 @@
-import { SQLEvents, SQLHandler } from "@dagda/shared/sql/handler";
-import { TablesDefinition } from "@dagda/shared/sql/types";
+import { EntitiesHandler } from "@dagda/shared/entities/handler";
+import { EntitiesEvents, TablesDefinition } from "@dagda/shared/entities/types";
 import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
 
 /** 
@@ -14,7 +14,7 @@ export class SQLStatusComponent<Tables extends TablesDefinition, Contexts> exten
     protected _refreshIcon: HTMLElement;
     protected _disconnectedIcon: HTMLElement;
 
-    constructor(handler: SQLHandler<Tables, Contexts>) {
+    constructor(handler: EntitiesHandler<Tables, Contexts>) {
         super();
         this.innerHTML = require("./status.component.html").default;
         this._downloadIcon = this.querySelector(`i[ref="downloadIcon"]`)!;
@@ -31,7 +31,7 @@ export class SQLStatusComponent<Tables extends TablesDefinition, Contexts> exten
         });
     }
 
-    protected _refresh(data: SQLEvents["state"]): void {
+    protected _refresh(data: EntitiesEvents["state"]): void {
         this._downloadIcon.classList.toggle("d-none", data.downloading === 0);
         this._uploadIcon.classList.toggle("d-none", data.uploading === 0);
         this._uploadCountSpan.classList.toggle("d-none", data.uploading < 2);

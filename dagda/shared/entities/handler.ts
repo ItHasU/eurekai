@@ -1,35 +1,12 @@
 import { Queue } from "@dagda/shared/tools/queue";
+import { OperationType, SQLTransaction } from "../sql/transaction";
 import { Event, EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "../tools/events";
 import { NotificationHelper } from "../tools/notification.helper";
-import { SQLCache, SQLCacheHandler } from "./cache";
+import { EntitiesCache, EntitiesCacheHandler } from "./cache";
 import { Named, asNamed } from "./named.types";
-import { OperationType, SQLTransaction } from "./transaction";
-import { ForeignKeys, SQLAdapter, TablesDefinition } from "./types";
+import { ContextEvents, EntitiesEvents, ForeignKeys, SQLAdapter, TablesDefinition } from "./types";
 
-export type SQLEvents = {
-    "state": {
-        /** 
-         * Is the handler currently loading data ?
-         * (ex: during loadTable()) 
-         */
-        downloading: number,
-        /**
-         * Is the handler currently sending data ?
-         * (ex: during submit())
-         */
-        uploading: number,
-        /**
-         * Is the cache dirty ?
-         * (ex: after an error or during a refresh)
-         */
-        dirty: boolean
-    }
-}
-
-export type ContextEvents<Contexts> = {
-    "contextChanged": Contexts[];
-};
-
+/** Internal structure to represent the current state of a context in the handler */
 interface ContextState<Contexts> {
     /** Loaded context */
     context: Contexts,
@@ -49,13 +26,13 @@ interface ContextState<Contexts> {
  * Utility class allowing to fetch data, store them in a cache and submit modifications.  
  * The cache can then be accessed through synchronous methods.
  */
-export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQLCacheHandler<Tables>, EventHandler<SQLEvents> {
+export class EntitiesHandler<Tables extends TablesDefinition, Contexts> implements EntitiesCacheHandler<Tables>, EventHandler<EntitiesEvents> {
 
     /** List of contexts loaded */
     protected _loadedContexts: ContextState<Contexts>[] = [];
 
     /** One cache per table */
-    protected _caches: { [TableName in keyof Tables]?: SQLCache<Tables[TableName]> } = {};
+    protected _caches: { [TableName in keyof Tables]?: EntitiesCache<Tables[TableName]> } = {};
 
     /** Current state of the temporary id counter */
     protected _nextId: number = 0;
@@ -74,22 +51,22 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
 
     //#region Events ----------------------------------------------------------
 
-    protected readonly _eventHandlerData: EventHandlerData<SQLEvents> = {};
+    protected readonly _eventHandlerData: EventHandlerData<EntitiesEvents> = {};
 
-    protected _state: SQLEvents["state"] = {
+    protected _state: EntitiesEvents["state"] = {
         downloading: 0,
         uploading: 0,
         dirty: false
     };
 
     /** @inheritdoc */
-    public on<EventName extends keyof SQLEvents>(eventName: EventName, listener: EventListener<SQLEvents[EventName]>): void {
+    public on<EventName extends keyof EntitiesEvents>(eventName: EventName, listener: EventListener<EntitiesEvents[EventName]>): void {
         // Call default implementation
         EventHandlerImpl.on(this._eventHandlerData, eventName, listener);
     }
 
     /** Utility method update the current state and fire an event */
-    protected _fireStateChanged(update: Partial<SQLEvents["state"]>): void {
+    protected _fireStateChanged(update: Partial<EntitiesEvents["state"]>): void {
         this._state = {
             // Keep previous state
             ...this._state,
@@ -144,10 +121,10 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
     }
 
     /** Get or build an empty cache */
-    public getCache<TableName extends keyof Tables>(tableName: TableName): SQLCache<Tables[TableName]> {
-        let cache: SQLCache<Tables[TableName]> | undefined = this._caches[tableName];
+    public getCache<TableName extends keyof Tables>(tableName: TableName): EntitiesCache<Tables[TableName]> {
+        let cache: EntitiesCache<Tables[TableName]> | undefined = this._caches[tableName];
         if (cache == null) {
-            this._caches[tableName] = cache = new SQLCache();
+            this._caches[tableName] = cache = new EntitiesCache();
         }
         return cache;
     }
@@ -290,7 +267,7 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
                             this._updateIds(op.options.table, op.options.values as any);
                             break;
                         case OperationType.DELETE:
-                            op.options.id = this.getUpdatedId(op.options.id)!;
+                            op.options.id = this.getUpdatedId(asNamed(op.options.id))!;
                             break;
                         default:
                             break;
@@ -390,7 +367,7 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
                     if (tmpId != null && tmpId < 0) {
                         if (item) {
                             // Update the id
-                            item[field] = this.getUpdatedId(tmpId) as any;
+                            item[field] = this.getUpdatedId(asNamed(tmpId)) as any;
                         }
                     }
                 }

@@ -1,4 +1,4 @@
-import { SQLAdapter, TablesDefinition } from "./types";
+import { SQLAdapter, TablesDefinition } from "../entities/types";
 
 export const SQL_URL = "sql";
 
