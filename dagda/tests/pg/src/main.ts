@@ -1,26 +1,9 @@
-import { PGTypeHandler } from "@dagda/shared/typings/impl/pg.handler";
-import { JSTypes } from "@dagda/shared/typings/javascript.types";
-import { asNamed } from "@dagda/shared/typings/named.types";
+import { JSTypes } from "@dagda/shared/entities/javascript.types";
+import { EntitiesModel } from "@dagda/shared/entities/model";
+import { asNamed } from "@dagda/shared/entities/named.types";
 
-export enum ComputationStatus {
-    NOT_STARTED = 0,
-    IN_PROGRESS = 1,
-    DONE = 2,
-    ERROR = 3
-}
-
-const APP_TYPES = new PGTypeHandler({
+const APP_TYPES = new EntitiesModel({
     "PROJECT_ID": {
-        rawType: JSTypes.number,
-        dbType: JSTypes.number,
-        dbTypeName: "INTEGER"
-    },
-    "PROMPT_ID": {
-        rawType: JSTypes.number,
-        dbType: JSTypes.number,
-        dbTypeName: "INTEGER"
-    },
-    "IMAGE_ID": {
         rawType: JSTypes.number,
         dbType: JSTypes.number,
         dbTypeName: "INTEGER"
@@ -34,37 +17,11 @@ const APP_TYPES = new PGTypeHandler({
         rawType: JSTypes.boolean,
         dbType: JSTypes.boolean,
         dbTypeName: "BOOLEAN"
-    },
-    "SEED": PGTypeHandler.type({
-        rawType: JSTypes.number,
-        dbType: JSTypes.string,
-        dbTypeName: "BIGINT",
-        store: (v: number) => String(v),
-        restore: (v: string) => parseInt(v)
-    }),
-    "COMPUTATION_STATUS": PGTypeHandler.type<ComputationStatus, JSTypes.custom, JSTypes.number, "SMALLINT">({
-        rawType: JSTypes.custom,
-        dbType: JSTypes.number,
-        dbTypeName: "SMALLINT",
-        store: (v: ComputationStatus) => v,
-        restore: (v: number) => v as ComputationStatus
-    })
+    }
 }, {
     projects: {
         id: { type: "PROJECT_ID", identity: true },
         name: { type: "TEXT" }
-    },
-    prompts: {
-        id: { type: "PROMPT_ID", identity: true },
-        projectId: { type: "PROJECT_ID", foreignTable: "projects" },
-        prompt: { type: "TEXT" },
-        negativePrompt: { type: "TEXT", optional: true }
-    },
-    images: {
-        id: { type: "IMAGE_ID", identity: true },
-        promptId: { type: "PROMPT_ID", foreignTable: "prompts" },
-        seed: { type: "SEED" },
-        status: { type: "COMPUTATION_STATUS" },
     }
 });
 

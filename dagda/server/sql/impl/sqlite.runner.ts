@@ -1,4 +1,3 @@
-import { ForeignKeys, TablesDefinition } from "@dagda/shared/sql/types";
 import { WorkerRequest, WorkerResponse } from "@dagda/shared/sql/worker";
 import { Worker } from "node:worker_threads";
 import { AbstractSQLRunner, BaseRow, SQLConnection, SQLValue } from "../runner";
@@ -120,10 +119,10 @@ export class SQLiteConnection implements SQLConnection {
 }
 
 /** Helper for SQLite database */
-export class SQLiteRunner<Tables extends TablesDefinition> extends AbstractSQLRunner<Tables, SQLiteConnection> {
+export class SQLiteRunner extends AbstractSQLRunner<SQLiteConnection> {
 
-    constructor(foreignKeys: ForeignKeys<Tables>, protected _filename: string) {
-        super(foreignKeys);
+    constructor(protected _filename: string) {
+        super();
     }
 
     //#region Implementation of AbstractSQLRunner -----------------------------
@@ -138,11 +137,6 @@ export class SQLiteRunner<Tables extends TablesDefinition> extends AbstractSQLRu
     public override releaseConnection(connection: SQLiteConnection): Promise<void> {
         // Release the connection
         return connection.terminate();
-    }
-
-    /** @inheritdoc */
-    protected override _getIDFieldType(): string {
-        return "INTEGER PRIMARY KEY AUTOINCREMENT";
     }
 
     //#endregion

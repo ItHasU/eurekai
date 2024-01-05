@@ -11,7 +11,7 @@ import { resolve } from "node:path";
 import { DiffusersRegistry } from "src/diffusers";
 
 /** Initialize an Express app and register the routes */
-export async function initHTTPServer(db: AbstractSQLRunner<AppTables>, port: number): Promise<void> {
+export async function initHTTPServer(db: AbstractSQLRunner, port: number): Promise<void> {
     const app = express();
     app.use(express.json());
 
@@ -60,7 +60,7 @@ export async function initHTTPServer(db: AbstractSQLRunner<AppTables>, port: num
  * Fetch function for the app.  
  * This function must return the records that match the filter
  */
-export async function sqlFetch(helper: AbstractSQLRunner<AppTables>, filter: AppContexts): Promise<Data<AppTables>> {
+export async function sqlFetch(helper: AbstractSQLRunner, filter: AppContexts): Promise<Data<AppTables>> {
     switch (filter.type) {
         case "projects":
             return {

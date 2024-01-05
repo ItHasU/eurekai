@@ -3,7 +3,7 @@ import { BaseDTO, ForeignKeys, TablesDefinition } from "@dagda/shared/sql/types"
 import { AbstractSQLRunner, SQLConnection, SQLValue, sqlValue } from "./runner";
 
 /** Transaction submit implementation for SQLite */
-export function submit<Tables extends TablesDefinition, Contexts>(runner: AbstractSQLRunner<Tables, SQLConnection>, transactionData: SQLTransactionData<Tables, Contexts>): Promise<SQLTransactionResult> {
+export function submit<Tables extends TablesDefinition, Contexts>(runner: AbstractSQLRunner<SQLConnection>, transactionData: SQLTransactionData<Tables, Contexts>): Promise<SQLTransactionResult> {
     return runner.withTransaction(async (connection: SQLConnection) => {
         const result: SQLTransactionResult = {
             updatedIds: {}
@@ -11,7 +11,7 @@ export function submit<Tables extends TablesDefinition, Contexts>(runner: Abstra
         for (const operation of transactionData.operations) {
             switch (operation.type) {
                 case OperationType.INSERT: {
-                    _updateForeignKeys(runner.foreignKeys, result, operation.options.table, operation.options.item);
+                    // _updateForeignKeys(runner.foreignKeys, result, operation.options.table, operation.options.item);
                     const columnNames = [];
                     const values: SQLValue[] = [];
                     for (const key in operation.options.item) {
@@ -31,7 +31,7 @@ export function submit<Tables extends TablesDefinition, Contexts>(runner: Abstra
                     break;
                 }
                 case OperationType.UPDATE: {
-                    _updateForeignKeys(runner.foreignKeys, result, operation.options.table, operation.options.values as any);
+                    // _updateForeignKeys(runner.foreignKeys, result, operation.options.table, operation.options.values as any);
                     const columnNameEqualValues = [];
                     const values: SQLValue[] = [];
                     let paramIndex = 1;

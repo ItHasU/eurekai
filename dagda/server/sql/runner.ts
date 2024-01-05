@@ -1,5 +1,3 @@
-import { ForeignKeys, TablesDefinition } from "@dagda/shared/sql/types";
-
 /** Values accepted by SQLite */
 export type SQLValue = boolean | number | string | BigInt | Buffer | null;
 
@@ -73,14 +71,9 @@ export interface SQLConnection {
 /**
  * Abstract class for a pool of SQL connections.
  */
-export abstract class AbstractSQLRunner<Tables extends TablesDefinition, C extends SQLConnection = SQLConnection> implements SQLConnection {
+export abstract class AbstractSQLRunner<C extends SQLConnection = SQLConnection> implements SQLConnection {
 
-    constructor(protected _foreignKeys: ForeignKeys<Tables>) { }
-
-    /** The foreign keys */
-    public get foreignKeys(): ForeignKeys<Tables> {
-        return this._foreignKeys;
-    }
+    constructor() { }
 
     //#region Reserved connections --------------------------------------------
 
@@ -116,52 +109,6 @@ export abstract class AbstractSQLRunner<Tables extends TablesDefinition, C exten
                 throw e;
             }
         });
-    }
-
-    //#endregion
-
-    //#region Table creation --------------------------------------------------
-
-    protected abstract _getIDFieldType(): string;
-
-    public async initTable<TN extends keyof Tables, T extends Tables[TN] = Tables[TN]>(
-        tableName: TN,
-        fieldTypes: { [fields in keyof Required<Omit<T, "id">>]: string }): Promise<void> {
-        // -- Add id field --
-        const fieldTypesFull: { [fields in keyof Required<T>]: string } = {
-            "id": this._getIDFieldType(),
-            ...fieldTypes
-        } as { [fields in keyof Required<T>]: string };
-
-        await this.withTransaction(async (connection: SQLConnection) => {
-            try {
-                await this._createTableIfNeeded(connection, tableName, fieldTypesFull);
-            } catch (e) {
-                // Ignore error
-                console.log(`Table ${tableName as string} may already exists`);
-                console.error(e);
-            }
-        });
-        await this.withTransaction(async (connection: SQLConnection) => {
-            for (const fieldName in fieldTypesFull) {
-                try {
-                    await this._createFieldIfNeeded(connection, tableName, fieldName as keyof Required<T>, fieldTypesFull[fieldName]);
-                } catch (e) {
-                    // We don't care if the request fails, there is no IF NOT EXISTS for column creation
-                    console.log(`Field ${tableName as string}.${fieldName} may already exists`);
-                    console.error(e);
-                }
-            }
-        });
-    }
-
-    protected _createTableIfNeeded<TN extends keyof Tables, T extends Tables[TN] = Tables[TN]>(connection: SQLConnection, tableName: TN, fieldTypes: { [fields in keyof Required<T>]: string }): Promise<void> {
-        return connection.run(`CREATE TABLE IF NOT EXISTS ${tableName as string} (${Object.entries(fieldTypes).map(([fieldName, fieldType]) => `"${fieldName}" ${fieldType}`).join(", ")});`);
-    }
-
-    /** @returns true if column was created */
-    protected _createFieldIfNeeded<TN extends keyof Tables, T extends Tables[TN] = Tables[TN]>(connection: SQLConnection, tableName: TN, fieldName: keyof Required<T>, fieldType: string): Promise<boolean> {
-        return connection.run(`ALTER TABLE ${tableName as string} ADD COLUMN "${fieldName as string}" ${fieldType};`).catch(() => false).then(() => true);
     }
 
     //#endregion

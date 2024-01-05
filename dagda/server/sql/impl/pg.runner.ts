@@ -1,4 +1,3 @@
-import { ForeignKeys, TablesDefinition } from "@dagda/shared/sql/types";
 import { Client, Pool, PoolClient } from "pg";
 import { AbstractSQLRunner, BaseRow, SQLConnection, SQLValue } from "../runner";
 
@@ -78,12 +77,12 @@ export class PGConnection implements SQLConnection {
 }
 
 /** PostgreSQL pool handler */
-export class PGRunner<Tables extends TablesDefinition> extends AbstractSQLRunner<Tables, PGConnection> {
+export class PGRunner extends AbstractSQLRunner<PGConnection> {
 
     protected readonly _pool: Pool;
 
-    constructor(foreignKeys: ForeignKeys<Tables>, connectionString: string) {
-        super(foreignKeys);
+    constructor(connectionString: string) {
+        super();
         this._pool = new Pool({ connectionString });
     }
 
@@ -101,11 +100,6 @@ export class PGRunner<Tables extends TablesDefinition> extends AbstractSQLRunner
             poolClient.release();
         }
         return Promise.resolve();
-    }
-
-    /** @inheritdoc */
-    protected override _getIDFieldType(): string {
-        return "SERIAL";
     }
 
 }

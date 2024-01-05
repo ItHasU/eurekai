@@ -2,6 +2,7 @@ import { Queue } from "@dagda/shared/tools/queue";
 import { Event, EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "../tools/events";
 import { NotificationHelper } from "../tools/notification.helper";
 import { SQLCache, SQLCacheHandler } from "./cache";
+import { Named, asNamed } from "./named.types";
 import { OperationType, SQLTransaction } from "./transaction";
 import { ForeignKeys, SQLAdapter, TablesDefinition } from "./types";
 
@@ -342,15 +343,15 @@ export class SQLHandler<Tables extends TablesDefinition, Contexts> implements SQ
      * This function compare ids and temporary ids.
      * There is no verification if the ids are from the same table.
      */
-    public isSameId(id1: number | null | undefined, id2: number | null | undefined): boolean {
+    public isSameId<N extends string>(id1: Named<N, number> | null | undefined, id2: Named<N, number> | null | undefined): boolean {
         return this.getUpdatedId(id1) == this.getUpdatedId(id2);
     }
 
-    public getUpdatedId(id: number | null | undefined): number | null | undefined {
+    public getUpdatedId<N extends string>(id: Named<N, number> | null | undefined): Named<N, number> | null | undefined {
         if (id == null) {
             return null;
         } else {
-            return this._updatedIds[id] ?? id;
+            return asNamed<N, number>(this._updatedIds[id] ?? id);
         }
     }
 
