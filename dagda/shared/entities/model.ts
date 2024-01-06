@@ -31,7 +31,7 @@ export type IdFieldDefinition<Types, Tables> = {
 };
 
 export type TypeDefinitions = Record<string, TypeDefinition<JSTypes, any>>;
-export type TableDefinitions<Types, Tables> = Record<keyof Tables, {
+export type FieldDefinitions<Types, Tables> = Record<keyof Tables, {
     id: IdFieldDefinition<Types, Tables>;
     [key: string]: FieldDefinition<Types, Tables>;
 }>
@@ -45,7 +45,7 @@ export type TableDefinitions<Types, Tables> = Record<keyof Tables, {
  */
 export class EntitiesModel<
     Types extends TypeDefinitions,
-    Tables extends TableDefinitions<Types, Tables>
+    Tables extends FieldDefinitions<Types, Tables>
 > {
 
     /**
@@ -54,7 +54,6 @@ export class EntitiesModel<
      * @param _tables The map of tables used in the application
      */
     constructor(protected readonly _types: Types, protected readonly _tables: Tables) {
-        this._validate();
     }
 
     //#region Utility methods
@@ -68,12 +67,16 @@ export class EntitiesModel<
 
     //#region Typing methods, to be used with typeof
 
+    public get typeNames(): keyof Types {
+        return undefined as any;
+    }
+
     public get types(): { [K in keyof Types]: NamedType<K, Types[K]> } {
         return undefined as any;
     }
 
     /** Use this property with typeof to get the list */
-    public get tablenames(): keyof Tables {
+    public get tableNames(): keyof Tables {
         return undefined as any;
     }
 
@@ -100,8 +103,8 @@ export class EntitiesModel<
         return Object.keys(this._tables[tableName]);
     }
 
-    public getFieldType<T extends keyof Tables, F extends keyof Tables[T]>(tableName: T, fieldName: F): Types[Tables[T][F]["type"]] {
-        return this._types[this._tables[tableName][fieldName]["type"]];
+    public getFieldTypeName<T extends keyof Tables, F extends keyof Tables[T]>(tableName: T, fieldName: F): Tables[T][F]["type"] {
+        return this._tables[tableName][fieldName]["type"];
     }
 
     public isFieldIdentity<T extends keyof Tables, F extends keyof Tables[T]>(tableName: T, fieldName: F): boolean {
@@ -147,7 +150,7 @@ export class EntitiesModel<
      * Validate the model 
      * @throws if the model is invalid
      */
-    protected _validate(): void {
+    public validate(): void {
         for (const type of this.getTypeNames()) {
             this._validateType(type);
         }

@@ -1,7 +1,7 @@
-import { Queue } from "@dagda/shared/tools/queue";
 import { OperationType, SQLTransaction } from "../sql/transaction";
 import { Event, EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "../tools/events";
 import { NotificationHelper } from "../tools/notification.helper";
+import { Queue } from "../tools/queue";
 import { EntitiesCache, EntitiesCacheHandler } from "./cache";
 import { EntitiesModel } from "./model";
 import { Named, asNamed } from "./named.types";
@@ -312,6 +312,15 @@ export class EntitiesHandler<Tables extends TablesDefinition, Contexts> implemen
         }
     }
 
+    /** Wait that all queued submitted transactions have been handled */
+    public waitForSubmit(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            this._submitQueue.run(() => {
+                resolve();
+                return Promise.resolve();
+            });
+        });
+    }
     //#endregion
 
     //#region Id handling -----------------------------------------------------

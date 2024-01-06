@@ -9,9 +9,11 @@
     "clean-all": "rimraf -g apps/*/dist **/.tsc-build **/node_modules"
   },
   "devDependencies": {
+    "@types/mocha": "^10.0.6",
     "css-loader": "^6.7.3",
     "html-loader": "^4.2.0",
     "html-webpack-plugin": "^5.5.1",
+    "mocha": "^10.2.0",
     "rimraf": "^5.0.0",
     "style-loader": "^3.3.2",
     "ts-loader": "^9.4.2",

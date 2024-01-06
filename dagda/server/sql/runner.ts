@@ -1,4 +1,4 @@
-import { EntitiesModel, TableDefinitions, TypeDefinitions } from "@dagda/shared/entities/model";
+import { EntitiesModel, FieldDefinitions, TypeDefinitions } from "@dagda/shared/entities/model";
 
 /** Values accepted by SQLite */
 export type SQLValue = boolean | number | string | BigInt | Buffer | null;
@@ -73,7 +73,7 @@ export interface SQLConnection {
 /**
  * Abstract class for a pool of SQL connections.
  */
-export abstract class AbstractSQLRunner<Types extends TypeDefinitions, Tables extends TableDefinitions<Types, Tables>, C extends SQLConnection = SQLConnection> implements SQLConnection {
+export abstract class AbstractSQLRunner<Types extends TypeDefinitions, Tables extends FieldDefinitions<Types, Tables>, C extends SQLConnection = SQLConnection> implements SQLConnection {
 
     constructor(protected _modelProvider: () => EntitiesModel<Types, Tables>) { }
 

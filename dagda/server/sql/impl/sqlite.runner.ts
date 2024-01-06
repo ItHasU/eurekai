@@ -1,4 +1,4 @@
-import { EntitiesModel, TableDefinitions, TypeDefinitions } from "@dagda/shared/entities/model";
+import { EntitiesModel, FieldDefinitions, TypeDefinitions } from "@dagda/shared/entities/model";
 import { WorkerRequest, WorkerResponse } from "@dagda/shared/sql/worker";
 import { Worker } from "node:worker_threads";
 import { AbstractSQLRunner, BaseRow, SQLConnection, SQLValue } from "../runner";
@@ -120,7 +120,7 @@ export class SQLiteConnection implements SQLConnection {
 }
 
 /** Helper for SQLite database */
-export class SQLiteRunner<Types extends TypeDefinitions, Tables extends TableDefinitions<Types, Tables>> extends AbstractSQLRunner<Types, Tables, SQLiteConnection> {
+export class SQLiteRunner<Types extends TypeDefinitions, Tables extends FieldDefinitions<Types, Tables>> extends AbstractSQLRunner<Types, Tables, SQLiteConnection> {
 
     constructor(modelProvider: () => EntitiesModel<Types, Tables>, protected _filename: string) {
         super(modelProvider);
