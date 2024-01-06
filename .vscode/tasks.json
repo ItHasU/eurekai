@@ -10,7 +10,6 @@
 			"dependsOrder": "parallel",
 			"dependsOn": [
 				"Watch server",
-				"Watch worker",
 				"Watch client"
 			]
 		},
@@ -26,6 +25,17 @@
 			]
 		},
 		{
+			"label": "Watch client",
+			"detail": "webpack - apps/client",
+			"type": "npm",
+			"script": "w",
+			"path": "apps/client",
+			"group": "build",
+			"problemMatcher": [
+				"$tsc"
+			],
+		},
+		{
 			"label": "Watch worker",
 			"detail": "webpack - worker db",
 			"type": "npm",
@@ -37,15 +47,15 @@
 			]
 		},
 		{
-			"label": "Watch client",
-			"detail": "webpack - apps/client",
+			"label": "Watch tests",
+			"detail": "webpack - tests",
 			"type": "npm",
 			"script": "w",
-			"path": "apps/client",
+			"path": "dagda/shared",
 			"group": "build",
 			"problemMatcher": [
 				"$tsc"
-			],
+			]
 		},
 		{
 			"label": "Watch test pg",
