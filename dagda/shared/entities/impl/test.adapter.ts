@@ -1,4 +1,5 @@
 import { OperationType, SQLTransactionData } from "../../sql/transaction";
+import { _updateForeignKeys } from "../handler";
 import { EntitiesModel } from "../model";
 import { Data, SQLAdapter, SQLTransactionResult, TablesDefinition } from "../types";
 
@@ -63,22 +64,29 @@ export class TestSQLAdapter<Tables extends TablesDefinition> implements SQLAdapt
     }
 
     public submit(transactionData: SQLTransactionData<Tables, EntityContext<keyof Tables>>): Promise<SQLTransactionResult> {
-        const updatedIds: { [temporaryId: number]: number } = {};
+        const result: SQLTransactionResult = {
+            updatedIds: {}
+        };
+        const foreignKeys = this._model.getForeignKeys() as any;
         for (const operation of transactionData.operations) {
             switch (operation.type) {
                 case OperationType.INSERT:
+                    _updateForeignKeys(foreignKeys, result, operation.options.table, operation.options.item);
+
                     // Clone the item and generate a new id
                     const entity = {
                         ...operation.options.item,
                         id: ++this._lastId
                     };
-                    updatedIds[operation.options.item.id] = entity.id;
+                    result.updatedIds[operation.options.item.id] = entity.id;
                     // Save the new item in the repository
                     const repository = this._repositories[operation.options.table] ?? [];
                     repository.push(entity);
                     this._repositories[operation.options.table] = repository;
                     break;
                 case OperationType.UPDATE:
+                    _updateForeignKeys<Tables, keyof Tables>(foreignKeys, result, operation.options.table, operation.options.values as any);
+
                     // Find the item in the repository
                     const repositoryToUpdate = this._repositories[operation.options.table];
                     if (!repositoryToUpdate) {
@@ -109,8 +117,6 @@ export class TestSQLAdapter<Tables extends TablesDefinition> implements SQLAdapt
                     break;
             }
         }
-        return Promise.resolve({
-            updatedIds: updatedIds
-        });
+        return Promise.resolve(result);
     }
 }

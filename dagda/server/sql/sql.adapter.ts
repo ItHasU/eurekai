@@ -1,5 +1,5 @@
-import { asNamed } from "@dagda/shared/entities/named.types";
-import { BaseEntity, ForeignKeys, TablesDefinition } from "@dagda/shared/entities/types";
+import { _getUpdatedId, _updateForeignKeys } from "@dagda/shared/entities/handler";
+import { TablesDefinition } from "@dagda/shared/entities/types";
 import { OperationType, SQLTransactionData, SQLTransactionResult } from "@dagda/shared/sql/transaction";
 import { AbstractSQLRunner, SQLConnection, SQLValue, sqlValue } from "./runner";
 
@@ -9,8 +9,8 @@ export function submit<Tables extends TablesDefinition, Contexts>(runner: Abstra
         const result: SQLTransactionResult = {
             updatedIds: {}
         }
+        const foreignKeys = runner.model.getForeignKeys() as any;
         for (const operation of transactionData.operations) {
-            const foreignKeys = runner.model.getForeignKeys() as any;
             switch (operation.type) {
                 case OperationType.INSERT: {
                     _updateForeignKeys(foreignKeys, result, operation.options.table, operation.options.item);
@@ -62,41 +62,3 @@ export function submit<Tables extends TablesDefinition, Contexts>(runner: Abstra
         return result;
     });
 }
-
-//#region Foreign keys tools --------------------------------------------------
-
-/** 
- * Update item's foreign keys to new uids.
- * @throws If id cannot be updated.
- */
-function _updateForeignKeys<Tables extends TablesDefinition, TableName extends keyof Tables>(foreignKeys: ForeignKeys<Tables>, result: SQLTransactionResult, table: TableName, item: Tables[TableName]): void {
-    const tableForeignKeys = foreignKeys[table];
-    for (const key in tableForeignKeys) {
-        if (tableForeignKeys[key]) {
-            const temporaryId = item[key as keyof Tables[TableName]] as BaseEntity["id"];
-            if (temporaryId == null) {
-                continue;
-            }
-            const newId = _getUpdatedId(result, temporaryId);
-            item[key as keyof Tables[TableName]] = newId as Tables[TableName][keyof Tables[TableName]];
-        }
-    }
-}
-
-/** 
- * Get id updated after insert. If id is positive, it is returned as-is.
- * @throws If id is negative and cannot be updated
- */
-function _getUpdatedId(result: SQLTransactionResult, id: BaseEntity["id"]): BaseEntity["id"] {
-    if (id >= 0) {
-        return id;
-    } else {
-        const newId = result.updatedIds[id] ?? id;
-        if (newId == null) {
-            throw new Error(`Failed to update ${id}`);
-        }
-        return asNamed(result.updatedIds[id] ?? id);
-    }
-}
-
-//#endregion

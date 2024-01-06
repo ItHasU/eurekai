@@ -3,7 +3,7 @@ import { describe } from "mocha";
 import { PublicationStatus, TEST_MODEL } from "./_data.spec";
 import { EntitiesHandler } from "./handler";
 import { EntityContext, TestSQLAdapter } from "./impl/test.adapter";
-import { Named, asNamed } from "./named.types";
+import { asNamed } from "./named.types";
 
 describe("EntitiesHandler", () => {
     type Tables = typeof TEST_MODEL.tables;
@@ -56,7 +56,6 @@ describe("EntitiesHandler", () => {
         const handler = new EntitiesHandler<Tables, EntityContext<keyof Tables>>(TEST_MODEL, adapter);
 
         // -- Insert an user and its first post -------------------------------
-        let user1TmpId: Named<"USER_ID", number> = asNamed(0);
         await handler.withTransaction((tr) => {
             const user1: Tables["users"] = {
                 id: asNamed(0),
@@ -65,10 +64,7 @@ describe("EntitiesHandler", () => {
                 age: asNamed(42)
             };
             tr.insert("users", user1);
-            user1TmpId = user1.id;
-        });
-
-        await handler.withTransaction((tr) => {
+            const user1TmpId = user1.id;
             const post1: Tables["posts"] = {
                 id: asNamed(0),
                 author: user1TmpId, // Here we use the temporary id of the author
@@ -80,13 +76,13 @@ describe("EntitiesHandler", () => {
         });
         await handler.waitForSubmit();
 
-        const user1 = handler.getCache("users").getItems()[0];
-        const post1 = handler.getCache("posts").getItems()[0];
+        const user1 = handler.getCache("users").getById(1);
+        const post1 = handler.getCache("posts").getById(2);
 
-        // Make sure the ids were updated
-        assert.equal(user1.id, 1, "The id should have been updated");
+        assert.ok(user1, "The user should have been inserted");
+        assert.ok(post1, "The post should have been inserted");
 
-        assert.equal(post1.id, 2, "The id should have been updated");
+        // Make sure the related ids were updated
         assert.equal(post1.author, 1, "The related id should have been updated");
 
         // -- Fetch --

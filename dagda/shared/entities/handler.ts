@@ -5,7 +5,7 @@ import { Queue } from "../tools/queue";
 import { EntitiesCache, EntitiesCacheHandler } from "./cache";
 import { EntitiesModel } from "./model";
 import { Named, asNamed } from "./named.types";
-import { ContextEvents, EntitiesEvents, SQLAdapter, TablesDefinition } from "./types";
+import { BaseEntity, ContextEvents, EntitiesEvents, ForeignKeys, SQLAdapter, SQLTransactionResult, TablesDefinition } from "./types";
 
 /** Internal structure to represent the current state of a context in the handler */
 interface ContextState<Contexts> {
@@ -259,10 +259,14 @@ export class EntitiesHandler<Tables extends TablesDefinition, Contexts> implemen
         try {
             await this._submitQueue.run(async () => {
                 // -- Make sure to update the ids before sending --
+                // This is only for ids that were updated during previous
+                // transactions as the server does not has the corresponding ids.
                 for (const op of transaction.operations) {
                     switch (op.type) {
                         case OperationType.INSERT:
-                            this._updateIds(op.options.table, op.options.item, { skipId: true });
+                            this._updateIds(op.options.table, op.options.item, {
+                                skipId: true // We don't want to update the id yet
+                            });
                             break;
                         case OperationType.UPDATE:
                             this._updateIds(op.options.table, op.options.values as any);
@@ -296,7 +300,11 @@ export class EntitiesHandler<Tables extends TablesDefinition, Contexts> implemen
                 for (const op of transaction.operations) {
                     switch (op.type) {
                         case OperationType.INSERT:
-                            this._updateIds(op.options.table, op.options.item);
+                            const item = this.getCache(op.options.table).getById(op.options.item.id);
+                            if (item) {
+                                // Update the real item, not the cloned item
+                                this._updateIds(op.options.table, item);
+                            }
                             break;
                         default:
                             break;
@@ -370,9 +378,8 @@ export class EntitiesHandler<Tables extends TablesDefinition, Contexts> implemen
                     }
                 }
             } else {
-                const foreignKeys = this._model.getForeignKeys();
-                const foreignTable: boolean = (foreignKeys as any)[field];
-                if (foreignTable) {
+                const isForeignKey = this._model.isFieldForeign(table, field);
+                if (isForeignKey) {
                     const tmpId = item[field] as number | null | undefined;
                     if (tmpId != null && tmpId < 0) {
                         if (item) {
@@ -387,3 +394,42 @@ export class EntitiesHandler<Tables extends TablesDefinition, Contexts> implemen
 
     //#endregion
 }
+
+
+//#region Foreign keys tools --------------------------------------------------
+
+/** 
+ * Update item's foreign keys to new uids.
+ * @throws If id cannot be updated.
+ */
+export function _updateForeignKeys<Tables extends TablesDefinition, TableName extends keyof Tables>(foreignKeys: ForeignKeys<Tables>, result: SQLTransactionResult, table: TableName, item: Tables[TableName]): void {
+    const tableForeignKeys = foreignKeys[table];
+    for (const key in tableForeignKeys) {
+        if (tableForeignKeys[key]) {
+            const temporaryId = item[key as keyof Tables[TableName]] as BaseEntity["id"];
+            if (temporaryId == null) {
+                continue;
+            }
+            const newId = _getUpdatedId(result, temporaryId);
+            item[key as keyof Tables[TableName]] = newId as Tables[TableName][keyof Tables[TableName]];
+        }
+    }
+}
+
+/** 
+ * Get id updated after insert. If id is positive, it is returned as-is.
+ * @throws If id is negative and cannot be updated
+ */
+export function _getUpdatedId(result: SQLTransactionResult, id: BaseEntity["id"]): BaseEntity["id"] {
+    if (id >= 0) {
+        return id;
+    } else {
+        const newId = result.updatedIds[id] ?? id;
+        if (newId == null) {
+            throw new Error(`Failed to update ${id}`);
+        }
+        return asNamed(result.updatedIds[id] ?? id);
+    }
+}
+
+//#endregion
