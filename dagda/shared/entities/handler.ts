@@ -134,6 +134,13 @@ export class EntitiesHandler<Tables extends TablesDefinition, Contexts> implemen
     public async fetch(...contextsToLoad: Contexts[]): Promise<void> {
         this._fireStateChanged({ downloading: this._state.downloading + 1 });
         try {
+            // -- If all dirty, reset caches --
+            let allDirty = !this._loadedContexts.find(c => c.dirty === false);
+            if (allDirty) {
+                this._caches = {};
+                this._loadedContexts = [];
+            }
+
             // -- Make a list of contexts to fetch --
             const contextsToFetch: Set<Contexts> = new Set();
             const statesToMarkActiveAndNotDirty: Set<ContextState<Contexts>> = new Set();
@@ -299,13 +306,22 @@ export class EntitiesHandler<Tables extends TablesDefinition, Contexts> implemen
                 // -- Update local items --
                 for (const op of transaction.operations) {
                     switch (op.type) {
-                        case OperationType.INSERT:
+                        case OperationType.INSERT: {
                             const item = this.getCache(op.options.table).getById(op.options.item.id);
                             if (item) {
                                 // Update the real item, not the cloned item
                                 this._updateIds(op.options.table, item);
                             }
                             break;
+                        }
+                        case OperationType.UPDATE: {
+                            const item = this.getCache(op.options.table).getById(op.options.id);
+                            if (item) {
+                                // Update the real item, not the cloned item
+                                this._updateIds(op.options.table, item);
+                            }
+                            break;
+                        }
                         default:
                             break;
                     }

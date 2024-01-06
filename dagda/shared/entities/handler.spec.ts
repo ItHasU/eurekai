@@ -44,7 +44,7 @@ describe("EntitiesHandler", () => {
         // -- Fetch --
         // Force a refresh
         handler.markCacheDirty();
-        handler.fetch({ table: "users" });
+        await handler.fetch({ table: "users" });
 
         // -- Check --
         const users = handler.getCache("users").getItems();
@@ -85,16 +85,35 @@ describe("EntitiesHandler", () => {
         // Make sure the related ids were updated
         assert.equal(post1.author, 1, "The related id should have been updated");
 
+        // -- Update the post with a newly inserted user ----------------------
+        await handler.withTransaction((tr) => {
+            const user2: Tables["users"] = {
+                id: asNamed(0),
+                name: asNamed("Jane"),
+                surname: asNamed("Doe"),
+                age: null // It is not polite to ask a lady her age
+            };
+            tr.insert("users", user2);
+            tr.update("posts", post1, { author: user2.id });
+        });
+        await handler.waitForSubmit();
+
+        const user2 = handler.getCache("users").getById(3);
+        assert.ok(user2, "The user should have been inserted");
+
+        // Make sure the related ids were updated
+        assert.equal(post1.author, 3, "The related id should have been updated");
+
         // -- Fetch --
         // Force a refresh
         handler.markCacheDirty();
-        handler.fetch({ table: "users", id: 1 });
+        await handler.fetch({ table: "users", id: 1 });
 
         // -- Check --
         const users = handler.getCache("users").getItems();
-        assert.equal(users.length, 1, "There should be one users");
+        assert.equal(users.length, 1, "There should be one users as we only fetched one");
         const posts = handler.getCache("posts").getItems();
-        assert.equal(posts.length, 1, "There should be one posts");
+        assert.equal(posts.length, 0, "There should be no post since we reassigned the author");
     });
 
 });
