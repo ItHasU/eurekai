@@ -8,10 +8,9 @@ export function buildAPIRouter<Methods extends BaseMethods>(api: Methods): Route
     const router: Router = Router();
 
     router.post("/:method", async (req, res) => {
+        const methodName: keyof Methods = req.params.method;
+        const args: any[] = req.body ?? [];
         try {
-            const methodName: keyof Methods = req.params.method;
-            const args: any[] = req.body ?? [];
-            console.debug(`Calling ${methodName as string} with args: ${JSON.stringify(args)}`);
             const method = api[methodName];
             if (method == null) {
                 res.status(404).json({ error: `No method named ${methodName as string}()` });
@@ -24,6 +23,7 @@ export function buildAPIRouter<Methods extends BaseMethods>(api: Methods): Route
                 res.json(result ?? null);
             }
         } catch (err) {
+            console.error(`Error while calling ${methodName as string} with args: ${JSON.stringify(args)}`);
             console.error(err);
             res.status(500).json({ error: new String(err) });
         }

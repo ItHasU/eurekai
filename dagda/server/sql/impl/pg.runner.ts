@@ -65,7 +65,6 @@ export class PGConnection implements SQLConnection {
 
     /** @inheritdoc */
     public async run(query: string, ...params: SQLValue[]): Promise<void> {
-        console.debug("pg.run()", query, params);
         try {
             await this.client.query(query, params);
         } catch (error) {
