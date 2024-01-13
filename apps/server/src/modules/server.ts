@@ -1,4 +1,5 @@
 import { registerAPI } from "@dagda/server/api";
+import { AuthHandler } from "@dagda/server/express/auth";
 import { registerAdapterAPI } from "@dagda/server/sql/api.adapter";
 import { AbstractSQLRunner } from "@dagda/server/sql/runner";
 import { ServerNotificationImpl } from "@dagda/server/tools/notification.impl";
@@ -9,10 +10,27 @@ import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api
 import express, { Application } from "express";
 import { resolve } from "node:path";
 import { DiffusersRegistry } from "src/diffusers";
+const GoogleStrategy = require('passport-google-oidc');
 
 /** Initialize an Express app and register the routes */
 export async function initHTTPServer(db: AbstractSQLRunner<any, any>, port: number): Promise<void> {
     const app = express();
+
+    const auth: AuthHandler = new AuthHandler(app);
+    auth.registerStrategy({
+        name: "google",
+        displayName: "Google",
+        strategy: new GoogleStrategy({
+            clientID: process.env['GOOGLE_CLIENT_ID'],
+            clientSecret: process.env['GOOGLE_CLIENT_SECRET'],
+            callbackURL: AuthHandler.getCallbackURL("google"),
+            scope: ['profile']
+        }, function verify(issuer: any, profile: any, cb: (err: any, user: any) => void) {
+            console.log(issuer, profile);
+            cb(null, profile);
+        })
+    });
+
     app.use(express.json());
 
     // -- Register client files routes --
