@@ -20,7 +20,7 @@ export class AuthHandler {
     private readonly _router: Router = Router();
     private readonly _strategies: AuthStrategy[] = [];
 
-    public constructor(protected readonly _app: Express, protected _verifier: Verifier) {
+    public constructor(protected readonly _app: Express, protected _baseURL: string, protected _verifier: Verifier) {
         this._initialize();
     }
 
@@ -93,7 +93,7 @@ export class AuthHandler {
         const strategy = new google.Strategy({
             clientID: clientId,
             clientSecret: clientSecret,
-            callbackURL: AuthHandler.getCallbackURL(AuthStrategyType.GOOGLE),
+            callbackURL: this.getCallbackURL(AuthStrategyType.GOOGLE),
             scope: ['profile']
         }, (accessToken: string, refreshToken: string, profile: google.Profile, done: google.VerifyCallback) => {
             Promise.resolve().then(() => {
@@ -128,14 +128,21 @@ export class AuthHandler {
         // Redirect to the strategy login page
         this._router.get(`/login/${strategy.name}`, passport.authenticate(strategy.strategy));
         // Handle strategy login callback
-        this._router.get(AuthHandler.getCallbackURL(strategy.name), passport.authenticate(strategy.strategy, {
+        this._router.get(AuthHandler.getCallbackPath(strategy.name), passport.authenticate(strategy.strategy, {
             successReturnToOrRedirect: '/',
             failureRedirect: '/login'
         }));
     }
 
     /** Get the callback URL that will be registered by @see registerStrategy() */
-    public static getCallbackURL(strategyName: string): string {
+    public getCallbackURL(strategyName: string): string {
+        // Remove trailing slash if any
+        const baseURL = this._baseURL.endsWith("/") ? this._baseURL.slice(0, -1) : this._baseURL;
+        return `${baseURL}${AuthHandler.getCallbackPath(strategyName)}`;
+    }
+
+    /** Get the callback URL that will be registered by @see registerStrategy() */
+    public static getCallbackPath(strategyName: string): string {
         return `/login/redirect/${strategyName}`;
     }
 }

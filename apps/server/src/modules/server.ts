@@ -2,6 +2,7 @@ import { registerAPI } from "@dagda/server/api";
 import { AuthHandler } from "@dagda/server/express/auth";
 import { registerAdapterAPI } from "@dagda/server/sql/api.adapter";
 import { AbstractSQLRunner } from "@dagda/server/sql/runner";
+import { getEnvString } from "@dagda/server/tools/config";
 import { ServerNotificationImpl } from "@dagda/server/tools/notification.impl";
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { Data } from "@dagda/shared/entities/types";
@@ -15,10 +16,10 @@ import { DiffusersRegistry } from "src/diffusers";
 import { buildServerEntitiesHandler } from "./entities.handler";
 
 /** Initialize an Express app and register the routes */
-export async function initHTTPServer(db: AbstractSQLRunner<any, any>, port: number): Promise<void> {
+export async function initHTTPServer(db: AbstractSQLRunner<any, any>, baseURL: string, port: number): Promise<void> {
     const app = express();
 
-    const auth: AuthHandler = new AuthHandler(app, async (profile: passport.Profile) => {
+    const auth: AuthHandler = new AuthHandler(app, baseURL, async (profile: passport.Profile) => {
         try {
             const handler = buildServerEntitiesHandler(db);
             await handler.fetch({ type: "users", "options": undefined });
@@ -45,8 +46,8 @@ export async function initHTTPServer(db: AbstractSQLRunner<any, any>, port: numb
         }
     });
     // Read the google client id and secret from the environment variables
-    const clientID = process.env['GOOGLE_CLIENT_ID'];
-    const clientSecret = process.env['GOOGLE_CLIENT_SECRET'];
+    const clientID = getEnvString("GOOGLE_CLIENT_ID");
+    const clientSecret = getEnvString("GOOGLE_CLIENT_SECRET");
     if (!clientID || !clientSecret) {
         throw new Error("Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET environment variables");
     }
