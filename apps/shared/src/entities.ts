@@ -36,6 +36,9 @@ export enum ComputationStatus {
 
 export const APP_MODEL = new EntitiesModel({
     // -- ID types ------------------------------------------------------------
+    USER_ID: {
+        rawType: JSTypes.number
+    },
     PROJECT_ID: {
         rawType: JSTypes.number
     },
@@ -62,6 +65,9 @@ export const APP_MODEL = new EntitiesModel({
         rawType: JSTypes.string
     },
     // -- Custom types --------------------------------------------------------
+    USER_UID: {
+        rawType: JSTypes.string
+    },
     PIXELS: {
         rawType: JSTypes.number
     },
@@ -78,6 +84,12 @@ export const APP_MODEL = new EntitiesModel({
         rawType: JSTypes.string
     }
 }, {
+    users: {
+        id: { type: "USER_ID", identity: true },
+        uid: { type: "USER_UID" },
+        displayName: { type: "TEXT" },
+        enabled: { type: "BOOLEAN" }
+    },
     projects: {
         id: { type: "PROJECT_ID", identity: true },
         name: { type: "TEXT" },
@@ -119,6 +131,8 @@ export const APP_MODEL = new EntitiesModel({
 
 //#region Properties types ----------------------------------------------------
 
+export type AppTypes = typeof APP_MODEL.types;
+
 export type ProjectId = typeof APP_MODEL.types["PROJECT_ID"];
 export type Seed = typeof APP_MODEL.types["SEED"];
 
@@ -127,6 +141,9 @@ export type Seed = typeof APP_MODEL.types["SEED"];
 //#region Entities types ------------------------------------------------------
 
 export type AppTables = typeof APP_MODEL.tables;
+
+/** Simple info for the user */
+export type UserEntity = typeof APP_MODEL.tables["users"];
 
 /** 
  * A project gather prompts with a common theme
@@ -162,6 +179,8 @@ type BaseContext<T extends string, Options> = {
     options: Options;
 }
 
+/** Get the list of users */
+export type UsersContext = BaseContext<"users", undefined>;
 /** Get all projects */
 export type ProjectsContext = BaseContext<"projects", undefined>;
 /** Get data for a specific project */
@@ -170,7 +189,7 @@ export type ProjectContext = BaseContext<"project", { projectId: typeof APP_MODE
 export type PendingPicturesContext = BaseContext<"pending", undefined>;
 
 /** List of all filters */
-export type AppContexts = ProjectsContext | ProjectContext | PendingPicturesContext;
+export type AppContexts = UsersContext | ProjectsContext | ProjectContext | PendingPicturesContext;
 
 /** Compare filters */
 export function appContextEquals(newContext: AppContexts, oldContext: AppContexts): boolean {

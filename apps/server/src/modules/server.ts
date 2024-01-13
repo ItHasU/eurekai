@@ -3,34 +3,54 @@ import { AuthHandler } from "@dagda/server/express/auth";
 import { registerAdapterAPI } from "@dagda/server/sql/api.adapter";
 import { AbstractSQLRunner } from "@dagda/server/sql/runner";
 import { ServerNotificationImpl } from "@dagda/server/tools/notification.impl";
+import { asNamed } from "@dagda/shared/entities/named.types";
 import { Data } from "@dagda/shared/entities/types";
 import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
-import { AppContexts, AppTables, AttachmentEntity, ComputationStatus, PictureEntity, ProjectEntity, PromptEntity, SeedEntity } from "@eurekai/shared/src/entities";
+import { AppContexts, AppTables, AttachmentEntity, ComputationStatus, PictureEntity, ProjectEntity, PromptEntity, SeedEntity, UserEntity } from "@eurekai/shared/src/entities";
 import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api";
 import express, { Application } from "express";
 import { resolve } from "node:path";
+import passport from "passport";
 import { DiffusersRegistry } from "src/diffusers";
-const GoogleStrategy = require('passport-google-oidc');
+import { buildServerEntitiesHandler } from "./entities.handler";
 
 /** Initialize an Express app and register the routes */
 export async function initHTTPServer(db: AbstractSQLRunner<any, any>, port: number): Promise<void> {
     const app = express();
 
-    const auth: AuthHandler = new AuthHandler(app);
-    auth.registerStrategy({
-        name: "google",
-        displayName: "Google",
-        strategy: new GoogleStrategy({
-            clientID: process.env['GOOGLE_CLIENT_ID'],
-            clientSecret: process.env['GOOGLE_CLIENT_SECRET'],
-            callbackURL: AuthHandler.getCallbackURL("google"),
-            scope: ['profile']
-        }, function verify(issuer: any, profile: any, cb: (err: any, user: any) => void) {
-            console.log(issuer, profile);
-            cb(null, profile);
-        })
+    const auth: AuthHandler = new AuthHandler(app, async (profile: passport.Profile) => {
+        try {
+            const handler = buildServerEntitiesHandler(db);
+            await handler.fetch({ type: "users", "options": undefined });
+            // Search for the user
+            const userEntity = handler.getItems("users").find(user => user.uid === profile.id);
+            if (userEntity == null) {
+                // We need to create the user
+                await handler.withTransaction((tr) => {
+                    tr.insert("users", {
+                        id: asNamed(0),
+                        uid: asNamed(profile.id),
+                        displayName: asNamed(profile.displayName),
+                        enabled: asNamed(false)
+                    });
+                });
+                await handler.waitForSubmit();
+                return false;
+            } else {
+                return userEntity.enabled;
+            }
+        } catch (err) {
+            console.error(err);
+            return false;
+        }
     });
-
+    // Read the google client id and secret from the environment variables
+    const clientID = process.env['GOOGLE_CLIENT_ID'];
+    const clientSecret = process.env['GOOGLE_CLIENT_SECRET'];
+    if (!clientID || !clientSecret) {
+        throw new Error("Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET environment variables");
+    }
+    auth.registerGoogleStrategy(clientID, clientSecret);
     app.use(express.json());
 
     // -- Register client files routes --
@@ -80,6 +100,10 @@ export async function initHTTPServer(db: AbstractSQLRunner<any, any>, port: numb
  */
 export async function sqlFetch(helper: AbstractSQLRunner<any, any>, filter: AppContexts): Promise<Data<AppTables>> {
     switch (filter.type) {
+        case "users":
+            return {
+                users: await helper.all<UserEntity>(`SELECT * FROM ${helper.qt("users")}`)
+            };
         case "projects":
             return {
                 projects: await helper.all<ProjectEntity>(`SELECT * FROM ${helper.qt("projects")}`)
@@ -99,6 +123,7 @@ export async function sqlFetch(helper: AbstractSQLRunner<any, any>, filter: AppC
                 pictures: await helper.all<PictureEntity>(`SELECT ${helper.qt("pictures")}.* FROM ${helper.qt("pictures")} WHERE ${helper.qf("pictures", "status")} = $1`, ComputationStatus.PENDING)
             }
         default:
+            throw new Error(`Unsupported fetch context`);
             return {};
     }
 }

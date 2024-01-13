@@ -1,6 +1,7 @@
 import { Express, Router } from 'express';
 import * as session from "express-session";
 import passport from 'passport';
+import * as google from 'passport-google-oauth20';
 
 export interface AuthStrategy {
     name: string;
@@ -8,18 +9,27 @@ export interface AuthStrategy {
     strategy: passport.Strategy;
 }
 
+enum AuthStrategyType {
+    GOOGLE = "google"
+}
+
+
+export type Verifier = (profile: passport.Profile) => Promise<boolean> | boolean;
 export class AuthHandler {
 
     private readonly _router: Router = Router();
     private readonly _strategies: AuthStrategy[] = [];
 
-    public constructor(protected readonly _app: Express) {
+    public constructor(protected readonly _app: Express, protected _verifier: Verifier) {
         this._initialize();
     }
 
     protected _initialize(): void {
         // -- Configure the app required middlewares --------------------------
-        this._app.use(session.default({ secret: 'keyboard cat' }));
+        this._app.use(session.default({
+            store: new session.MemoryStore(),
+            secret: _randomSecret(24) // Use random since sessions are not persisted
+        }));
         this._app.use(passport.initialize());
         this._app.use(passport.session());
 
@@ -38,12 +48,10 @@ export class AuthHandler {
 
         // -- Initialize passport ---------------------------------------------
         passport.serializeUser(function (user, done) {
-            console.log("serializeUser", user);
             done(null, user);
         });
 
         passport.deserializeUser(function (id, done) {
-            console.log("deserializeUser", id);
             done(null, { id });
         });
 
@@ -74,8 +82,41 @@ export class AuthHandler {
 
     }
 
-    /** 
-     * Register a new strategy 
+    /** Register a strategy specific to Google accounts SSO */
+    public registerGoogleStrategy(clientId: string, clientSecret: string): void {
+        // Check if the strategy is already registered
+        if (this._strategies.find(s => s.name === AuthStrategyType.GOOGLE)) {
+            throw new Error("Google strategy already registered");
+        }
+
+        // -- Create the strategy ---------------------------------------------
+        const strategy = new google.Strategy({
+            clientID: clientId,
+            clientSecret: clientSecret,
+            callbackURL: AuthHandler.getCallbackURL(AuthStrategyType.GOOGLE),
+            scope: ['profile']
+        }, (accessToken: string, refreshToken: string, profile: google.Profile, done: google.VerifyCallback) => {
+            Promise.resolve().then(() => {
+                return this._verifier(profile);
+            }).then(isUserValid => {
+                if (isUserValid) {
+                    done(null, profile);
+                } else {
+                    done(null, false);
+                }
+            }).catch(err => done(err));
+        });
+
+        // Register the strategy
+        this.registerStrategy({
+            name: AuthStrategyType.GOOGLE,
+            displayName: "Google",
+            strategy
+        });
+    }
+
+    /**
+     * Register a new strategy.
      * This function will register the strategy in passport and create the required routes
      */
     public registerStrategy(strategy: AuthStrategy): void {
@@ -97,4 +138,13 @@ export class AuthHandler {
     public static getCallbackURL(strategyName: string): string {
         return `/login/redirect/${strategyName}`;
     }
+}
+
+function _randomSecret(length: number): string {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
 }

@@ -1,13 +1,16 @@
-import { EntitiesHandler } from "@dagda/shared/entities/handler";
+import { AbstractSQLRunner } from "@dagda/server/sql/runner";
 import { asNamed } from "@dagda/shared/entities/named.types";
-import { AppContexts, AppTables, ComputationStatus } from "@eurekai/shared/src/entities";
+import { ComputationStatus } from "@eurekai/shared/src/entities";
 import { DiffusersRegistry } from "src/diffusers";
 import { ImageDescription } from "src/diffusers/diffuser";
+import { buildServerEntitiesHandler } from "./entities.handler";
 
 export class Generator {
     protected _stopOnNextTimeout: boolean = false;
+    protected _handler: ReturnType<typeof buildServerEntitiesHandler>;
 
-    constructor(protected _handler: EntitiesHandler<AppTables, AppContexts>) {
+    constructor(protected _db: AbstractSQLRunner<any, any>) {
+        this._handler = buildServerEntitiesHandler(this._db);
         this._scheduleNextIfNeeded();
     }
 

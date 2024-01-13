@@ -1,22 +1,13 @@
-import { submit } from "@dagda/server/sql/sql.adapter";
 import { getEnvNumber } from "@dagda/server/tools/config";
-import { EntitiesHandler } from "@dagda/shared/entities/handler";
-import { APP_MODEL, AppContexts, AppTables, appContextEquals } from "@eurekai/shared/src/entities";
 import { DiffusersRegistry } from "./diffusers";
 import { ENV_VARIABLES_NUMBER } from "./modules/config";
 import { initDatabaseHelper } from "./modules/db";
 import { Generator } from "./modules/generator";
-import { initHTTPServer, sqlFetch } from "./modules/server";
+import { initHTTPServer } from "./modules/server";
 
 async function main(): Promise<void> {
     // -- Initialize db -------------------------------------------------------
     const db = await initDatabaseHelper();
-    const handler = new EntitiesHandler<AppTables, AppContexts>(APP_MODEL, {
-        contextEquals: appContextEquals,
-        contextIntersects: appContextEquals,
-        fetch: filter => sqlFetch(db, filter),
-        submit: transactionData => submit(db, transactionData)
-    });
 
     // -- Initialize the models -----------------------------------------------
     try {
@@ -33,7 +24,7 @@ async function main(): Promise<void> {
     }
 
     // -- Generate ------------------------------------------------------------
-    new Generator(handler);
+    new Generator(db);
 
     // -- Initialize HTTP server ----------------------------------------------
     const port = getEnvNumber<ENV_VARIABLES_NUMBER>("PORT");
