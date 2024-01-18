@@ -61,12 +61,20 @@ export class AuthHandler {
 
         // Register login landing page
         this._router.get("/login", (req, res) => {
-            let content: string = `<h1>Login</h1><ul>`;
-            for (const strategy of this._strategies) {
-                content += `<li><a href="/login/${strategy.name}">${strategy.displayName}</a></li>`;
-            };
-            content += "</ul>";
-            res.send(content);
+            if (this._strategies.length === 0) {
+                res.send("No login strategy registered");
+                return;
+            } else if (this._strategies.length === 1) {
+                res.redirect(`/login/${this._strategies[0].name}`);
+                return;
+            } else {
+                let content: string = `<h1>Login</h1><ul>`;
+                for (const strategy of this._strategies) {
+                    content += `<li><a href="/login/${strategy.name}">${strategy.displayName}</a></li>`;
+                };
+                content += "</ul>";
+                res.send(content);
+            }
         });
 
         // Register logout route
