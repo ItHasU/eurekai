@@ -47,7 +47,13 @@ export const TEST_MODEL = new EntitiesModel({
         },
         age: {
             type: "INTEGER",
-            optional: true
+            optional: true,
+            fromVersion: 1 // Test a field added
+        },
+        size: {
+            type: "INTEGER",
+            optional: true,
+            toVersion: 1 // Test a removed field
         }
     },
     "posts": {

@@ -23,11 +23,15 @@ export type FieldDefinition<Types, Tables> = {
     identity?: boolean;
     optional?: true;
     foreignTable?: keyof Tables;
+    fromVersion?: number;
+    toVersion?: number;
 }
 
 export type IdFieldDefinition<Types, Tables> = {
     type: keyof Types;
-    identity: true
+    identity: true;
+    fromVersion?: never; // Force from the first version
+    toVersion?: never;   // Force until the last version
 };
 
 export type TypeDefinitions = Record<string, TypeDefinition<JSTypes, any>>;
@@ -35,6 +39,8 @@ export type FieldDefinitions<Types, Tables> = Record<keyof Tables, {
     id: IdFieldDefinition<Types, Tables>;
     [key: string]: FieldDefinition<Types, Tables>;
 }>
+
+export type KeysWithToVersion<T> = { [K in keyof T]: T[K] extends { toVersion: any } ? never : K }[keyof T];
 
 /** 
  * This class handles all information for the data used in the application.
@@ -45,7 +51,8 @@ export type FieldDefinitions<Types, Tables> = Record<keyof Tables, {
  */
 export class EntitiesModel<
     Types extends TypeDefinitions,
-    Tables extends FieldDefinitions<Types, Tables>
+    Tables extends FieldDefinitions<Types, Tables>,
+    Version extends number = 1
 > {
 
     /**
@@ -80,8 +87,32 @@ export class EntitiesModel<
         return undefined as any;
     }
 
+    /** Get the current version of the model */
+    public get version(): number {
+        let version: number = 0;
+        for (const table of this.getTableNames()) {
+            for (const field of this.getTableFieldNames(table)) {
+                const fromFieldVersion = this._tables[table][field].fromVersion;
+                if (fromFieldVersion != null && version < fromFieldVersion) {
+                    version = fromFieldVersion;
+                }
+                const toFieldVersion = this._tables[table][field].toVersion;
+                if (toFieldVersion != null && version < toFieldVersion) {
+                    version = toFieldVersion;
+                }
+            }
+        }
+        return version;
+    }
+
     /** Use this property to get the list of types associated to table names */
-    public get tables(): { [Table in keyof Tables]: { [K in keyof Tables[Table]]: Tables[Table][K] extends { optional: true } ? Nullable<NamedType<Tables[Table][K]["type"], Types[Tables[Table][K]["type"]]>> : NamedType<Tables[Table][K]["type"], Types[Tables[Table][K]["type"]]> } } {
+    public get tables(): { [Table in keyof Tables]: {
+        [K in KeysWithToVersion<Tables[Table]>]:
+        undefined extends Tables[Table][K]["toVersion"] ?
+        (Tables[Table][K] extends { optional: true } ? Nullable<NamedType<Tables[Table][K]["type"], Types[Tables[Table][K]["type"]]>> :
+            NamedType<Tables[Table][K]["type"], Types[Tables[Table][K]["type"]]>) :
+        undefined
+    } } {
         return undefined as any;
     }
 
@@ -99,8 +130,22 @@ export class EntitiesModel<
     }
 
     /** Get the list of fields for a table */
-    public getTableFieldNames<T extends keyof Tables>(tableName: T): (keyof Tables[T])[] {
-        return Object.keys(this._tables[tableName]);
+    public getTableFieldNames<T extends keyof Tables>(tableName: T, version?: number): (keyof Tables[T])[] {
+        return Object.keys(this._tables[tableName]).filter(field => {
+            if (version == null) {
+                return this._tables[tableName][field].toVersion == null
+            } else {
+                const fromVersion = this._tables[tableName][field].fromVersion;
+                if (fromVersion != null && version < fromVersion) {
+                    return false;
+                }
+                const toVersion = this._tables[tableName][field].toVersion;
+                if (toVersion != null && toVersion <= version) {
+                    return false;
+                }
+                return true;
+            }
+        });
     }
 
     public getFieldTypeName<T extends keyof Tables, F extends keyof Tables[T]>(tableName: T, fieldName: F): Tables[T][F]["type"] {
@@ -175,6 +220,49 @@ export class EntitiesModel<
         } else if (idFieldCount > 1) {
             throw new Error(`Table ${table as string} has more than one identity field`);
         }
+    }
+
+    //#endregion
+
+    //#region Versioning methods
+
+    /** 
+     * Get the list of fields that are new in the given version
+     * @param version The version to check
+     */
+    public getAddedFields(version: number): { [T in keyof Tables]?: (keyof Tables[T])[] } {
+        const newFields: { [T in keyof Tables]?: (keyof Tables[T])[] } = {} as any;
+        for (const table of this.getTableNames()) {
+            for (const field of this.getTableFieldNames(table, version)) {
+                const fromFieldVersion = this._tables[table][field].fromVersion;
+                if (fromFieldVersion != null && version === fromFieldVersion) {
+                    const newFieldsForTable = newFields[table] ?? [];
+                    newFieldsForTable.push(field);
+                    newFields[table] = newFieldsForTable;
+                }
+            }
+        }
+        return newFields;
+    }
+
+    /** 
+     * Get the list of fields that are removed in the given version
+     * @param version The version to check
+     */
+    public getRemovedFields(version: number): { [T in keyof Tables]?: (keyof Tables[T])[] } {
+        const removedFields: { [T in keyof Tables]?: (keyof Tables[T])[] } = {} as any;
+        for (const table of this.getTableNames()) {
+            // On récupère les champs à la version précédente, parce que si le champ a été supprimé, il n'existe plus à la version actuelle
+            for (const field of this.getTableFieldNames(table, version - 1)) {
+                const toFieldVersion = this._tables[table][field].toVersion;
+                if (toFieldVersion != null && version === toFieldVersion) {
+                    const removedFieldsForTable = removedFields[table] ?? [];
+                    removedFieldsForTable.push(field);
+                    removedFields[table] = removedFieldsForTable;
+                }
+            }
+        }
+        return removedFields;
     }
 
     //#endregion

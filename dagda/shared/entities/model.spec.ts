@@ -21,6 +21,9 @@ describe("EntitiesModel", () => {
     });
 
     it("returns the list of fields for a table", () => {
+        assert.deepEqual(["id", "name", "surname", "size"], TEST_MODEL.getTableFieldNames("users", 0));
+        assert.deepEqual(["id", "name", "surname", "age"], TEST_MODEL.getTableFieldNames("users", 1));
+        assert.deepEqual(["id", "name", "surname", "age"], TEST_MODEL.getTableFieldNames("users", 2));
         assert.deepEqual(["id", "name", "surname", "age"], TEST_MODEL.getTableFieldNames("users"));
     });
 
@@ -73,4 +76,19 @@ describe("EntitiesModel", () => {
         };
     });
 
+    it("gives fields added", () => {
+        assert.deepEqual(TEST_MODEL.getAddedFields(0), {});
+        assert.deepEqual(TEST_MODEL.getAddedFields(1), {
+            "users": ["age"]
+        });
+        assert.deepEqual(TEST_MODEL.getAddedFields(2), {});
+    });
+
+    it("gives fields removed", () => {
+        assert.deepEqual(TEST_MODEL.getRemovedFields(0), {});
+        assert.deepEqual(TEST_MODEL.getRemovedFields(1), {
+            "users": ["size"]
+        });
+        assert.deepEqual(TEST_MODEL.getRemovedFields(2), {});
+    });
 });
