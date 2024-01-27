@@ -177,24 +177,33 @@ export class PicturesPage extends AbstractPageElement {
                         item.refresh();
                     },
                     toggleHighres: async () => {
-                        // await this._cache.withData(async (data) => {
-                        //     switch (picture.highresStatus) {
-                        //         case ComputationStatus.REJECTED:
-                        //         case ComputationStatus.ERROR:
-                        //         case ComputationStatus.NONE:
-                        //             await data.setPictureHighres(picture.id, true);
-                        //             picture.highresStatus = ComputationStatus.PENDING;
-                        //             break;
-                        //         case ComputationStatus.PENDING:
-                        //             await data.setPictureHighres(picture.id, false);
-                        //             picture.highresStatus = ComputationStatus.NONE;
-                        //             break;
-                        //         case ComputationStatus.COMPUTING:
-                        //         case ComputationStatus.DONE:
-                        //             // No way to cancel from there
-                        //             break;
-                        //     }
-                        // });
+                        let newStatus: ComputationStatus | null = null;
+                        switch (picture.highresStatus) {
+                            case ComputationStatus.REJECTED:
+                            case ComputationStatus.ERROR:
+                            case ComputationStatus.NONE:
+                                newStatus = ComputationStatus.PENDING;
+                                break;
+                            case ComputationStatus.PENDING:
+                                newStatus = ComputationStatus.NONE;
+                                break;
+                            case ComputationStatus.ACCEPTED:
+                            case ComputationStatus.DONE:
+                                // No way to cancel from there
+                                break;
+                        }
+                        if (newStatus != null) {
+                            await StaticDataProvider.entitiesHandler.withTransaction(tr => {
+                                tr.update("pictures", picture, {
+                                    highresStatus: asNamed(newStatus)
+                                });
+                                if (newStatus === ComputationStatus.PENDING) {
+                                    // Manually add the context so that the server gets notified
+                                    tr.contexts.push({ type: "pending", options: undefined });
+                                }
+                            });
+                        }
+
                         item.refresh();
                     },
                     setAsFeatured: async () => {

@@ -108,6 +108,7 @@ export class Generator {
                     negative_prompt: prompt.negative_prompt ?? "",
                     seed: picture.seed
                 };
+                console.debug(`Generating ${highres ? "highres" : "lowres"} image for picture ${picture.id} with model ${prompt.model} and seed ${picture.seed}`);
                 const imageData = await diffuser.txt2img(img, highres);
 
                 // For debugging purpose, write image to disk

@@ -24,9 +24,10 @@ export class SDXL extends Automatic1111 {
             },
             highresTemplate: {
                 ...DEFAULT_PARAMETERS,
-                refiner_checkpoint: _refiner.title,
-                steps: 45,
-                refiner_switch_at: 0.66
+                steps: 50,
+                // Disable the refiner for now
+                // refiner_checkpoint: _refiner.title,
+                // refiner_switch_at: 0.66
             }
         });
     }
