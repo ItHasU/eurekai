@@ -1,3 +1,4 @@
+import { AppTypes } from "@eurekai/shared/src/entities";
 import { ModelInfo } from "@eurekai/shared/src/models.api";
 
 /** Common parameters to generate an image */
@@ -15,5 +16,5 @@ export abstract class AbstractDiffuser {
     public abstract getModelInfo(): ModelInfo;
 
     /** Generate an image. */
-    public abstract txt2img(options: ImageDescription, highres: boolean): Promise<string>;
+    public abstract txt2img(options: ImageDescription, highres: boolean): Promise<AppTypes["BASE64_DATA"]>;
 }

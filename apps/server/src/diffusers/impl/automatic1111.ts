@@ -1,4 +1,6 @@
 import { jsonPost } from "@dagda/server/tools/fetch";
+import { asNamed } from "@dagda/shared/entities/named.types";
+import { AppTypes } from "@eurekai/shared/src/entities";
 import { AbstractDiffuser, ImageDescription } from "../diffuser";
 
 //#region Types ---------------------------------------------------------------
@@ -69,7 +71,7 @@ export abstract class Automatic1111 extends AbstractDiffuser {
     //#region Image generation
 
     /** @inheritdoc */
-    public override async txt2img(image: ImageDescription, highres: boolean): Promise<string> {
+    public override async txt2img(image: ImageDescription, highres: boolean): Promise<AppTypes["BASE64_DATA"]> {
         // -- Set model --
         await this._setModel(this._options.model.title);
 
@@ -88,7 +90,7 @@ export abstract class Automatic1111 extends AbstractDiffuser {
         if (images == null || images.length === 0) {
             throw "No image generated";
         } else {
-            return images[0];
+            return asNamed(images[0]);
         }
     }
 

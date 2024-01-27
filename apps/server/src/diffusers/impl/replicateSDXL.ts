@@ -1,3 +1,5 @@
+import { asNamed } from "@dagda/shared/entities/named.types";
+import { AppTypes } from "@eurekai/shared/src/entities";
 import { ModelInfo } from "@eurekai/shared/src/models.api";
 import Replicate from "replicate";
 import { fetch } from "undici";
@@ -27,7 +29,7 @@ export class ReplicateSDXL extends AbstractDiffuser {
     }
 
     /** @inheritdoc */
-    public override async txt2img(options: ImageDescription, highres: boolean): Promise<string> {
+    public override async txt2img(options: ImageDescription, highres: boolean): Promise<AppTypes["BASE64_DATA"]> {
         // -- Call tge API --
         const output = await this._replicate.run(
             this._model,
@@ -74,6 +76,6 @@ export class ReplicateSDXL extends AbstractDiffuser {
 
         const blob = await response.blob();
         const buffer = await blob.arrayBuffer();
-        return Buffer.from(buffer).toString("base64");
+        return asNamed(Buffer.from(buffer).toString("base64"));
     }
 }
