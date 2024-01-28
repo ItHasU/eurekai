@@ -37,6 +37,16 @@ export class SQLStatusComponent<Tables extends TablesDefinition, Contexts> exten
         this._uploadCountSpan.classList.toggle("d-none", data.uploading < 2);
         this._uploadCountSpan.innerHTML = "" + data.uploading;
         this._refreshIcon.classList.toggle("text-danger", data.dirty);
+        if (data.dirty) {
+            this._refreshIcon.parentElement?.parentElement?.animate([
+                { transform: "scale(1)" },
+                { transform: "scale(1.2)" },
+                { transform: "scale(1)" },
+            ], {
+                duration: 200,
+                iterations: 1
+            }).play();
+        }
     }
 }
 
