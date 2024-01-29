@@ -32,7 +32,6 @@
           <button type="button" class="btn btn-secondary form-control" data-count="1"></button>
           <button type="button" class="btn btn-secondary form-control" data-count="5"></button>
           <button type="button" class="btn btn-secondary form-control" data-count="10"></button>
-          <button type="button" class="btn btn-secondary form-control" data-count="50"></button>
           <button ref="addPreferredButton" type="button" class="btn btn-secondary form-control">
             <i class="bi bi-heart-fill text-danger-emphasis"></i>
           </button>
@@ -48,11 +47,28 @@
           </button>
           <ul class="dropdown-menu">
             <!-- Delete prompt and its images -->
-            <li><a ref="delete" class="dropdown-item" href="javascript: void(0)"><i class="bi bi-trash"></i>&nbsp;Delete
-                prompt</a></li>
+            <li>
+              <a ref="delete" class="dropdown-item" href="javascript: void(0)">
+                <i class="bi bi-trash"></i>&nbsp;Delete prompt
+              </a>
+            </li>
             <!-- Move prompt -->
-            <li><a ref="move" class="dropdown-item" href="javascript: void(0)"><i
-                  class="bi bi-box-arrow-up-right"></i>&nbsp;Move to another project...</li>
+            <li>
+              <a ref="move" class="dropdown-item" href="javascript: void(0)">
+                <i class="bi bi-box-arrow-up-right"></i>&nbsp;Move to another project...
+              </a>
+            </li>
+            <!-- Seeds -->
+            <li>
+              <a ref="updateSeeds" class="dropdown-item" href="javascript: void(0)">
+                <i class="bi bi-heart-half"></i>&nbsp;Remove seeds from rejected images...
+              </a>
+            </li>
+            <li>
+              <a ref="setSeeds" class="dropdown-item" href="javascript: void(0)">
+                <i class="bi bi-arrow-through-heart-fill"></i>&nbsp;Set preferred seeds to validated images...
+              </a>
+            </li>
           </ul>
         </div>
       </div>

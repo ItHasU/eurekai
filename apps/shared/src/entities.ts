@@ -134,6 +134,7 @@ export const APP_MODEL = new EntitiesModel({
 export type AppTypes = typeof APP_MODEL.types;
 
 export type ProjectId = typeof APP_MODEL.types["PROJECT_ID"];
+export type PromptId = typeof APP_MODEL.types["PROMPT_ID"];
 export type Seed = typeof APP_MODEL.types["SEED"];
 
 //#endregion

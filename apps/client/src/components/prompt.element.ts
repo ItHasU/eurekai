@@ -1,7 +1,7 @@
 import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "@dagda/shared/tools/events";
 import { ComputationStatus, ProjectEntity, PromptEntity } from "@eurekai/shared/src/entities";
 import { ModelInfo } from "@eurekai/shared/src/models.api";
-import { deletePicture, generateNextPictures } from "@eurekai/shared/src/pictures.data";
+import { deletePicture, generateNextPictures, updateSeeds } from "@eurekai/shared/src/pictures.data";
 import { diff_match_patch } from "diff-match-patch";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { AbstractDTOElement } from "./abstract.dto.element";
@@ -201,7 +201,18 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
                 EventHandlerImpl.fire(this._eventData, "delete", { prompt: this.data });
             }
         });
+        this._bindClick("updateSeeds", async () => {
+            return StaticDataProvider.entitiesHandler.withTransaction((tr) => {
+                updateSeeds(StaticDataProvider.entitiesHandler, tr, this.data, false);
+            });
+        });
+        this._bindClick("setSeeds", async () => {
+            return StaticDataProvider.entitiesHandler.withTransaction((tr) => {
+                updateSeeds(StaticDataProvider.entitiesHandler, tr, this.data, true);
+            });
+        });
     }
+
 }
 
 customElements.define("custom-prompt", PromptElement);

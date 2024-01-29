@@ -80,3 +80,39 @@ export function deletePicture(handler: EntitiesHandler<AppTables, AppContexts>, 
         tr.delete("attachments", picture.highresAttachmentId)
     }
 }
+
+export function updateSeeds(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, prompt: PromptEntity, addNewSeeds: boolean): void {
+    const preferredSeeds = new Set<Seed>();
+    for (const picture of handler.getItems("pictures")) {
+        if (handler.isSameId(picture.promptId, prompt.id)) {
+            if (picture.status === ComputationStatus.ACCEPTED) {
+                preferredSeeds.add(picture.seed);
+            }
+        }
+    }
+
+    // Only keep the seeds that are in the preferred seeds
+    const existingSeeds = new Set<Seed>();
+    for (const seed of handler.getItems("seeds")) {
+        if (handler.isSameId(seed.projectId, prompt.projectId)) {
+            if (!preferredSeeds.has(seed.seed)) {
+                tr.delete("seeds", seed.id);
+            } else {
+                existingSeeds.add(seed.seed);
+            }
+        }
+    }
+
+    // Add the new seeds
+    if (addNewSeeds) {
+        for (const seed of preferredSeeds) {
+            if (!existingSeeds.has(seed)) {
+                tr.insert("seeds", {
+                    id: asNamed(0),
+                    projectId: prompt.projectId,
+                    seed
+                });
+            }
+        }
+    }
+}
