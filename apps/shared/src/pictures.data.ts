@@ -1,7 +1,7 @@
 import { EntitiesHandler } from "@dagda/shared/entities/handler";
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { SQLTransaction } from "@dagda/shared/sql/transaction";
-import { AppContexts, AppTables, ComputationStatus, PictureEntity, ProjectId, PromptEntity, Seed } from "./entities";
+import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity, PictureId, ProjectId, PromptEntity, PromptId, Seed, SeedId } from "./entities";
 
 /** 
  * Generate a certain amount of images 
@@ -115,4 +115,52 @@ export function updateSeeds(handler: EntitiesHandler<AppTables, AppContexts>, tr
             }
         }
     }
+}
+
+/** Delete all data from a project */
+export function deleteProject(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, projectId: ProjectId): void {
+    const promptIds: Set<PromptId> = new Set();
+    for (const prompt of handler.getItems("prompts")) {
+        if (handler.isSameId(prompt.projectId, projectId)) {
+            promptIds.add(prompt.id);
+        }
+    }
+    const seedIds: Set<SeedId> = new Set();
+    for (const seed of handler.getItems("seeds")) {
+        if (handler.isSameId(seed.projectId, projectId)) {
+            seedIds.add(seed.id);
+        }
+    }
+
+    const pictureIds: Set<PictureId> = new Set();
+    const attachmentIds: Set<AttachmentId> = new Set();
+    for (const picture of handler.getItems("pictures")) {
+        if (promptIds.has(picture.promptId)) {
+            // Here we don't care about same id as we used the ids of the prompts themselves
+            pictureIds.add(picture.id);
+            if (picture.attachmentId != null) {
+                attachmentIds.add(picture.attachmentId);
+            }
+            if (picture.highresAttachmentId != null) {
+                attachmentIds.add(picture.highresAttachmentId);
+            }
+        }
+    }
+
+    for (const pictureId of pictureIds) {
+        tr.delete("pictures", pictureId);
+        // Cleans references of the prompts and attachments
+    }
+    for (const attachmentId of attachmentIds) {
+        tr.delete("attachments", attachmentId);
+    }
+    for (const promptId of promptIds) {
+        tr.delete("prompts", promptId);
+        // Cleans references to the project
+    }
+    for (const seedId of seedIds) {
+        tr.delete("seeds", seedId);
+        // Cleans references to the project
+    }
+    tr.delete("projects", projectId);
 }

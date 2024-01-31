@@ -4,10 +4,12 @@ import { AbstractDTOElement } from "./abstract.dto.element";
 export class ProjectElement extends AbstractDTOElement<ProjectEntity> {
 
     constructor(project: ProjectEntity, protected _options: {
+        rename: (name: string) => void;
         pin: () => void;
         unpin: () => void;
         lock: () => void;
         unlock: () => void;
+        delete: () => void;
     }) {
         super(project, require("./project.element.html").default);
         this.classList.add("list-group-item", "list-group-item-action");
@@ -34,6 +36,28 @@ export class ProjectElement extends AbstractDTOElement<ProjectEntity> {
         if (this.data.featuredAttachmentId != null) {
             (<HTMLImageElement>this.querySelector("[ref='featured']")!).src = `/attachment/${this.data.featuredAttachmentId}`;
         }
+        this._bindClick("rename", (evt) => {
+            evt.stopPropagation();
+            // Replace title by an input
+            const nameSpan = this._getElementByRef("name");
+            if (nameSpan == null) {
+                return;
+            }
+            nameSpan.innerHTML = `<input type="text" class="form-control" value="${this.data.name}">`;
+            const input = nameSpan.querySelector("input");
+            if (!input) {
+                return;
+            }
+            input.addEventListener("click", (evt) => evt.stopPropagation()); // Prevent click on input to select the project
+            input.addEventListener("change", async () => {
+                const name = nameSpan.querySelector("input")?.value;
+                if (name) {
+                    this._options.rename(name);
+                    input.classList.add("is-valid");
+                }
+            });
+            input.focus();
+        });
         this._bindClick("pin", (evt) => {
             evt.stopPropagation();
             this._options.pin();
@@ -49,6 +73,10 @@ export class ProjectElement extends AbstractDTOElement<ProjectEntity> {
         this._bindClick("unlock", (evt) => {
             evt.stopPropagation();
             this._options.unlock();
+        });
+        this._bindClick("delete", (evt) => {
+            evt.stopPropagation();
+            this._options.delete();
         });
     }
 

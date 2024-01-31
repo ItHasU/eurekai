@@ -135,6 +135,10 @@ export type AppTypes = typeof APP_MODEL.types;
 
 export type ProjectId = typeof APP_MODEL.types["PROJECT_ID"];
 export type PromptId = typeof APP_MODEL.types["PROMPT_ID"];
+export type PictureId = typeof APP_MODEL.types["PICTURE_ID"];
+export type AttachmentId = typeof APP_MODEL.types["ATTACHMENT_ID"];
+export type SeedId = typeof APP_MODEL.types["SEED_ID"];
+
 export type Seed = typeof APP_MODEL.types["SEED"];
 
 //#endregion

@@ -59,13 +59,12 @@ export class PicturesPage extends AbstractPageElement {
         }
 
         // -- Async part ------------------------------------------------------
-        await StaticDataProvider.entitiesHandler.fetch({
+        const dataWereLoaded = await StaticDataProvider.entitiesHandler.fetch({
             type: "project",
             options: {
                 projectId
             }
         });
-        const models = await StaticDataProvider.getModels();
 
         // -- Clear -----------------------------------------------------------
         this._picturesDiv.innerHTML = "";
@@ -228,7 +227,9 @@ export class PicturesPage extends AbstractPageElement {
         }
 
         // -- Scroll to top ---------------------------------------------------
-        this._picturesDiv.scrollTo(0, 0);
+        if (dataWereLoaded) {
+            this._picturesDiv.scrollTo(0, 0);
+        }
     }
 
     protected _getFilter(preferredSeeds: Set<number>): (picture: PictureEntity) => boolean {

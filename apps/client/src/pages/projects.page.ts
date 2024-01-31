@@ -1,4 +1,5 @@
 import { asNamed } from "@dagda/shared/entities/named.types";
+import { deleteProject } from "@eurekai/shared/src/pictures.data";
 import { APP } from "src";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { ProjectElement } from "../components/project.element";
@@ -63,29 +64,48 @@ export class ProjectsPage extends AbstractPageElement {
         // Render projects
         for (const project of projects) {
             const element = new ProjectElement(project, {
+                rename: async (name: string) => {
+                    await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
+                        tr.update("projects", project, { name: asNamed(name) });
+                    });
+                    element.refresh();
+                },
                 pin: async () => {
                     await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
                         tr.update("projects", project, { pinned: asNamed(true) });
                     });
-                    this.refresh();
+                    // Refresh the whole page because position has changed
+                    await this.refresh();
                 },
                 unpin: async () => {
                     await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
                         tr.update("projects", project, { pinned: asNamed(false) });
                     });
-                    this.refresh();
+                    // Refresh the whole page because position has changed
+                    await this.refresh();
                 },
                 lock: async () => {
                     await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
                         tr.update("projects", project, { lockable: asNamed(true) });
                     });
-                    this.refresh();
+                    // Refreshing the element is enough
+                    element.refresh();
                 },
                 unlock: async () => {
                     await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
                         tr.update("projects", project, { lockable: asNamed(false) });
                     });
-                    this.refresh();
+                    // Refreshing the element is enough
+                    element.refresh();
+                },
+                delete: async () => {
+                    // Make sure we have all the project's data
+                    await StaticDataProvider.entitiesHandler.fetch({ type: "project", options: { projectId: project.id } });
+                    await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
+                        deleteProject(StaticDataProvider.entitiesHandler, tr, project.id);
+                    });
+                    // Here we need to refresh the whole page because the project is deleted
+                    await this.refresh();
                 }
             });
             element.addEventListener("click", () => {

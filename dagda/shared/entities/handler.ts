@@ -130,8 +130,11 @@ export class EntitiesHandler<Tables extends TablesDefinition, Contexts> implemen
         return cache;
     }
 
-    /** Fetch data */
-    public async fetch(...contextsToLoad: Contexts[]): Promise<void> {
+    /** 
+     * Fetch data 
+     * @returns true if the cache was dirty and data were reloaded
+     */
+    public async fetch(...contextsToLoad: Contexts[]): Promise<boolean> {
         this._fireStateChanged({ downloading: this._state.downloading + 1 });
         try {
             // -- If all dirty, reset caches --
@@ -200,6 +203,7 @@ export class EntitiesHandler<Tables extends TablesDefinition, Contexts> implemen
 
             // All done, cache is ok
             this._fireStateChanged({ dirty: false });
+            return contextsToFetch.size > 0;
         } catch (e) {
             this._loadedContexts = [];
             this._fireStateChanged({ dirty: true });
