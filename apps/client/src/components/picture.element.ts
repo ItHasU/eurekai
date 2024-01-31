@@ -107,7 +107,7 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> {
             const touch = ev.touches[0];
             const x = touch.clientX;
             // Do a ratio with the image width
-            const ratio = x / img_sd.clientWidth;
+            const ratio = x / containerDiv.clientWidth;
             // If the touch is in the center of the image
             if (ratio < ACTION_SWIPE_MARGIN) {
                 // Prevent scrolling, show reject icon
@@ -140,7 +140,7 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> {
             const touch = ev.touches[0];
             const x = touch.clientX;
             // Do a ratio with the image width
-            const ratio = x / img_sd.clientWidth;
+            const ratio = x / containerDiv.clientWidth;
             // If the touch is in the center of the image
             if (this._swipeMode == SwipeMode.REJECT_STARTED && ratio > ACTION_SWIPE_MARGIN) {
                 // We crossed the accept limit, reject the image
