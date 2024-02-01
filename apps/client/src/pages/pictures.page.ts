@@ -1,6 +1,6 @@
 import { asNamed } from "@dagda/shared/entities/named.types";
-import { ComputationStatus, PictureEntity, PromptEntity } from "@eurekai/shared/src/entities";
-import { generateNextPictures, isPreferredSeed, togglePreferredSeed } from "@eurekai/shared/src/pictures.data";
+import { AttachmentId, ComputationStatus, PictureEntity, PromptEntity } from "@eurekai/shared/src/entities";
+import { generateNextPictures, isPreferredSeed, togglePreferredSeed, zipPictures } from "@eurekai/shared/src/pictures.data";
 import { PictureElement } from "src/components/picture.element";
 import { PromptElement } from "src/components/prompt.element";
 import { PromptEditor } from "src/editors/prompt.editor";
@@ -97,7 +97,7 @@ export class PicturesPage extends AbstractPageElement {
                 pictures.push(picture);
             }
         }
-        // TODO Preferred seeds
+        // Preferred seeds
         const preferredSeeds: Set<number> = new Set(StaticDataProvider.entitiesHandler.getItems("seeds").filter(s => StaticDataProvider.entitiesHandler.isSameId(s.projectId, projectId)).map(s => s.seed));
 
         // -- Render per prompt -----------------------------------------------
@@ -267,26 +267,33 @@ export class PicturesPage extends AbstractPageElement {
     }
 
     protected async _onZipClick(): Promise<void> {
-        // const projectId = this._cache.getSelectedProjectId();
-        // if (!projectId) {
-        //     return;
-        // }
-        // try {
-        //     const zip = await zipPictures({
-        //         data: this._cache.data,
-        //         projectId,
-        //         filter: this._getFilter()
-        //     });
-        //     const blob = await zip.generateAsync({ type: "blob" });
-        //     const a: HTMLAnchorElement = document.createElement("a");
-        //     const url = window.URL.createObjectURL(blob);
-        //     a.href = url;
-        //     a.download = "pictures.zip";
-        //     a.click();
-        //     window.URL.revokeObjectURL(url);
-        // } catch (e) {
-        //     console.error(e);
-        // }
+        const projectId = StaticDataProvider.getSelectedProject();
+        if (!projectId) {
+            return;
+        }
+        const project = StaticDataProvider.entitiesHandler.getCache("projects").getById(projectId);
+        if (!project) {
+            return;
+        }
+        try {
+            // Preferred seeds
+            const preferredSeeds: Set<number> = new Set(StaticDataProvider.entitiesHandler.getItems("seeds").filter(s => StaticDataProvider.entitiesHandler.isSameId(s.projectId, projectId)).map(s => s.seed));
+
+            const zip = await zipPictures(StaticDataProvider.entitiesHandler, projectId, (attachmentId: AttachmentId) => {
+                // -- Download the image --
+                const URL = `/attachment/${attachmentId}`;
+                return fetch(URL).then(res => res.blob());
+            }, this._getFilter(preferredSeeds));
+            const blob = await zip.generateAsync({ type: "blob" });
+            const a: HTMLAnchorElement = document.createElement("a");
+            const url = window.URL.createObjectURL(blob);
+            a.href = url;
+            a.download = `${project.name.replace("/*", "_")}.zip`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } catch (e) {
+            console.error(e);
+        }
     }
 
     protected async _onClearRejectedButtonClick(): Promise<void> {

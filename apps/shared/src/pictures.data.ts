@@ -1,7 +1,8 @@
 import { EntitiesHandler } from "@dagda/shared/entities/handler";
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { SQLTransaction } from "@dagda/shared/sql/transaction";
-import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity, PictureId, ProjectId, PromptEntity, PromptId, Seed, SeedId } from "./entities";
+import JSZip from "jszip";
+import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity, PictureId, ProjectId, PromptEntity, PromptId, Seed, SeedEntity, SeedId } from "./entities";
 
 /** 
  * Generate a certain amount of images 
@@ -163,4 +164,80 @@ export function deleteProject(handler: EntitiesHandler<AppTables, AppContexts>, 
         // Cleans references to the project
     }
     tr.delete("projects", projectId);
+}
+
+function _getProjectEntities(handler: EntitiesHandler<AppTables, AppContexts>, projectId: ProjectId): { prompts: PromptEntity[], pictures: PictureEntity[], seeds: SeedEntity[] } {
+    // -- Prompts --
+    const prompts: PromptEntity[] = [];
+    const promptIds: Set<PromptId> = new Set();
+    for (const prompt of handler.getItems("prompts")) {
+        if (handler.isSameId(prompt.projectId, projectId)) {
+            promptIds.add(prompt.id);
+            prompts.push(prompt);
+        }
+    }
+
+    const pictures: PictureEntity[] = [];
+    for (const picture of handler.getItems("pictures")) {
+        if (promptIds.has(picture.promptId)) {
+            pictures.push(picture);
+        }
+    }
+
+    const seeds: SeedEntity[] = [];
+    for (const seed of handler.getItems("seeds")) {
+        if (handler.isSameId(seed.projectId, projectId)) {
+            seeds.push(seed);
+        }
+    }
+    return { prompts, pictures, seeds };
+}
+
+export async function zipPictures(
+    handler: EntitiesHandler<AppTables, AppContexts>,
+    projectId: ProjectId,
+    download: (AttachmentId: AttachmentId) => Promise<Blob>,
+    filter?: (picture: PictureEntity) => boolean,
+): Promise<JSZip> {
+    const { pictures } = _getProjectEntities(handler, projectId);
+
+    const zip = new JSZip();
+    for (const picture of pictures) {
+        if (!picture.attachmentId) {
+            // No attachment, skip
+            continue;
+        }
+
+        const keepPicture = filter?.(picture) ?? true;
+        if (!keepPicture) {
+            // Skip this picture
+            continue;
+        }
+
+        const baseFilename = `${picture.id}`;
+
+        // -- Add sd picture to zip --
+        if (picture.attachmentId != null) {
+            try {
+                const data = await download(picture.attachmentId);
+                // Add picture as png to zip
+                zip.file(`${baseFilename}-sd.png`, data, { binary: true });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // -- Add highres picture to zip --
+        if (picture.highresAttachmentId != null) {
+            try {
+                const data = await download(picture.highresAttachmentId);
+                // Add picture as png to zip
+                zip.file(`${baseFilename}-hd.png`, data, { binary: true });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    }
+
+    return zip;
 }
