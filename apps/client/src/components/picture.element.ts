@@ -90,6 +90,7 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> {
             button_both.remove();
         } else {
             img_hd.src = `/attachment/${this.data.highresAttachmentId}`;
+            this._setDisplay("hd"); // Prefer HD by default
         }
 
         // -- Handle swipe --

@@ -242,6 +242,9 @@ export class PicturesPage extends AbstractPageElement {
             case "preferred":
                 filter = function (picture) { return picture.status >= ComputationStatus.DONE && preferredSeeds.has(picture.seed); };
                 break;
+            case "highres":
+                filter = function (picture) { return picture.highresStatus >= ComputationStatus.DONE; };
+                break;
             case "done":
                 filter = function (picture) { return picture.status === ComputationStatus.DONE; };
                 break;
