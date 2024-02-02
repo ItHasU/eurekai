@@ -1,5 +1,6 @@
 import { ProjectEntity } from "@eurekai/shared/src/entities";
 import { AbstractDTOElement } from "./abstract.dto.element";
+import { showConfirm } from "./tools";
 
 export class ProjectElement extends AbstractDTOElement<ProjectEntity> {
 
@@ -76,7 +77,11 @@ export class ProjectElement extends AbstractDTOElement<ProjectEntity> {
         });
         this._bindClick("delete", (evt) => {
             evt.stopPropagation();
-            this._options.delete();
+            showConfirm({ title: "Delete project", message: `Do you want to delete the project to "${this.data.name}"?` }).then((result) => {
+                if (result) {
+                    this._options.delete();
+                }
+            }).catch(console.error);
         });
     }
 

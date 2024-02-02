@@ -25,7 +25,7 @@ export function showSelect<T>(choices: T[], options: {
                     </div>
                     <div class="modal-footer">
                         <button ref="cancel" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button ref="ok" type="button" class="btn btn-primary">OK</button>
+                        <button ref="ok" type="button" class="btn btn-primary">Ok</button>
                     </div>
                 </div>
             </div>
@@ -54,6 +54,54 @@ export function showSelect<T>(choices: T[], options: {
         dialog.addEventListener('hidden.bs.modal', event => {
             console.log("modal hidden");
             resolve(undefined);
+            dialog.remove();
+        });
+        // -- Show the dialog --
+        document.body.appendChild(dialog);
+        myModal.show();
+    });
+}
+
+export function showConfirm(options: {
+    title: string,
+    message: string,
+    okText?: string,
+    cancelText?: string
+}): Promise<boolean> {
+    // -- Create a dialog with a select --
+    const dialog = htmlStringToElement<HTMLDivElement>(`<div class="modal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">${options.title}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>${options.message}</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button ref="cancel" type="button" class="btn btn-secondary" data-bs-dismiss="modal">${options.cancelText ?? "Cancel"}</button>
+                        <button ref="ok" type="button" class="btn btn-primary">${options.okText ?? "Ok"}</button>
+                    </div>
+                </div>
+            </div>
+        </div>`);
+    if (dialog == null) {
+        return Promise.resolve(false);
+    }
+
+    const myModal = new Modal(dialog, {
+        keyboard: false,
+        backdrop: "static"
+    });
+
+    return new Promise<boolean>((resolve, reject) => {
+        dialog.querySelector("button[ref='ok']")?.addEventListener("click", () => {
+            resolve(true);
+            myModal.hide();
+        });
+        dialog.addEventListener('hidden.bs.modal', event => {
+            resolve(false);
             dialog.remove();
         });
         // -- Show the dialog --
