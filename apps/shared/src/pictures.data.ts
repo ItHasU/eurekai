@@ -26,7 +26,7 @@ export function generateNextPictures(handler: EntitiesHandler<AppTables, AppCont
     // -- Create new pictures --
     if (count === null) {
         // If count is null, just create the missing preferred seeds
-        count = missingPreferredSeeds.size;
+        count = missingPreferredSeeds.size + 1;
     }
 
     for (let i = 0; i < count; i++) {
