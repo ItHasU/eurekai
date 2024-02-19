@@ -171,7 +171,7 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
         });
         this._bindClick("addPreferredButton", async () => {
             await StaticDataProvider.entitiesHandler.withTransaction(tr => {
-                generateNextPictures(StaticDataProvider.entitiesHandler, tr, this.data, null);
+                generateNextPictures(StaticDataProvider.entitiesHandler, tr, this.data, "preferred");
             });
             this.refresh();
         });

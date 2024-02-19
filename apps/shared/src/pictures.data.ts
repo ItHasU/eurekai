@@ -8,7 +8,7 @@ import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity,
  * Generate a certain amount of images 
  * If requested quantity is null, will generate for all preferred seeds
  */
-export function generateNextPictures(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, prompt: PromptEntity, count: number | null): void {
+export function generateNextPictures(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, prompt: PromptEntity, count: number | null | "preferred"): void {
     // -- Get a list of preferred seeds --
     const missingPreferredSeeds: Set<Seed> = new Set();
     for (const seed of handler.getItems("seeds")) {
@@ -25,8 +25,11 @@ export function generateNextPictures(handler: EntitiesHandler<AppTables, AppCont
 
     // -- Create new pictures --
     if (count === null) {
-        // If count is null, just create the missing preferred seeds
+        // If count is null, just create the missing preferred seeds + 1 random
         count = missingPreferredSeeds.size + 1;
+    } else if (count === "preferred") {
+        // Only create the missing preferred seeds
+        count = missingPreferredSeeds.size;
     }
 
     for (let i = 0; i < count; i++) {
