@@ -2,6 +2,7 @@ import { getEnvString } from "@dagda/server/tools/config";
 import { ENV_VARIABLES_STR } from "src/modules/config";
 import { AbstractDiffuser } from "./diffuser";
 import { getAllModels } from "./impl/automatic1111.tools";
+import { DallE } from "./impl/dall-e";
 import { ModelIdentifier, ReplicateSDXL } from "./impl/replicateSDXL";
 
 export class DiffusersRegistry {
@@ -32,6 +33,16 @@ export class DiffusersRegistry {
             const REPLICATE_MODELS = getEnvString<ENV_VARIABLES_STR>("REPLICATE_MODELS").split(",");
             for (const model of REPLICATE_MODELS) {
                 DiffusersRegistry.push(new ReplicateSDXL(REPLICATE_API_TOKEN, model as ModelIdentifier));
+            }
+        } catch (e) {
+            console.error(e);
+        }
+
+        // -- Fetch DALL-E models --
+        try {
+            const API_KEY = getEnvString<ENV_VARIABLES_STR>("OPENAI_API_TOKEN");
+            if (API_KEY != null) {
+                DiffusersRegistry.push(new DallE(API_KEY));
             }
         } catch (e) {
             console.error(e);

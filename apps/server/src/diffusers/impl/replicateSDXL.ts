@@ -29,7 +29,7 @@ export class ReplicateSDXL extends AbstractDiffuser {
     }
 
     /** @inheritdoc */
-    public override async txt2img(options: ImageDescription, highres: boolean): Promise<AppTypes["BASE64_DATA"]> {
+    public override async txt2img(options: ImageDescription, highres: boolean): Promise<{ data: AppTypes["BASE64_DATA"] }> {
         // -- Call tge API --
         const output = await this._replicate.run(
             this._model,
@@ -76,6 +76,6 @@ export class ReplicateSDXL extends AbstractDiffuser {
 
         const blob = await response.blob();
         const buffer = await blob.arrayBuffer();
-        return asNamed(Buffer.from(buffer).toString("base64"));
+        return { data: asNamed(Buffer.from(buffer).toString("base64")) };
     }
 }

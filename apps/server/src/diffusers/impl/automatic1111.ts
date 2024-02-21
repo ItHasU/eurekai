@@ -71,7 +71,7 @@ export abstract class Automatic1111 extends AbstractDiffuser {
     //#region Image generation
 
     /** @inheritdoc */
-    public override async txt2img(image: ImageDescription, highres: boolean): Promise<AppTypes["BASE64_DATA"]> {
+    public override async txt2img(image: ImageDescription, highres: boolean): Promise<{ data: AppTypes["BASE64_DATA"] }> {
         // -- Set model --
         await this._setModel(this._options.model.title);
 
@@ -90,7 +90,7 @@ export abstract class Automatic1111 extends AbstractDiffuser {
         if (images == null || images.length === 0) {
             throw "No image generated";
         } else {
-            return asNamed(images[0]);
+            return { data: asNamed(images[0]) };
         }
     }
 

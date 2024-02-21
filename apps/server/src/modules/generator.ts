@@ -117,7 +117,7 @@ export class Generator {
                 // -- Save --
                 const attachment = tr.insert("attachments", {
                     id: asNamed(0),
-                    data: imageData
+                    data: imageData.data
                 });
 
                 if (highres) {
@@ -130,6 +130,16 @@ export class Generator {
                         status: asNamed(ComputationStatus.DONE),
                         attachmentId: attachment.id
                     });
+                    if (imageData.revisedWidth != null) {
+                        tr.update("prompts", prompt, {
+                            width: asNamed(imageData.revisedWidth)
+                        });
+                    }
+                    if (imageData.revisedHeight != null) {
+                        tr.update("prompts", prompt, {
+                            height: asNamed(imageData.revisedHeight)
+                        });
+                    }
                 }
             } catch (e) {
                 console.error(`Failed to generate image for picture ${picture.id}`);
