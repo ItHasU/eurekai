@@ -1,6 +1,8 @@
 import { AbstractSQLRunner } from "@dagda/server/sql/runner";
 import { asNamed } from "@dagda/shared/entities/named.types";
+import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
 import { ComputationStatus, PictureEntity } from "@eurekai/shared/src/entities";
+import { AppEvents } from "@eurekai/shared/src/events";
 import { DiffusersRegistry } from "src/diffusers";
 import { ImageDescription } from "src/diffusers/diffuser";
 import { buildServerEntitiesHandler } from "./entities.handler";
@@ -48,6 +50,7 @@ export class Generator {
             });
 
             // Generate all lowres pictures
+            NotificationHelper.broadcast<AppEvents>("generating", { running: true });
             for (const picture of picturesPending) {
                 // Both renderings are done in separate transactions
                 // so that the client can see each image asap
@@ -70,6 +73,7 @@ export class Generator {
             return false;
         } finally {
             // Re-schedule next
+            NotificationHelper.broadcast<AppEvents>("generating", { running: false });
             setTimeout(this._unqueue.bind(this), 5000);
         }
     }

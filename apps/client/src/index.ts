@@ -5,6 +5,7 @@ import "bootstrap/dist/css/bootstrap.css";
 import { SQLStatusComponent } from "@dagda/client/sql/status.component";
 import { ClientNotificationImpl } from "@dagda/client/tools/notification.impl";
 import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
+import { AppEvents } from "@eurekai/shared/src/events";
 import { PictureElement } from "./components/picture.element";
 import { PromptElement } from "./components/prompt.element";
 import { PromptEditor } from "./editors/prompt.editor";
@@ -70,6 +71,14 @@ class App {
 
         // -- Notification helper --
         NotificationHelper.set(new ClientNotificationImpl());
+
+        // -- Generation display --
+        const generationSpan = document.getElementById("generationSpan");
+        if (generationSpan) {
+            NotificationHelper.on<AppEvents>("generating", (event) => {
+                generationSpan.classList.toggle("d-none", !event.data.running);
+            });
+        }
     }
 
     protected _bindPage(buttonId: string, pageConstructor: PageConstructor): void {
