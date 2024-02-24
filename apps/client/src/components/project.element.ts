@@ -49,6 +49,7 @@ export class ProjectElement extends AbstractDTOElement<ProjectEntity> {
             if (!input) {
                 return;
             }
+            // -- Bind input events --
             input.addEventListener("click", (evt) => evt.stopPropagation()); // Prevent click on input to select the project
             input.addEventListener("change", async () => {
                 const name = nameSpan.querySelector("input")?.value;
@@ -57,6 +58,10 @@ export class ProjectElement extends AbstractDTOElement<ProjectEntity> {
                     input.classList.add("is-valid");
                 }
             });
+            // -- Hide the dropdown menu --
+            // TODO Find a better way to close the dropdown
+            (this.querySelector("button[data-bs-toggle=\"dropdown\"]") as HTMLButtonElement)?.click();
+            // -- Force focus on the input to allow immediate typing --
             input.focus();
         });
         this._bindClick("pin", (evt) => {
