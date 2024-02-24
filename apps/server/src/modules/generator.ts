@@ -50,7 +50,6 @@ export class Generator {
             });
 
             // Generate all lowres pictures
-            NotificationHelper.broadcast<AppEvents>("generating", { running: true });
             for (const picture of picturesPending) {
                 // Both renderings are done in separate transactions
                 // so that the client can see each image asap
@@ -73,7 +72,6 @@ export class Generator {
             return false;
         } finally {
             // Re-schedule next
-            NotificationHelper.broadcast<AppEvents>("generating", { running: false });
             setTimeout(this._unqueue.bind(this), 5000);
         }
     }
@@ -82,6 +80,10 @@ export class Generator {
     protected async _generatePicture(picture: PictureEntity, highres: boolean): Promise<void> {
         await this._handler.withTransaction(async (tr) => {
             try {
+                // -- Notify the clients we are at work --
+                // We notify on each image for newly connected clients
+                NotificationHelper.broadcast<AppEvents>("generating", { running: true });
+
                 // -- Get the prompt --
                 const prompt = this._handler.getById("prompts", picture.promptId);
                 if (prompt == null) {
@@ -157,6 +159,9 @@ export class Generator {
                         status: asNamed(ComputationStatus.ERROR)
                     });
                 }
+            } finally {
+                // -- Notify the clients we are done --
+                NotificationHelper.broadcast<AppEvents>("generating", { running: false });
             }
         });
     }
