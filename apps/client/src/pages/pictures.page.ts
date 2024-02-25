@@ -14,7 +14,7 @@ function scrollToNextSibling(node: HTMLElement): void {
     }
 
     const next = node.nextElementSibling as HTMLElement | null;
-    if (next) {
+    if (next && next.tagName === node.tagName) {
         next.scrollIntoView({
             behavior: "smooth"
         });
