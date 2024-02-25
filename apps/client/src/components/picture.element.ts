@@ -6,8 +6,7 @@ enum SwipeMode {
     ACCEPT_STARTED,
     ACCEPT_DONE,
     REJECT_STARTED,
-    REJECT_DONE,
-    HIGHRES_DONE
+    REJECT_DONE
 }
 
 const colors: Record<SwipeMode, string> = {
@@ -15,13 +14,8 @@ const colors: Record<SwipeMode, string> = {
     [SwipeMode.ACCEPT_STARTED]: "rgba(0, 255, 0, 0.15)",
     [SwipeMode.ACCEPT_DONE]: "rgba(0, 255, 0, 0.25)",
     [SwipeMode.REJECT_STARTED]: "rgba(255, 0, 0, 0.15)",
-    [SwipeMode.REJECT_DONE]: "rgba(255, 0, 0, 0.25)",
-    [SwipeMode.HIGHRES_DONE]: "rgba(0, 0, 255, 0.25)"
+    [SwipeMode.REJECT_DONE]: "rgba(255, 0, 0, 0.25)"
 };
-
-const ICON_HIGHRES = "bi-aspect-ratio";
-const ICON_HIGHRES_COMPUTING = "bi-hourglass-split";
-const ICON_HIGHRES_DONE = "bi-badge-hd-fill";
 
 const ACTION_SWIPE_MARGIN = 0.2;
 
@@ -37,7 +31,6 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> {
         accept: () => void,
         reject: () => void,
         toggleSeed: () => void,
-        toggleHighres: () => void,
         setAsFeatured: () => void
     }) {
         super(data, require("./picture.element.html").default);
@@ -62,35 +55,17 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> {
         this._bindClick("accept", this._options.accept);
         this._bindClick("reject", this._options.reject);
         this._bindClick("seed", this._options.toggleSeed);
-        this._bindClick("highres", this._options.toggleHighres);
         this._bindClick("featured", this._options.setAsFeatured);
-        this._bindClick("sd", this._setDisplay.bind(this, "sd"));
-        this._bindClick("hd", this._setDisplay.bind(this, "hd"));
-        this._bindClick("both", this._setDisplay.bind(this, "both"));
 
         // Get elements related to images at the top of the card
-        const img_sd: HTMLImageElement = this.querySelector(".card-img-top > img.sd") as HTMLImageElement;
-        const img_hd: HTMLImageElement = this.querySelector(".card-img-top > img.hd") as HTMLImageElement;
-        const containerDiv: HTMLDivElement = img_sd.parentElement! as HTMLDivElement; // Here we know that we have a parent element for sure due to the CSS selector
-        const button_sd = this._getElementByRef("sd")!;
-        const button_hd = this._getElementByRef("hd")!;
-        const button_both = this._getElementByRef("both")!;
+        const img: HTMLImageElement = this.querySelector(".card-img-top > img") as HTMLImageElement;
+        const containerDiv: HTMLDivElement = img.parentElement! as HTMLDivElement; // Here we know that we have a parent element for sure due to the CSS selector
 
         if (this.data.attachmentId == null) {
-            img_sd.remove();
-            button_sd.remove();
-            button_both.remove();
+            // No attachment, no src to set for the image
         }
         else {
-            img_sd.src = `/attachment/${this.data.attachmentId}`;
-        }
-        if (this.data.highresAttachmentId == null) {
-            img_hd.remove();
-            button_hd.remove();
-            button_both.remove();
-        } else {
-            img_hd.src = `/attachment/${this.data.highresAttachmentId}`;
-            this._setDisplay("hd"); // Prefer HD by default
+            img.src = `/attachment/${this.data.attachmentId}`;
         }
 
         // -- Handle swipe --
@@ -155,12 +130,6 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> {
             } else if (this._swipeMode == SwipeMode.ACCEPT_DONE && ratio > (1 - ACTION_SWIPE_MARGIN)) {
                 // Cancel the accept mode
                 this._swipeMode = SwipeMode.ACCEPT_STARTED;
-            } else if (this._swipeMode == SwipeMode.ACCEPT_DONE && ratio < ACTION_SWIPE_MARGIN) {
-                // Cancel the accept mode
-                this._swipeMode = SwipeMode.HIGHRES_DONE;
-            } else if (this._swipeMode == SwipeMode.HIGHRES_DONE && ratio > ACTION_SWIPE_MARGIN) {
-                // Cancel the accept mode
-                this._swipeMode = SwipeMode.ACCEPT_DONE;
             } else {
                 // Nothing to do
             }
@@ -174,10 +143,6 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> {
             } else if (this._swipeMode == SwipeMode.REJECT_DONE) {
                 // We crossed the reject limit, reject the image
                 this._options.reject();
-            } else if (this._swipeMode == SwipeMode.HIGHRES_DONE) {
-                // We crossed the reject limit, reject the image
-                this._options.accept();
-                this._options.toggleHighres();
             } else {
                 // Nothing to do
             }
@@ -185,46 +150,8 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> {
             this._swipeMode = SwipeMode.NONE;
             feedbackDiv.style.background = colors[this._swipeMode];
         });
-
-        // -- Handle highres --
-        const highresButton: HTMLButtonElement = this._getElementByRef("highres") as HTMLButtonElement;
-        const highresIcon: HTMLSpanElement = highresButton.querySelector("i") as HTMLElement;
-        highresIcon.classList.remove(ICON_HIGHRES, ICON_HIGHRES_COMPUTING, ICON_HIGHRES_DONE);
-        switch (this.data.highresStatus) {
-            case ComputationStatus.NONE:
-                highresIcon.classList.add(ICON_HIGHRES);
-                highresButton.disabled = false;
-                break;
-            case ComputationStatus.PENDING:
-                highresIcon.classList.add(ICON_HIGHRES_COMPUTING);
-                highresButton.disabled = false;
-                break;
-            case ComputationStatus.DONE:
-                highresIcon.classList.add(ICON_HIGHRES_DONE);
-                highresButton.disabled = true;
-                break;
-            case ComputationStatus.ERROR:
-                highresIcon.classList.add(ICON_HIGHRES_DONE, "text-danger");
-                highresButton.disabled = false;
-                break;
-            case ComputationStatus.REJECTED:
-                highresIcon.classList.add(ICON_HIGHRES_DONE, "text-muted");
-                highresButton.disabled = false;
-                break;
-        }
     }
 
-    protected _setDisplay(buttonRef: "sd" | "hd" | "both"): void {
-        const img_sd: HTMLImageElement = this.querySelector(".card-img-top > img.sd") as HTMLImageElement;
-        const img_hd: HTMLImageElement = this.querySelector(".card-img-top > img.hd") as HTMLImageElement;
-        // Toggle images visibility
-        img_sd.style.display = buttonRef !== "hd" ? "block" : "none";
-        img_hd.style.display = buttonRef !== "sd" ? "block" : "none";
-        // Toggle button active state
-        this._getElementByRef("display")?.querySelectorAll("button").forEach(btn => btn.classList.remove("active"));
-        this._getElementByRef(buttonRef)?.classList.add("active");
-        img_sd.style.opacity = buttonRef === "both" ? "0.6" : "";
-    }
 }
 
 customElements.define("custom-picture", PictureElement);

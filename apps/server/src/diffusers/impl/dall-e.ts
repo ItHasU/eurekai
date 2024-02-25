@@ -27,7 +27,7 @@ export class DallE extends AbstractDiffuser {
     }
 
     /** @inheritdoc */
-    public override async txt2img(options: ImageDescription, highres: boolean): Promise<{ data: AppTypes["BASE64_DATA"], revisedWidth: AppTypes["PIXELS"], revisedHeight: AppTypes["PIXELS"] }> {
+    public override async txt2img(options: ImageDescription): Promise<{ data: AppTypes["BASE64_DATA"], revisedWidth: AppTypes["PIXELS"], revisedHeight: AppTypes["PIXELS"] }> {
         // -- Call openai API --
         const size = options.width === options.height ? "1024x1024" : (options.width > options.height ? "1792x1024" : "1024x1792");
         const [revisedWidth, revisedHeight] = size.split("x").map(x => +x);

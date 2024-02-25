@@ -1,6 +1,6 @@
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { AttachmentId, ComputationStatus, PictureEntity, PromptEntity } from "@eurekai/shared/src/entities";
-import { generateNextPictures, isPreferredSeed, togglePreferredSeed, zipPictures } from "@eurekai/shared/src/pictures.data";
+import { deletePicture, generateNextPictures, isPreferredSeed, togglePreferredSeed, zipPictures } from "@eurekai/shared/src/pictures.data";
 import { PictureElement } from "src/components/picture.element";
 import { PromptElement } from "src/components/prompt.element";
 import { PromptEditor } from "src/editors/prompt.editor";
@@ -175,36 +175,6 @@ export class PicturesPage extends AbstractPageElement {
                         item._options.isPreferredSeed = isPreferredSeed(StaticDataProvider.entitiesHandler, projectId, picture.seed);
                         item.refresh();
                     },
-                    toggleHighres: async () => {
-                        let newStatus: ComputationStatus | null = null;
-                        switch (picture.highresStatus) {
-                            case ComputationStatus.REJECTED:
-                            case ComputationStatus.ERROR:
-                            case ComputationStatus.NONE:
-                                newStatus = ComputationStatus.PENDING;
-                                break;
-                            case ComputationStatus.PENDING:
-                                newStatus = ComputationStatus.NONE;
-                                break;
-                            case ComputationStatus.ACCEPTED:
-                            case ComputationStatus.DONE:
-                                // No way to cancel from there
-                                break;
-                        }
-                        if (newStatus != null) {
-                            await StaticDataProvider.entitiesHandler.withTransaction(tr => {
-                                tr.update("pictures", picture, {
-                                    highresStatus: asNamed(newStatus)
-                                });
-                                if (newStatus === ComputationStatus.PENDING) {
-                                    // Manually add the context so that the server gets notified
-                                    tr.contexts.push({ type: "pending", options: undefined });
-                                }
-                            });
-                        }
-
-                        item.refresh();
-                    },
                     setAsFeatured: async () => {
                         await StaticDataProvider.entitiesHandler.withTransaction(tr => {
                             tr.update("projects", project, {
@@ -213,7 +183,7 @@ export class PicturesPage extends AbstractPageElement {
                         });
                     }
                 });
-                item.classList.add("col-sm-12", "col-md-6", "col-lg-4");
+                item.classList.add("col-sm-12", "col-md-6", "col-lg-3");
                 this._picturesDiv.appendChild(item);
                 item.refresh();
             }
@@ -241,9 +211,6 @@ export class PicturesPage extends AbstractPageElement {
                 break;
             case "preferred":
                 filter = function (picture) { return picture.status >= ComputationStatus.DONE && preferredSeeds.has(picture.seed); };
-                break;
-            case "highres":
-                filter = function (picture) { return picture.highresStatus >= ComputationStatus.DONE; };
                 break;
             case "done":
                 filter = function (picture) { return picture.status === ComputationStatus.DONE; };
@@ -314,13 +281,7 @@ export class PicturesPage extends AbstractPageElement {
                 }
 
                 if (picture.status === ComputationStatus.REJECTED || picture.status === ComputationStatus.ERROR) {
-                    tr.delete("pictures", picture.id);
-                    if (picture.attachmentId) {
-                        tr.delete("attachments", picture.attachmentId);
-                    }
-                    if (picture.highresAttachmentId) {
-                        tr.delete("attachments", picture.highresAttachmentId);
-                    }
+                    deletePicture(StaticDataProvider.entitiesHandler, tr, picture);
                 }
             }
         });

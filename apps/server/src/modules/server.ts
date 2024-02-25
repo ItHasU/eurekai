@@ -120,8 +120,8 @@ export async function sqlFetch(helper: AbstractSQLRunner<any, any>, filter: AppC
         case "pending":
             return {
                 projects: await helper.all<ProjectEntity>(`SELECT * FROM ${helper.qt("projects")}`),
-                prompts: await helper.all<PromptEntity>(`SELECT ${helper.qt("prompts")}.* FROM ${helper.qt("pictures")} LEFT JOIN ${helper.qt("prompts")} ON ${helper.qf("prompts", "id")} = ${helper.qf("pictures", "promptId")} WHERE ${helper.qf("pictures", "status")} = $1 OR ${helper.qf("pictures", "highresStatus")} = $1`, ComputationStatus.PENDING),
-                pictures: await helper.all<PictureEntity>(`SELECT ${helper.qt("pictures")}.* FROM ${helper.qt("pictures")} WHERE ${helper.qf("pictures", "status")} = $1 OR ${helper.qf("pictures", "highresStatus")} = $1`, ComputationStatus.PENDING)
+                prompts: await helper.all<PromptEntity>(`SELECT ${helper.qt("prompts")}.* FROM ${helper.qt("pictures")} LEFT JOIN ${helper.qt("prompts")} ON ${helper.qf("prompts", "id")} = ${helper.qf("pictures", "promptId")} WHERE ${helper.qf("pictures", "status")} = $1`, ComputationStatus.PENDING),
+                pictures: await helper.all<PictureEntity>(`SELECT ${helper.qt("pictures")}.* FROM ${helper.qt("pictures")} WHERE ${helper.qf("pictures", "status")} = $1`, ComputationStatus.PENDING)
             }
         default:
             throw new Error(`Unsupported fetch context`);

@@ -16,5 +16,5 @@ export abstract class AbstractDiffuser {
     public abstract getModelInfo(): ModelInfo;
 
     /** Generate an image. */
-    public abstract txt2img(options: ImageDescription, highres: boolean): Promise<{ data: AppTypes["BASE64_DATA"], revisedWidth?: AppTypes["PIXELS"], revisedHeight?: AppTypes["PIXELS"] }>;
+    public abstract txt2img(options: ImageDescription): Promise<{ data: AppTypes["BASE64_DATA"], revisedWidth?: AppTypes["PIXELS"], revisedHeight?: AppTypes["PIXELS"] }>;
 }

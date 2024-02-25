@@ -112,9 +112,7 @@ export const APP_MODEL = new EntitiesModel({
         promptId: { type: "PROMPT_ID", foreignTable: "prompts" },
         seed: { type: "SEED" },
         status: { type: "COMPUTATION_STATUS" },
-        attachmentId: { type: "ATTACHMENT_ID", optional: true, foreignTable: "attachments" },
-        highresStatus: { type: "COMPUTATION_STATUS" },
-        highresAttachmentId: { type: "ATTACHMENT_ID", optional: true, foreignTable: "attachments" },
+        attachmentId: { type: "ATTACHMENT_ID", optional: true, foreignTable: "attachments" }
     },
     attachments: {
         id: { type: "ATTACHMENT_ID", identity: true },

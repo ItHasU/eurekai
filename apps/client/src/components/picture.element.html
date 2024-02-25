@@ -3,14 +3,10 @@
   <!-- Force image aspect ratio -->
   <div class="card-img-top w-100 lockable-container"
     style="position: relative; aspect-ratio: {{_options.prompt.width}}/{{_options.prompt.height}};">
-    <!-- High definition image -->
-    <img class="card-img-top hd {{#if _options.isLockable}}lockable{{/if}}"
-      style="position: absolute; top: 0; left: 0; aspect-ratio: {{_options.prompt.width}}/{{_options.prompt.height}};"
-      style="display: none;" alt="High resolution">
     <!-- Force image aspect ratio -->
-    <img class="card-img-top sd {{#if _options.isLockable}}lockable{{/if}}"
+    <img class="card-img-top {{#if _options.isLockable}}lockable{{/if}}"
       style="position: absolute; top: 0; left: 0; aspect-ratio: {{_options.prompt.width}}/{{_options.prompt.height}}"
-      alt="Low resolution">
+      alt="Generated picture">
     <!-- Color overlay for touch response -->
     <div
       style="position: absolute; top: 0; left: 0; height: 100%; width: 100%; background-color: rgba(255,0,0, 0); pointer-events: none;">
@@ -34,25 +30,10 @@
     </div>
     <div class="row g-1">
       <div class="col">
-        <div ref="display" class="btn-group" role="group" aria-label="Select display mode">
-          <button ref="sd" type="button" class="btn btn-outline-secondary active">
-            <i class="bi bi-badge-sd"></i>
-          </button>
-          <button ref="hd" type="button" class="btn btn-outline-secondary">
-            <i class="bi bi-badge-hd"></i>
-          </button>
-          <button ref="both" type="button" class="btn btn-outline-secondary">
-            <i class="bi bi-images"></i>
-          </button>
-        </div>
-      </div>
-      <div class="col">
         <div class="btn-group" role="group" aria-label="Select display mode" style="width: 100%;">
           <button ref="reject" type="button" class="btn btn-danger form-control"><i class="bi bi-x-lg"></i></button>
           <button ref="accept" type="button" class="btn btn-success form-control"><i
               class="bi bi-check-lg"></i></button>
-          <button ref="highres" type="button" class="btn btn-primary form-control"><i
-              class="bi bi-aspect-ratio"></i></button>
           <button ref="featured" type="button" class="btn btn-secondary form-control" title="Set as featured image"><i
               class="bi bi-image"></i></button>
         </div>

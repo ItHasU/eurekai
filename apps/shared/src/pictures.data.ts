@@ -38,9 +38,7 @@ export function generateNextPictures(handler: EntitiesHandler<AppTables, AppCont
             promptId: prompt.id,
             seed: [...missingPreferredSeeds.values()][0] ?? Math.floor(Math.random() * Number.MAX_SAFE_INTEGER),
             status: asNamed(ComputationStatus.PENDING),
-            attachmentId: null,
-            highresStatus: asNamed(ComputationStatus.NONE),
-            highresAttachmentId: null
+            attachmentId: null
         };
 
         // Remove seed has it has already been handled
@@ -79,9 +77,6 @@ export function deletePicture(handler: EntitiesHandler<AppTables, AppContexts>, 
     tr.delete("pictures", picture.id);
     if (picture.attachmentId) {
         tr.delete("attachments", picture.attachmentId);
-    }
-    if (picture.highresAttachmentId) {
-        tr.delete("attachments", picture.highresAttachmentId)
     }
 }
 
@@ -144,9 +139,6 @@ export function deleteProject(handler: EntitiesHandler<AppTables, AppContexts>, 
             pictureIds.add(picture.id);
             if (picture.attachmentId != null) {
                 attachmentIds.add(picture.attachmentId);
-            }
-            if (picture.highresAttachmentId != null) {
-                attachmentIds.add(picture.highresAttachmentId);
             }
         }
     }
@@ -225,17 +217,6 @@ export async function zipPictures(
                 const data = await download(picture.attachmentId);
                 // Add picture as png to zip
                 zip.file(`${baseFilename}-sd.png`, data, { binary: true });
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
-        // -- Add highres picture to zip --
-        if (picture.highresAttachmentId != null) {
-            try {
-                const data = await download(picture.highresAttachmentId);
-                // Add picture as png to zip
-                zip.file(`${baseFilename}-hd.png`, data, { binary: true });
             } catch (e) {
                 console.error(e);
             }

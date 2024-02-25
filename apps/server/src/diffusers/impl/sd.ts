@@ -18,15 +18,13 @@ export class SD extends Automatic1111 {
             apiURL,
             model,
             size: 512, // SD 1.5
-            lowresTemplate: {
+            template: {
                 ...DEFAULT_PARAMETERS
-            },
-            highresTemplate: {
-                ...DEFAULT_PARAMETERS,
-                enable_hr: true,
-                steps: 30,
-                denoising_strength: 0.6,
-                hr_scale: 2
+                // Disable Highres for now
+                // enable_hr: true,
+                // steps: 30,
+                // denoising_strength: 0.6,
+                // hr_scale: 2
             }
         });
     }

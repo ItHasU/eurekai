@@ -12,4 +12,10 @@ export function buildServerEntitiesHandler(db: AbstractSQLRunner<any, any>) {
         submit: transactionData => submit(db, transactionData)
     });
     return handler
-} 
+}
+
+export type TypeDefinition<T> = T extends EntitiesHandler<infer TypeDef, infer TableDef> ? TypeDef : never;
+export type TableDefinition<T> = T extends EntitiesHandler<infer TypeDef, infer TableDef> ? TableDef : never;
+
+export type AppTypeDefinitions = TypeDefinition<ReturnType<typeof buildServerEntitiesHandler>>;
+export type AppTableDefinitions = TableDefinition<ReturnType<typeof buildServerEntitiesHandler>>;

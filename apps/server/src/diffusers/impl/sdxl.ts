@@ -18,13 +18,9 @@ export class SDXL extends Automatic1111 {
             apiURL,
             model,
             size: 1024,
-            lowresTemplate: {
+            template: {
                 ...DEFAULT_PARAMETERS,
-                steps: 20
-            },
-            highresTemplate: {
-                ...DEFAULT_PARAMETERS,
-                steps: 30,
+                steps: 30
                 // Disable the refiner for now
                 // refiner_checkpoint: _refiner.title,
                 // refiner_switch_at: 0.66

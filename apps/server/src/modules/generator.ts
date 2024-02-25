@@ -56,12 +56,7 @@ export class Generator {
 
                 // Render the lowres image if needed
                 if (picture.status === ComputationStatus.PENDING) {
-                    await this._generatePicture(picture, false);
-                }
-
-                // Render the highres image if needed
-                if (picture.highresStatus === ComputationStatus.PENDING) {
-                    await this._generatePicture(picture, true);
+                    await this._generatePicture(picture);
                 }
             }
 
@@ -77,7 +72,7 @@ export class Generator {
     }
 
     /** Generate a picture and save it to the picture */
-    protected async _generatePicture(picture: PictureEntity, highres: boolean): Promise<void> {
+    protected async _generatePicture(picture: PictureEntity): Promise<void> {
         await this._handler.withTransaction(async (tr) => {
             try {
                 // -- Notify the clients we are at work --
@@ -114,8 +109,8 @@ export class Generator {
                     negative_prompt: prompt.negative_prompt ?? "",
                     seed: picture.seed
                 };
-                console.debug(`Generating ${highres ? "highres" : "lowres"} image for picture ${picture.id} with model ${prompt.model} and seed ${picture.seed}`);
-                const imageData = await diffuser.txt2img(img, highres);
+                console.debug(`Generating picture ${picture.id} with model ${prompt.model} and seed ${picture.seed}`);
+                const imageData = await diffuser.txt2img(img);
 
                 // For debugging purpose, write image to disk
                 // await writeFile(`${new Date().getTime()}.png`, Buffer.from(imageData, 'base64'));
@@ -126,39 +121,26 @@ export class Generator {
                     data: imageData.data
                 });
 
-                if (highres) {
-                    tr.update("pictures", picture, {
-                        highresStatus: asNamed(ComputationStatus.DONE),
-                        highresAttachmentId: attachment.id
+                tr.update("pictures", picture, {
+                    status: asNamed(ComputationStatus.DONE),
+                    attachmentId: attachment.id
+                });
+                if (imageData.revisedWidth != null) {
+                    tr.update("prompts", prompt, {
+                        width: asNamed(imageData.revisedWidth)
                     });
-                } else {
-                    tr.update("pictures", picture, {
-                        status: asNamed(ComputationStatus.DONE),
-                        attachmentId: attachment.id
+                }
+                if (imageData.revisedHeight != null) {
+                    tr.update("prompts", prompt, {
+                        height: asNamed(imageData.revisedHeight)
                     });
-                    if (imageData.revisedWidth != null) {
-                        tr.update("prompts", prompt, {
-                            width: asNamed(imageData.revisedWidth)
-                        });
-                    }
-                    if (imageData.revisedHeight != null) {
-                        tr.update("prompts", prompt, {
-                            height: asNamed(imageData.revisedHeight)
-                        });
-                    }
                 }
             } catch (e) {
                 console.error(`Failed to generate image for picture ${picture.id}`);
                 console.error(e);
-                if (highres) {
-                    tr.update("pictures", picture, {
-                        highresStatus: asNamed(ComputationStatus.ERROR)
-                    });
-                } else {
-                    tr.update("pictures", picture, {
-                        status: asNamed(ComputationStatus.ERROR)
-                    });
-                }
+                tr.update("pictures", picture, {
+                    status: asNamed(ComputationStatus.ERROR)
+                });
             } finally {
                 // -- Notify the clients we are done --
                 NotificationHelper.broadcast<AppEvents>("generating", { running: false });

@@ -29,7 +29,7 @@ export class ReplicateSDXL extends AbstractDiffuser {
     }
 
     /** @inheritdoc */
-    public override async txt2img(options: ImageDescription, highres: boolean): Promise<{ data: AppTypes["BASE64_DATA"] }> {
+    public override async txt2img(options: ImageDescription): Promise<{ data: AppTypes["BASE64_DATA"] }> {
         // -- Call tge API --
         const output = await this._replicate.run(
             this._model,
@@ -44,13 +44,7 @@ export class ReplicateSDXL extends AbstractDiffuser {
                     guidance_scale: 7,
                     scheduler: "KarrasDPM",
                     disable_safety_checker: true,
-                    ...highres ? {
-                        num_inference_steps: highres ? 60 : 20,
-                        refine: "base_image_refiner",
-                        refine_steps: 30
-                    } : {
-                        num_inference_steps: 15
-                    }
+                    num_inference_steps: 30
                 }
             },
             (prediction) => {

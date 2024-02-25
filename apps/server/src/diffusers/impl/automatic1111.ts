@@ -58,8 +58,7 @@ export interface ModelOptions {
     apiURL: string;
     model: SDModel;
     size: number;
-    lowresTemplate: GenerateImageOptions;
-    highresTemplate: GenerateImageOptions;
+    template: GenerateImageOptions;
 }
 
 export abstract class Automatic1111 extends AbstractDiffuser {
@@ -71,13 +70,13 @@ export abstract class Automatic1111 extends AbstractDiffuser {
     //#region Image generation
 
     /** @inheritdoc */
-    public override async txt2img(image: ImageDescription, highres: boolean): Promise<{ data: AppTypes["BASE64_DATA"] }> {
+    public override async txt2img(image: ImageDescription): Promise<{ data: AppTypes["BASE64_DATA"] }> {
         // -- Set model --
         await this._setModel(this._options.model.title);
 
         // -- Generate image --
         const options: Txt2ImgOptions = {
-            ...(highres ? this._options.highresTemplate : this._options.lowresTemplate),
+            ...this._options.template,
             prompt: image.prompt,
             negative_prompt: image.negative_prompt,
             width: image.width,
