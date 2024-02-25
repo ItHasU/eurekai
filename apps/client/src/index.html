@@ -42,6 +42,25 @@
         body.locked custom-project.lockable {
             display: none;
         }
+
+        .btn-group-footer {
+            display: flex;
+            flex-direction: row;
+            border-radius: 0 0 var(--bs-card-inner-border-radius) var(--bs-card-inner-border-radius);
+        }
+
+        .btn-group-footer .btn {
+            flex: 1 1 auto;
+            border-radius: 0;
+        }
+
+        .btn-group-footer .btn:first-child {
+            border-radius: 0 0 0 var(--bs-card-inner-border-radius);
+        }
+
+        .btn-group-footer .btn:last-child {
+            border-radius: 0 0 var(--bs-card-inner-border-radius) 0;
+        }
     </style>
 </head>
 

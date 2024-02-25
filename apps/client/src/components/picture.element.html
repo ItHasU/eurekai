@@ -12,32 +12,20 @@
       style="position: absolute; top: 0; left: 0; height: 100%; width: 100%; background-color: rgba(255,0,0, 0); pointer-events: none;">
     </div>
   </div>
-  <div class="card-body">
-    <div class="card-text pb-2">
-      <div class="d-flex justify-content-between">
-        <div>
-          <span title="{{_options.prompt.prompt}} // {{_options.prompt.negative_prompt}}">
-            {{_options.prompt.width}}&nbsp;x&nbsp;{{_options.prompt.height}}&nbsp;px
-          </span>
-        </div>
-        <div>
-          <a ref="seed" href="javascript: void(0);">
-            <span class="seed">{{data.seed}}</span>
-            <i class="bi bi-heart{{#if _options.isPreferredSeed}}-fill text-danger{{/if}}"></i>
-          </a>
-        </div>
-      </div>
-    </div>
-    <div class="row g-1">
-      <div class="col">
-        <div class="btn-group" role="group" aria-label="Select display mode" style="width: 100%;">
-          <button ref="reject" type="button" class="btn btn-danger form-control"><i class="bi bi-x-lg"></i></button>
-          <button ref="accept" type="button" class="btn btn-success form-control"><i
-              class="bi bi-check-lg"></i></button>
-          <button ref="featured" type="button" class="btn btn-secondary form-control" title="Set as featured image"><i
-              class="bi bi-image"></i></button>
-        </div>
-      </div>
+  <div class="card-footer p-0">
+    <!--  -->
+    <div class="btn-group-footer" role="group" aria-label="Select display mode" style="width: 100%;">
+      <button ref="reject" type="button" class="btn btn-danger form-control" title="Reject">
+        <i class="bi bi-x-lg"></i>
+      </button>
+      <button ref="accept" type="button" class="btn btn-success form-control" title="Accept">
+        <i class="bi bi-check-lg"></i>
+      </button>
+      <button ref="seed" type="button" class="btn btn-secondary form-control" title="Toggle preferred seed">
+        <i class="bi bi-heart{{#if _options.isPreferredSeed}}-fill text-danger{{/if}}"></i>
+      </button>
+      <button ref="featured" type="button" class="btn btn-secondary form-control" title="Set as featured image">
+        <i class="bi bi-image"></i></button>
     </div>
   </div>
 </div>

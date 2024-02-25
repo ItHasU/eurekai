@@ -2,9 +2,7 @@
   <div class="card-body">
     <div class="card-text pb-2">
       <b>#{{data.orderIndex}}</b>
-      <code>{{model.displayName}}</code>
-      <br>
-      <b>Changes&nbsp;: </b>
+      <code>{{model.displayName}}</code> - {{data.width}}&nbsp;x&nbsp;{{data.height}}&nbsp;px -
       <a class="text-decoration-none" data-bs-toggle="collapse" href="#promptDiff_{{this.data.id}}"
         title="Prompt change(s)">
         <span class="text-danger">-{{promptRemovedCount}}</span>
@@ -16,6 +14,7 @@
         <span class="text-danger">-{{negativePromptRemovedCount}}</span>
         <span class="text-success">+{{negativePromptAddedCount}}</span>
       </a>
+      <br>
       <div class="collapse show" id="promptDiff_{{this.data.id}}">
         <b>Prompt&nbsp;: </b>{{{promptDiffShort}}}
       </div>
