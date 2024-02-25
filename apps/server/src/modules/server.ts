@@ -7,16 +7,17 @@ import { ServerNotificationImpl } from "@dagda/server/tools/notification.impl";
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { Data } from "@dagda/shared/entities/types";
 import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
-import { AppContexts, AppTables, AttachmentEntity, ComputationStatus, PictureEntity, ProjectEntity, PromptEntity, SeedEntity, UserEntity } from "@eurekai/shared/src/entities";
+import { APP_MODEL, AppContexts, AppTables, AttachmentEntity, ComputationStatus, PictureEntity, ProjectEntity, PromptEntity, SeedEntity, UserEntity } from "@eurekai/shared/src/entities";
 import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api";
 import express, { Application } from "express";
 import { resolve } from "node:path";
 import passport from "passport";
 import { DiffusersRegistry } from "src/diffusers";
+import { qf, qt } from "./db";
 import { buildServerEntitiesHandler } from "./entities.handler";
 
 /** Initialize an Express app and register the routes */
-export async function initHTTPServer(db: AbstractSQLRunner<any, any>, baseURL: string, port: number): Promise<void> {
+export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, port: number): Promise<void> {
     const app = express();
 
     const auth: AuthHandler = new AuthHandler(app, baseURL, async (profile: passport.Profile) => {
@@ -59,7 +60,7 @@ export async function initHTTPServer(db: AbstractSQLRunner<any, any>, baseURL: s
     app.use(express.static(path));
 
     // -- Register SQL routes --
-    registerAdapterAPI<AppTables, AppContexts>(app, db, sqlFetch);
+    registerAdapterAPI<AppTables, AppContexts>(app, APP_MODEL, db, sqlFetch);
 
     // -- Register models routes --
     _registerModelsAPI(app);
@@ -69,7 +70,7 @@ export async function initHTTPServer(db: AbstractSQLRunner<any, any>, baseURL: s
         // Send attachment as a png image from the base 64 string
         const id = +req.params.id;
         try {
-            const attachment = await db.get<AttachmentEntity>(`SELECT * FROM ${db.qt("attachments")} WHERE ${db.qf("attachments", "id")}=$1`, id);
+            const attachment = await db.get<AttachmentEntity>(`SELECT * FROM ${qt("attachments")} WHERE ${qf("attachments", "id")}=$1`, id);
             if (!attachment) {
                 res.status(404).send(`Attachment ${id} not found`);
             } else {
@@ -99,29 +100,29 @@ export async function initHTTPServer(db: AbstractSQLRunner<any, any>, baseURL: s
  * Fetch function for the app.  
  * This function must return the records that match the filter
  */
-export async function sqlFetch(helper: AbstractSQLRunner<any, any>, filter: AppContexts): Promise<Data<AppTables>> {
+export async function sqlFetch(helper: AbstractSQLRunner, filter: AppContexts): Promise<Data<AppTables>> {
     switch (filter.type) {
         case "users":
             return {
-                users: await helper.all<UserEntity>(`SELECT * FROM ${helper.qt("users")}`)
+                users: await helper.all<UserEntity>(`SELECT * FROM ${qt("users")}`)
             };
         case "projects":
             return {
-                projects: await helper.all<ProjectEntity>(`SELECT * FROM ${helper.qt("projects")}`)
+                projects: await helper.all<ProjectEntity>(`SELECT * FROM ${qt("projects")}`)
             };
         case "project":
             return {
-                projects: await helper.all<ProjectEntity>(`SELECT * FROM ${helper.qt("projects")} WHERE ${helper.qf("projects", "id")} = $1`, filter.options.projectId),
-                prompts: await helper.all<PromptEntity>(`SELECT * FROM ${helper.qt("prompts")} WHERE ${helper.qf("prompts", "projectId")} = $1`, filter.options.projectId),
-                pictures: await helper.all<PictureEntity>(`SELECT ${helper.qt("pictures")}.* FROM ${helper.qt("pictures")} JOIN ${helper.qt("prompts")} ON ${helper.qf("pictures", "promptId")} = ${helper.qf("prompts", "id")} WHERE ${helper.qf("prompts", "projectId")} = $1`, filter.options.projectId),
+                projects: await helper.all<ProjectEntity>(`SELECT * FROM ${qt("projects")} WHERE ${qf("projects", "id")} = $1`, filter.options.projectId),
+                prompts: await helper.all<PromptEntity>(`SELECT * FROM ${qt("prompts")} WHERE ${qf("prompts", "projectId")} = $1`, filter.options.projectId),
+                pictures: await helper.all<PictureEntity>(`SELECT ${qt("pictures")}.* FROM ${qt("pictures")} JOIN ${qt("prompts")} ON ${qf("pictures", "promptId")} = ${qf("prompts", "id")} WHERE ${qf("prompts", "projectId")} = $1`, filter.options.projectId),
                 // attachments: not fetch using cache but through a custom route
-                seeds: await helper.all<SeedEntity>(`SELECT * FROM ${helper.qt("seeds")} WHERE ${helper.qf("seeds", "projectId")} = $1`, filter.options.projectId)
+                seeds: await helper.all<SeedEntity>(`SELECT * FROM ${qt("seeds")} WHERE ${qf("seeds", "projectId")} = $1`, filter.options.projectId)
             }
         case "pending":
             return {
-                projects: await helper.all<ProjectEntity>(`SELECT * FROM ${helper.qt("projects")}`),
-                prompts: await helper.all<PromptEntity>(`SELECT ${helper.qt("prompts")}.* FROM ${helper.qt("pictures")} LEFT JOIN ${helper.qt("prompts")} ON ${helper.qf("prompts", "id")} = ${helper.qf("pictures", "promptId")} WHERE ${helper.qf("pictures", "status")} = $1`, ComputationStatus.PENDING),
-                pictures: await helper.all<PictureEntity>(`SELECT ${helper.qt("pictures")}.* FROM ${helper.qt("pictures")} WHERE ${helper.qf("pictures", "status")} = $1`, ComputationStatus.PENDING)
+                projects: await helper.all<ProjectEntity>(`SELECT * FROM ${qt("projects")}`),
+                prompts: await helper.all<PromptEntity>(`SELECT ${qt("prompts")}.* FROM ${qt("pictures")} LEFT JOIN ${qt("prompts")} ON ${qf("prompts", "id")} = ${qf("pictures", "promptId")} WHERE ${qf("pictures", "status")} = $1`, ComputationStatus.PENDING),
+                pictures: await helper.all<PictureEntity>(`SELECT ${qt("pictures")}.* FROM ${qt("pictures")} WHERE ${qf("pictures", "status")} = $1`, ComputationStatus.PENDING)
             }
         default:
             throw new Error(`Unsupported fetch context`);

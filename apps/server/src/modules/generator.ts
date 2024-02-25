@@ -10,7 +10,7 @@ import { buildServerEntitiesHandler } from "./entities.handler";
 export class Generator {
     protected _handler: ReturnType<typeof buildServerEntitiesHandler>;
 
-    constructor(protected _db: AbstractSQLRunner<any, any>) {
+    constructor(protected _db: AbstractSQLRunner) {
         this._handler = buildServerEntitiesHandler(this._db);
         this._unqueue();
     }
