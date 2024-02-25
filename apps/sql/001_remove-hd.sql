@@ -6,6 +6,6 @@ INSERT INTO "pictures" ("promptId", "seed", "status", "attachmentId", "highresSt
         WHERE "highresStatus" = 2;
 -- Remove obsolete highres columns
 ALTER TABLE "pictures" 
-    DROP COLUMN "highresStatus"
+    DROP COLUMN "highresStatus",
     DROP COLUMN "highresAttachmentId";
 COMMIT;
