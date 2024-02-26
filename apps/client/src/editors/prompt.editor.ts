@@ -1,6 +1,6 @@
 import { apiCall } from "@dagda/client/api";
 import { asNamed } from "@dagda/shared/entities/named.types";
-import { PromptEntity } from "@eurekai/shared/src/entities";
+import { PromptEntity, PromptId } from "@eurekai/shared/src/entities";
 import { MODELS_URL, ModelsAPI } from "@eurekai/shared/src/models.api";
 import { htmlStringToElement } from "src/components/tools";
 import { StaticDataProvider } from "src/tools/dataProvider";
@@ -19,6 +19,7 @@ const DEFAULT_SIZE = 1024;
 
 export class PromptEditor extends HTMLElement {
 
+    protected _parentId: PromptId | null = null;
     protected readonly _positiveInput: HTMLInputElement;
     protected readonly _negativeInput: HTMLInputElement;
     protected readonly _widthInput: HTMLInputElement;
@@ -97,6 +98,7 @@ export class PromptEditor extends HTMLElement {
 
     public setPrompt(prompt?: PromptEntity): void {
         // -- Set all fields to passed prompt --
+        this._parentId = prompt?.id ?? null;
         this._positiveInput.value = prompt?.prompt ?? "";
         this._negativeInput.value = prompt?.negative_prompt ?? "";
         this._widthInput.value = "" + (prompt?.width ?? DEFAULT_SIZE);
@@ -114,6 +116,7 @@ export class PromptEditor extends HTMLElement {
 
         // -- Build object --
         return {
+            parentId: this._parentId,
             prompt: asNamed(positivePrompt),
             negative_prompt: negativePrompt ? asNamed(negativePrompt) : undefined,
             width: asNamed(width),

@@ -94,20 +94,25 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
         // -- Prepare diff ----------------------------------------------------
         let previousPrompt: PromptEntity | null = null;
         // -- Search for the previous prompt --
-        for (const prompt of StaticDataProvider.entitiesHandler.getItems("prompts")) {
-            if (!StaticDataProvider.entitiesHandler.isSameId(prompt.projectId, this.data.projectId)) {
-                // Pas le prompt du bon projet
-                continue;
-            }
-            if (prompt.orderIndex >= this.data.orderIndex) {
-                // Le prompt est plus récent
-                continue;
-            }
-            if (previousPrompt === null || previousPrompt.orderIndex < prompt.orderIndex) {
-                // Pas encore de previous prompt ou alors on a un prompt plus près du prompt courant.
-                previousPrompt = prompt;
+        if (this.data.parentId != null) {
+            previousPrompt = StaticDataProvider.entitiesHandler.getById("prompts", this.data.parentId) ?? null;
+        } else {
+            for (const prompt of StaticDataProvider.entitiesHandler.getItems("prompts")) {
+                if (!StaticDataProvider.entitiesHandler.isSameId(prompt.projectId, this.data.projectId)) {
+                    // Pas le prompt du bon projet
+                    continue;
+                }
+                if (prompt.orderIndex >= this.data.orderIndex) {
+                    // Le prompt est plus récent
+                    continue;
+                }
+                if (previousPrompt === null || previousPrompt.orderIndex < prompt.orderIndex) {
+                    // Pas encore de previous prompt ou alors on a un prompt plus près du prompt courant.
+                    previousPrompt = prompt;
+                }
             }
         }
+
         // -- Compute and prepare diff display --
         this.promptRemovedCount = 0;
         this.promptAddedCount = 0;

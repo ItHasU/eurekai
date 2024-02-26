@@ -99,6 +99,7 @@ export const APP_MODEL = new EntitiesModel({
     },
     prompts: {
         id: { type: "PROMPT_ID", identity: true },
+        parentId: { type: "PROMPT_ID", optional: true, foreignTable: "prompts" },
         projectId: { type: "PROJECT_ID", foreignTable: "projects" },
         orderIndex: { type: "INDEX" },
         width: { type: "PIXELS" },

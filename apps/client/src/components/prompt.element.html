@@ -1,7 +1,13 @@
-<div class="card mb-3">
+<div class="card mb-3" id="prompt-{{data.id}}">
   <div class="card-body">
     <div class="card-text pb-2">
       <b>#{{data.orderIndex}}</b>
+      {{#if data.parentId}}
+      <a class="link-secondary link-offset-2 link-underline-opacity-0" href="#prompt-{{data.parentId}}"
+        title="See parent prompt">
+        <i class="bi bi-arrow-return-left"></i>
+      </a>
+      {{/if}}
       <code>{{model.displayName}}</code> - {{data.width}}&nbsp;x&nbsp;{{data.height}}&nbsp;px -
       <a class="text-decoration-none" data-bs-toggle="collapse" href="#promptDiff_{{this.data.id}}"
         title="Prompt change(s)">
