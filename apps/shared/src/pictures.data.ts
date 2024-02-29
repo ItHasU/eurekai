@@ -249,6 +249,7 @@ export function movePromptToProject(handler: EntitiesHandler<AppTables, AppConte
         for (const prompt of promptsToMove) {
             tr.update("prompts", prompt, { projectId: newProjectId });
         }
+        tr.update("prompts", firstPrompt, { parentId: null });
         return [...promptsToMove];
     } else {
         tr.update("prompts", firstPrompt, { projectId: newProjectId });
@@ -257,6 +258,7 @@ export function movePromptToProject(handler: EntitiesHandler<AppTables, AppConte
                 tr.update("prompts", prompt, { parentId: null });
             }
         }
+        tr.update("prompts", firstPrompt, { parentId: null });
         return [firstPrompt];
     }
 
