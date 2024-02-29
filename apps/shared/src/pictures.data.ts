@@ -226,6 +226,24 @@ export async function zipPictures(
     return zip;
 }
 
+/** Delete a prompt */
+export function deletePrompt(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, prompt: PromptEntity): void {
+    // -- Delete this prompt pictures --
+    for (const picture of handler.getItems("pictures")) {
+        if (handler.isSameId(picture.promptId, prompt.id)) {
+            deletePicture(handler, tr, picture);
+        }
+    }
+    // -- Unlink this prompt from its children --
+    for (const child of handler.getItems("prompts")) {
+        if (handler.isSameId(child.parentId, prompt.id)) {
+            tr.update("prompts", child, { parentId: null });
+        }
+    }
+    // -- Delete the prompt itself --
+    tr.delete("prompts", prompt.id);
+}
+
 /** Will move the firstPrompt and all its children and sub-children to the newProjectId */
 export function movePromptToProject(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, firstPrompt: PromptEntity, newProjectId: ProjectId, withChildren: boolean): PromptEntity[] {
     const prompts = [...handler.getItems("prompts")];

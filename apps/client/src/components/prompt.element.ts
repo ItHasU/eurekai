@@ -1,7 +1,7 @@
 import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "@dagda/shared/tools/events";
 import { ComputationStatus, ProjectEntity, PromptEntity } from "@eurekai/shared/src/entities";
 import { ModelInfo } from "@eurekai/shared/src/models.api";
-import { deletePicture, generateNextPictures, movePromptToProject, updateSeeds } from "@eurekai/shared/src/pictures.data";
+import { deletePrompt, generateNextPictures, movePromptToProject, updateSeeds } from "@eurekai/shared/src/pictures.data";
 import { diff_match_patch } from "diff-match-patch";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { AbstractDTOElement } from "./abstract.dto.element";
@@ -183,12 +183,7 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
         this._bindClick("clone", () => EventHandlerImpl.fire(this._eventData, "clone", { prompt: this.data }));
         this._bindClick("delete", async () => {
             await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
-                for (const picture of StaticDataProvider.entitiesHandler.getItems("pictures")) {
-                    if (StaticDataProvider.entitiesHandler.isSameId(picture.promptId, this.data.id)) {
-                        deletePicture(StaticDataProvider.entitiesHandler, tr, picture);
-                    }
-                }
-                tr.delete("prompts", this.data.id);
+                deletePrompt(StaticDataProvider.entitiesHandler, tr, this.data);
             });
             EventHandlerImpl.fire(this._eventData, "delete", { prompt: this.data });
         });
