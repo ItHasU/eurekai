@@ -57,10 +57,16 @@
                 <i class="bi bi-trash"></i>&nbsp;Delete prompt
               </a>
             </li>
-            <!-- Move prompt -->
+            <!-- Move prompt only and break relationship with other prompts -->
             <li>
               <a ref="move" class="dropdown-item" href="javascript: void(0)">
                 <i class="bi bi-box-arrow-up-right"></i>&nbsp;Move to another project...
+              </a>
+            </li>
+            <!-- Move prompt with children -->
+            <li>
+              <a ref="moveWithChildren" class="dropdown-item" href="javascript: void(0)">
+                <i class="bi bi-box-arrow-up-right"></i>&nbsp;Move prompt and children...
               </a>
             </li>
             <!-- Seeds -->

@@ -1,7 +1,7 @@
 import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "@dagda/shared/tools/events";
 import { ComputationStatus, ProjectEntity, PromptEntity } from "@eurekai/shared/src/entities";
 import { ModelInfo } from "@eurekai/shared/src/models.api";
-import { deletePicture, generateNextPictures, updateSeeds } from "@eurekai/shared/src/pictures.data";
+import { deletePicture, generateNextPictures, movePromptToProject, updateSeeds } from "@eurekai/shared/src/pictures.data";
 import { diff_match_patch } from "diff-match-patch";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { AbstractDTOElement } from "./abstract.dto.element";
@@ -192,20 +192,27 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
             });
             EventHandlerImpl.fire(this._eventData, "delete", { prompt: this.data });
         });
-        this._bindClick("move", async () => {
-            const projects = StaticDataProvider.entitiesHandler.getItems("projects");
-            const selectedProject = await showSelect<ProjectEntity>(projects, {
-                valueKey: "id",
-                displayString: "name",
-                selected: projects.find(p => StaticDataProvider.entitiesHandler.isSameId(p.id, this.data.projectId))
-            });
-            if (selectedProject != null && selectedProject.id != this.data.projectId) {
-                await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
-                    tr.update("prompts", this.data, { projectId: selectedProject.id });
+        const genMoveButtonCallback = (withChildren: boolean) => {
+            return async () => {
+                const projects = StaticDataProvider.entitiesHandler.getItems("projects");
+                const selectedProject = await showSelect<ProjectEntity>(projects, {
+                    valueKey: "id",
+                    displayString: "name",
+                    selected: projects.find(p => StaticDataProvider.entitiesHandler.isSameId(p.id, this.data.projectId))
                 });
-                EventHandlerImpl.fire(this._eventData, "delete", { prompt: this.data });
+                if (selectedProject != null && selectedProject.id != this.data.projectId) {
+                    let promptsDeleted: PromptEntity[] = [];
+                    await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
+                        promptsDeleted = movePromptToProject(StaticDataProvider.entitiesHandler, tr, this.data, selectedProject.id, withChildren);
+                    });
+                    for (const prompt of promptsDeleted) {
+                        EventHandlerImpl.fire(this._eventData, "delete", { prompt });
+                    }
+                }
             }
-        });
+        }
+        this._bindClick("move", genMoveButtonCallback(false));
+        this._bindClick("moveWithChildren", genMoveButtonCallback(true));
         this._bindClick("updateSeeds", async () => {
             return StaticDataProvider.entitiesHandler.withTransaction((tr) => {
                 updateSeeds(StaticDataProvider.entitiesHandler, tr, this.data, false);

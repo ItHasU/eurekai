@@ -225,3 +225,39 @@ export async function zipPictures(
 
     return zip;
 }
+
+/** Will move the firstPrompt and all its children and sub-children to the newProjectId */
+export function movePromptToProject(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, firstPrompt: PromptEntity, newProjectId: ProjectId, withChildren: boolean): PromptEntity[] {
+    const prompts = [...handler.getItems("prompts")];
+    prompts.sort((a, b) => (a.id - b.id));
+
+    if (withChildren) {
+        // -- Make the list of prompts to move --
+        const promptsToMove: Set<PromptEntity> = new Set([firstPrompt]);
+        let added = false;
+        for (const prompt of prompts) {
+            const parentPrompt = prompt.parentId == null ? null : handler.getById("prompts", prompt.parentId);
+            if (parentPrompt != null && promptsToMove.has(parentPrompt)) {
+                if (promptsToMove.has(prompt)) {
+                    // Prompt is already in the list, skip
+                } else {
+                    added = true;
+                    promptsToMove.add(prompt);
+                }
+            }
+        }
+        for (const prompt of promptsToMove) {
+            tr.update("prompts", prompt, { projectId: newProjectId });
+        }
+        return [...promptsToMove];
+    } else {
+        tr.update("prompts", firstPrompt, { projectId: newProjectId });
+        for (const prompt of prompts) {
+            if (handler.isSameId(prompt.parentId, firstPrompt.id)) {
+                tr.update("prompts", prompt, { parentId: null });
+            }
+        }
+        return [firstPrompt];
+    }
+
+}
