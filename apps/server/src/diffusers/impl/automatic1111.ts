@@ -2,6 +2,7 @@ import { jsonPost } from "@dagda/server/tools/fetch";
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { AppTypes } from "@eurekai/shared/src/entities";
 import { AbstractDiffuser, ImageDescription } from "../diffuser";
+import { getAllModelsWithWOL } from "./automatic1111.tools";
 
 //#region Types ---------------------------------------------------------------
 
@@ -56,6 +57,7 @@ export interface SDModel {
 
 export interface ModelOptions {
     apiURL: string;
+    mac?: string;
     model: SDModel;
     size: number;
     template: GenerateImageOptions;
@@ -71,6 +73,15 @@ export abstract class Automatic1111 extends AbstractDiffuser {
 
     /** @inheritdoc */
     public override async txt2img(image: ImageDescription): Promise<{ data: AppTypes["BASE64_DATA"] }> {
+        // -- Wait for server to wake up --
+        if (this._options.mac != null) {
+            try {
+                await getAllModelsWithWOL(this._options.apiURL, this._options.mac);
+            } catch (e) {
+                throw "Failed to wake up server";
+            }
+        }
+
         // -- Set model --
         await this._setModel(this._options.model.title);
 

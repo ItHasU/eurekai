@@ -17,6 +17,7 @@
     "@types/express-session": "^1.17.10",
     "@types/passport": "^1.0.16",
     "@types/passport-google-oauth20": "^2.0.14",
+    "@types/wol": "^1.0.4",
     "undici": "^5.27.1"
   },
   "dependencies": {
@@ -26,6 +27,7 @@
     "openai": "^4.28.0",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
-    "replicate": "^0.25.2"
+    "replicate": "^0.25.2",
+    "wol": "^1.0.7"
   }
 }
