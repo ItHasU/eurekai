@@ -17,9 +17,10 @@ export class DiffusersRegistry {
         // -- Fetch A1111 models --
         try {
             const automatic1111_apiUrl = getEnvString<ENV_VARIABLES_STR>("API_URL");
-            const automatic1111_mac = getEnvString<ENV_VARIABLES_STR>("API_WOL_MAC");
+            const automatic1111_wolMAC = getEnvString<ENV_VARIABLES_STR>("API_WOL_MAC");
+            const automatic1111_wolIP = getEnvString<ENV_VARIABLES_STR>("API_WOL_IP");
             if (automatic1111_apiUrl != null) {
-                const a1111_models = automatic1111_mac == null ? await getAllModels(automatic1111_apiUrl) : await (getAllModelsWithWOL(automatic1111_apiUrl, automatic1111_mac) as Promise<AbstractDiffuser[]>);
+                const a1111_models = automatic1111_wolMAC == null ? await getAllModels(automatic1111_apiUrl) : await (getAllModelsWithWOL(automatic1111_apiUrl, automatic1111_wolMAC, automatic1111_wolIP) as Promise<AbstractDiffuser[]>);
                 for (const model of a1111_models) {
                     DiffusersRegistry.push(model);
                 }

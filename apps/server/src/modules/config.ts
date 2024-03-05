@@ -1,7 +1,7 @@
 export type ENV_VARIABLES_STR =
     "BASE_URL" |
     "GOOGLE_CLIENT_ID" | "GOOGLE_CLIENT_SECRET" |
-    "API_URL" | "API_WOL_MAC" | // API MAC is used to WOL the server
+    "API_URL" | "API_WOL_MAC" | "API_WOL_IP" | // API MAC/IP is used to WOL the server
     "REPLICATE_TOKEN" | "REPLICATE_MODELS" |
     "OPENAI_API_TOKEN" |
     "DATABASE_URL";

@@ -16,7 +16,7 @@ async function getModels(apiUrl: string): Promise<SDModel[]> {
  * @return The list of diffused on success
  * @throws An error if anything fails in the process
  */
-export async function getAllModelsWithWOL(apiURL: string, mac: string): Promise<Automatic1111[]> {
+export async function getAllModelsWithWOL(apiURL: string, mac: string, ip?: string): Promise<Automatic1111[]> {
     // -- Read MAC address --
     const nbRetries: number = 3;
     const timeout_ms: number = 10000;
@@ -35,7 +35,7 @@ export async function getAllModelsWithWOL(apiURL: string, mac: string): Promise<
         // -- Send WOL request --
         try {
             const wolResult = await new Promise<boolean>((resolve, reject) => {
-                wake(mac, (err: any, res) => {
+                wake(mac, { address: ip }, (err: any, res) => {
                     if (err) {
                         reject(err);
                     } else {

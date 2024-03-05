@@ -57,7 +57,8 @@ export interface SDModel {
 
 export interface ModelOptions {
     apiURL: string;
-    mac?: string;
+    wolMAC?: string;
+    wolIP?: string;
     model: SDModel;
     size: number;
     template: GenerateImageOptions;
@@ -74,9 +75,9 @@ export abstract class Automatic1111 extends AbstractDiffuser {
     /** @inheritdoc */
     public override async txt2img(image: ImageDescription): Promise<{ data: AppTypes["BASE64_DATA"] }> {
         // -- Wait for server to wake up --
-        if (this._options.mac != null) {
+        if (this._options.wolMAC != null) {
             try {
-                await getAllModelsWithWOL(this._options.apiURL, this._options.mac);
+                await getAllModelsWithWOL(this._options.apiURL, this._options.wolMAC, this._options.wolIP);
             } catch (e) {
                 throw "Failed to wake up server";
             }
