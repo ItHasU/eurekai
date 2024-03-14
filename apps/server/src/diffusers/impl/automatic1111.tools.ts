@@ -1,6 +1,7 @@
 import { jsonGet } from "@dagda/server/tools/fetch";
 import { wait } from "@dagda/shared/tools/async";
-import { wake } from "wol";
+import { exec } from "child_process";
+import { } from "node:process";
 import { Automatic1111, SDModel } from "./automatic1111";
 import { SD } from "./sd";
 import { SDXL } from "./sdxl";
@@ -16,7 +17,7 @@ async function getModels(apiUrl: string): Promise<SDModel[]> {
  * @return The list of diffused on success
  * @throws An error if anything fails in the process
  */
-export async function getAllModelsWithWOL(apiURL: string, mac: string, ip?: string): Promise<Automatic1111[]> {
+export async function getAllModelsWithWOL(apiURL: string, wakeupScript?: string): Promise<Automatic1111[]> {
     // -- Read MAC address --
     const nbRetries: number = 3;
     const timeout_ms: number = 10000;
@@ -32,26 +33,31 @@ export async function getAllModelsWithWOL(apiURL: string, mac: string, ip?: stri
             console.error("Waiting for server to wake up...", e);
         }
 
+        if (!wakeupScript) {
+            // No WOL script, we can't wake the server
+            return [];
+        }
+
         // -- Send WOL request --
         try {
-            const wolResult = await new Promise<boolean>((resolve, reject) => {
-                wake(mac, { address: ip }, (err: any, res) => {
-                    if (err) {
-                        reject(err);
+            // Execute the WOL script
+            await new Promise<boolean>((resolve, reject) => {
+                console.log(`Sending WOL request (attempt ${i + 1}/${nbRetries})...`);
+                console.log(wakeupScript);
+                exec(wakeupScript, (error: any) => {
+                    if (error) {
+                        reject(error);
                     } else {
-                        resolve(res ?? false);
+                        resolve(true);
                     }
                 });
             });
-            if (wolResult === false) {
-                console.error("Failed to send WOL request without error");
-            }
+            // -- Wait --
+            await wait(timeout_ms);
         } catch (e) {
             console.error("Failed to send WOL request", e);
         }
 
-        // -- Wait --
-        await wait(timeout_ms);
     }
     // -- Failed to wake the server --
     throw new Error("Failed to wake the server after " + nbRetries + " retries");

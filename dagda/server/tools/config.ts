@@ -1,9 +1,18 @@
 import { env } from "node:process";
 
 export function getEnvString<ENV_VARIABLES_STR extends string = string>(key: ENV_VARIABLES_STR): string {
-    const value = env[key];
+    const value = getEnvStringOptional(key);
     if (value == null) {
         throw `Missing environment property: ${key}`;
+    } else {
+        return value;
+    }
+}
+
+export function getEnvStringOptional<ENV_VARIABLES_STR extends string = string>(key: ENV_VARIABLES_STR): string | undefined {
+    const value = env[key];
+    if (value == null) {
+        return undefined;
     } else {
         return value;
     }
