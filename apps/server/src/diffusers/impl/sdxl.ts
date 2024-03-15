@@ -13,11 +13,12 @@ const DEFAULT_PARAMETERS: GenerateImageOptions = {
 /** Stable diffusion XL model */
 export class SDXL extends Automatic1111 {
 
-    constructor(apiURL: string, model: SDModel, protected _refiner: SDModel) {
+    constructor(apiURL: string, model: SDModel, protected _refiner: SDModel, wolScript?: string) {
         super({
             apiURL,
             model,
             size: 1024,
+            wolScript,
             template: {
                 ...DEFAULT_PARAMETERS,
                 steps: 30

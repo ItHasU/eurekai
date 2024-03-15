@@ -1,7 +1,7 @@
 import { getEnvString, getEnvStringOptional } from "@dagda/server/tools/config";
 import { ENV_VARIABLES_STR } from "src/modules/config";
 import { AbstractDiffuser } from "./diffuser";
-import { getAllModels, getAllModelsWithWOL } from "./impl/automatic1111.tools";
+import { getAllModelsWithWOL } from "./impl/automatic1111.tools";
 import { DallE } from "./impl/dall-e";
 import { ModelIdentifier, ReplicateSDXL } from "./impl/replicateSDXL";
 
@@ -19,7 +19,7 @@ export class DiffusersRegistry {
             const automatic1111_apiUrl = getEnvString<ENV_VARIABLES_STR>("API_URL");
             const automatic1111_wolScript = getEnvStringOptional<ENV_VARIABLES_STR>("API_WOL_SCRIPT");
             if (automatic1111_apiUrl != null) {
-                const a1111_models = automatic1111_wolScript == null ? await getAllModels(automatic1111_apiUrl) : await (getAllModelsWithWOL(automatic1111_apiUrl, automatic1111_wolScript) as Promise<AbstractDiffuser[]>);
+                const a1111_models = await (getAllModelsWithWOL(automatic1111_apiUrl, automatic1111_wolScript) as Promise<AbstractDiffuser[]>);
                 for (const model of a1111_models) {
                     DiffusersRegistry.push(model);
                 }

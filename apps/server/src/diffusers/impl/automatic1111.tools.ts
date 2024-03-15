@@ -17,7 +17,7 @@ async function getModels(apiUrl: string): Promise<SDModel[]> {
  * @return The list of diffused on success
  * @throws An error if anything fails in the process
  */
-export async function getAllModelsWithWOL(apiURL: string, wakeupScript?: string): Promise<Automatic1111[]> {
+export async function getAllModelsWithWOL(apiURL: string, wolScript?: string): Promise<Automatic1111[]> {
     // -- Read MAC address --
     const nbRetries: number = 3;
     const timeout_ms: number = 10000;
@@ -27,13 +27,13 @@ export async function getAllModelsWithWOL(apiURL: string, wakeupScript?: string)
         // -- Try to fetch the models --
         try {
             // If we managed to fetch the models, the server is up
-            return await getAllModels(apiURL);
+            return await getAllModels(apiURL, wolScript);
         } catch (e) {
             // If we failed to fetch the models, the server is down
             console.error("Waiting for server to wake up...", e);
         }
 
-        if (!wakeupScript) {
+        if (!wolScript) {
             // No WOL script, we can't wake the server
             return [];
         }
@@ -43,8 +43,8 @@ export async function getAllModelsWithWOL(apiURL: string, wakeupScript?: string)
             // Execute the WOL script
             await new Promise<boolean>((resolve, reject) => {
                 console.log(`Sending WOL request (attempt ${i + 1}/${nbRetries})...`);
-                console.log(wakeupScript);
-                exec(wakeupScript, (error: any) => {
+                console.log(wolScript);
+                exec(wolScript, (error: any) => {
                     if (error) {
                         reject(error);
                     } else {
@@ -64,7 +64,7 @@ export async function getAllModelsWithWOL(apiURL: string, wakeupScript?: string)
 }
 
 /** Fetch models from Automatic 1111 and try to best guess all the available models */
-export async function getAllModels(apiURL: string): Promise<Automatic1111[]> {
+export async function getAllModels(apiURL: string, wolScript?: string): Promise<Automatic1111[]> {
     // -- Fetch models and spread them --
     const sdxl_refiners: SDModel[] = [];
     const sdxl_models: SDModel[] = [];
@@ -86,11 +86,11 @@ export async function getAllModels(apiURL: string): Promise<Automatic1111[]> {
     const diffusers: Automatic1111[] = [];
     for (const sdxl_model of sdxl_models) {
         for (const sdxl_refiner of sdxl_refiners) {
-            diffusers.push(new SDXL(apiURL, sdxl_model, sdxl_refiner));
+            diffusers.push(new SDXL(apiURL, sdxl_model, sdxl_refiner, wolScript));
         }
     }
     for (const sd_model of sd_models) {
-        diffusers.push(new SD(apiURL, sd_model));
+        diffusers.push(new SD(apiURL, sd_model, wolScript));
     }
     return diffusers;
 }

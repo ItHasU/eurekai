@@ -13,11 +13,12 @@ const DEFAULT_PARAMETERS: GenerateImageOptions = {
 /** Stable diffusion model */
 export class SD extends Automatic1111 {
 
-    constructor(apiURL: string, model: SDModel) {
+    constructor(apiURL: string, model: SDModel, wolScript?: string) {
         super({
             apiURL,
             model,
             size: 512, // SD 1.5
+            wolScript,
             template: {
                 ...DEFAULT_PARAMETERS
                 // Disable Highres for now
