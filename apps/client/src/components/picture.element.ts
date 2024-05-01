@@ -150,6 +150,11 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> {
             this._swipeMode = SwipeMode.NONE;
             feedbackDiv.style.background = colors[this._swipeMode];
         });
+        containerDiv.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            // Toggle prompt display
+            this.querySelector(".prompt")?.classList.toggle("d-none");
+        });
     }
 
 }

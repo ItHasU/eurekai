@@ -11,6 +11,13 @@
     <div
       style="position: absolute; top: 0; left: 0; height: 100%; width: 100%; background-color: rgba(255,0,0, 0); pointer-events: none;">
     </div>
+    <div class="prompt d-none"
+      style="position: absolute; padding: 0.5em; top: 0; left: 0; height: 100%; width: 100%; background-color: rgba(0,0,0, 0.4); pointer-events: none;">
+      <b>Prompt&nbsp;:</b> {{_options.prompt.prompt}}<br>
+      <b>Negative prompt&nbsp;:</b> <i>{{_options.prompt.negative_prompt}}</i><br>
+      <b>Size&nbsp;:</b> <i>{{_options.prompt.width}}&nbsp;x&nbsp;{{_options.prompt.height}} px</i><br>
+      <b>Seed&nbsp;:</b> <i>{{data.seed}}</i><br>
+    </div>
   </div>
   <div class="card-footer p-0">
     <!--  -->
