@@ -7,6 +7,11 @@ import { PromptEditor } from "src/editors/prompt.editor";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { AbstractPageElement } from "./abstract.page.element";
 
+enum GroupMode {
+    PROMPT,
+    SEED
+}
+
 function scrollToNextSibling(node: HTMLElement): void {
     const parent = node.parentElement;
     if (!parent) {
@@ -30,6 +35,7 @@ export class PicturesPage extends AbstractPageElement {
     protected readonly _picturesFilterSelect: HTMLSelectElement;
     protected readonly _promptCard: HTMLDivElement;
     protected readonly _promptEditor: PromptEditor;
+    protected _group: GroupMode = GroupMode.PROMPT;
 
     constructor() {
         super(require("./pictures.page.html").default);
@@ -47,6 +53,8 @@ export class PicturesPage extends AbstractPageElement {
         this._bindClickForRef("newPromptButton", this._onNewPromptClick.bind(this));
         this._bindClickForRef("zipButton", this._onZipClick.bind(this));
         this._bindClickForRef("clearRejectedButton", this._onClearRejectedButtonClick.bind(this));
+        this._bindClickForRef("groupByPromptButton", this._toggleGroupMode.bind(this, GroupMode.PROMPT));
+        this._bindClickForRef("groupBySeedButton", this._toggleGroupMode.bind(this, GroupMode.SEED));
         this._picturesFilterSelect.addEventListener("change", this.refresh.bind(this, false));
     }
 
@@ -322,6 +330,11 @@ export class PicturesPage extends AbstractPageElement {
             await this.refresh();
         }
         this._promptCard.classList.add("d-none");
+    }
+
+    protected _toggleGroupMode(mode: GroupMode): void {
+        this._group = mode;
+        this.refresh();
     }
 }
 
