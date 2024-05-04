@@ -25,6 +25,15 @@
                         Clear rejected
                     </span>
                 </button>
+                <!-- Dropdown button for sorting -->
+                <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"
+                    aria-expanded="false" title="Group by ...">
+                    <i class="bi bi-sort-down-alt"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a ref="groupByPromptButton" class="dropdown-item" href="#">Group by prompt</a></li>
+                    <li><a ref="groupBySeedButton" class="dropdown-item" href="#">Group by seed</a></li>
+                </ul>
             </div>
         </div>
     </div>
