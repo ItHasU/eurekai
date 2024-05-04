@@ -1,8 +1,9 @@
 import { asNamed } from "@dagda/shared/entities/named.types";
-import { AttachmentId, ComputationStatus, PictureEntity, PromptEntity } from "@eurekai/shared/src/entities";
+import { AttachmentId, ComputationStatus, PictureEntity, ProjectEntity, PromptEntity, Seed } from "@eurekai/shared/src/entities";
 import { deletePicture, generateNextPictures, isPreferredSeed, togglePreferredSeed, zipPictures } from "@eurekai/shared/src/pictures.data";
 import { PictureElement } from "src/components/picture.element";
 import { PromptElement } from "src/components/prompt.element";
+import { SeedElement } from "src/components/seed.element";
 import { PromptEditor } from "src/editors/prompt.editor";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { AbstractPageElement } from "./abstract.page.element";
@@ -105,96 +106,144 @@ export class PicturesPage extends AbstractPageElement {
                 pictures.push(picture);
             }
         }
-        // Preferred seeds
+        // -- Preferred seeds --
         const preferredSeeds: Set<number> = new Set(StaticDataProvider.entitiesHandler.getItems("seeds").filter(s => StaticDataProvider.entitiesHandler.isSameId(s.projectId, projectId)).map(s => s.seed));
-
-        // -- Render per prompt -----------------------------------------------
-        // Sort prompts per order index (inverted)
-        prompts.sort((p1, p2) => {
-            let res = 0;
-
-            if (res === 0) {
-                // Reverse order
-                return -(p1.orderIndex - p2.orderIndex);
-            }
-
-            if (res === 0) {
-                return p1.id - p2.id;
-            }
-
-            return res;
-        });
-
         // -- Get the filter --
-        let filter: (picture: PictureEntity) => boolean = this._getFilter(preferredSeeds);
+        const filter: (picture: PictureEntity) => boolean = this._getFilter(preferredSeeds);
 
-        for (const prompt of prompts) {
-            // -- Add a line break --
-            const div = document.createElement("div");
-            div.classList.add("w-100");
-            this._picturesDiv.appendChild(div);
+        if (this._group === GroupMode.PROMPT) {
+            // -- Render per prompt -------------------------------------------
+            // Sort prompts per order index (inverted)
+            prompts.sort((p1, p2) => {
+                let res = 0;
 
-            // -- Render prompt --
-            const promptItem = new PromptElement(prompt);
-            promptItem.on("clone", (evt) => {
-                this._openPromptPanel(evt.data.prompt);
+                if (res === 0) {
+                    // Reverse order
+                    return -(p1.orderIndex - p2.orderIndex);
+                }
+
+                if (res === 0) {
+                    return p1.id - p2.id;
+                }
+
+                return res;
             });
-            promptItem.on("delete", () => {
-                this.refresh();
-            });
 
-            promptItem.classList.add("col-12");
-            promptItem.refresh();
-            this._picturesDiv.appendChild(promptItem);
+            for (const prompt of prompts) {
+                // -- Add a line break --
+                const div = document.createElement("div");
+                div.classList.add("w-100");
+                this._picturesDiv.appendChild(div);
 
-            // -- Render images --
-            const picturesForPrompt = (promptsMap[prompt.id]?.pictures ?? []).filter(filter);
-            picturesForPrompt.sort((i1, i2) => { return -(i1.id - i2.id); });
-            for (const picture of picturesForPrompt) {
-                // -- Add the picture --
-                const item = new PictureElement(picture, {
-                    prompt,
-                    isPreferredSeed: isPreferredSeed(StaticDataProvider.entitiesHandler, projectId, picture.seed),
-                    isLockable: project.lockable === true,
-                    accept: async () => {
-                        await StaticDataProvider.entitiesHandler.withTransaction(tr => {
-                            tr.update("pictures", picture, {
-                                status: asNamed(ComputationStatus.ACCEPTED)
-                            });
-                        });
-                        item.refresh();
-                        promptItem.refresh();
-                        scrollToNextSibling(item);
-                    },
-                    reject: async () => {
-                        await StaticDataProvider.entitiesHandler.withTransaction(tr => {
-                            tr.update("pictures", picture, {
-                                status: asNamed(ComputationStatus.REJECTED)
-                            });
-                        });
-                        item.refresh();
-                        promptItem.refresh();
-                        scrollToNextSibling(item);
-                    },
-                    toggleSeed: async () => {
-                        await StaticDataProvider.entitiesHandler.withTransaction(tr => {
-                            togglePreferredSeed(StaticDataProvider.entitiesHandler, tr, projectId, picture.seed);
-                        });
-                        item._options.isPreferredSeed = isPreferredSeed(StaticDataProvider.entitiesHandler, projectId, picture.seed);
-                        item.refresh();
-                    },
-                    setAsFeatured: async () => {
-                        await StaticDataProvider.entitiesHandler.withTransaction(tr => {
-                            tr.update("projects", project, {
-                                featuredAttachmentId: picture.attachmentId
-                            });
-                        });
-                    }
+                // -- Render prompt --
+                const promptItem = new PromptElement(prompt);
+                promptItem.on("clone", (evt) => {
+                    this._openPromptPanel(evt.data.prompt);
                 });
-                item.classList.add("col-sm-12", "col-md-6", "col-lg-3");
-                this._picturesDiv.appendChild(item);
-                item.refresh();
+                promptItem.on("delete", () => {
+                    this.refresh();
+                });
+
+                promptItem.classList.add("col-12");
+                promptItem.refresh();
+                this._picturesDiv.appendChild(promptItem);
+
+                // -- Render images --
+                const picturesForPrompt = (promptsMap[prompt.id]?.pictures ?? []).filter(filter);
+                picturesForPrompt.sort((i1, i2) => { return -(i1.id - i2.id); });
+                for (const picture of picturesForPrompt) {
+                    // -- Add the picture --
+                    const item = this._buildPictureElement(picture, prompt, project, promptItem);
+                    item.classList.add("col-sm-12", "col-md-6", "col-lg-3");
+                    this._picturesDiv.appendChild(item);
+                    item.refresh();
+                }
             }
+        } else {
+            // -- Render per seed ---------------------------------------------
+            const picturesBySeed: Map<Seed, { picture: PictureEntity, prompt: PromptEntity }[]> = new Map();
+
+            for (const picture of pictures) {
+                if (!filter(picture)) {
+                    continue;
+                }
+                const prompt = promptsMap[picture.promptId]?.prompt;
+                if (prompt == null) {
+                    continue;
+                }
+
+                const picturesForSeed = picturesBySeed.get(picture.seed) ?? [];
+                picturesForSeed.push({ picture, prompt });
+                picturesBySeed.set(picture.seed, picturesForSeed);
+            }
+
+            const seeds: Seed[] = [...picturesBySeed.keys()];
+            seeds.sort((s1, s2) => {
+                let res = 0;
+
+                if (res === 0) {
+                    const picturesCount1 = picturesBySeed.get(s1)?.length ?? 0;
+                    const picturesCount2 = picturesBySeed.get(s2)?.length ?? 0;
+
+                    // Most pictures is better
+                    res = -(picturesCount1 - picturesCount2);
+                }
+
+                if (res === 0) {
+                    res = s1 - s2;
+                }
+
+                return res;
+            });
+
+            for (const seed of seeds) {
+                // -- Add a line break --
+                const div = document.createElement("div");
+                div.classList.add("w-100");
+                this._picturesDiv.appendChild(div);
+
+                const picturesForSeed = picturesBySeed.get(seed);
+                if (picturesForSeed == null) {
+                    continue;
+                }
+
+                // -- Add seed --
+                const seedItem = new SeedElement({
+                    seed,
+                    picturesCount: picturesForSeed.length,
+                    isPreferredSeed: preferredSeeds.has(seed)
+                });
+                seedItem.classList.add("col-12");
+                seedItem.refresh();
+                this._picturesDiv.appendChild(seedItem);
+
+                // -- Add pictures --
+
+                picturesForSeed.sort((p1, p2) => {
+                    let res = 0;
+
+                    if (res === 0) {
+                        return p1.prompt.orderIndex - p2.prompt.orderIndex;
+                    }
+
+                    if (res === 0) {
+                        return p1.prompt.id - p2.prompt.id;
+                    }
+
+                    if (res === 0) {
+                        return p1.picture.id - p2.picture.id;
+                    }
+                    return res;
+                });
+
+                for (const { picture, prompt } of picturesForSeed) {
+                    const item = this._buildPictureElement(picture, prompt, project);
+                    item.classList.add("col-sm-12", "col-md-6", "col-lg-3");
+                    this._picturesDiv.appendChild(item);
+                    item.refresh();
+                }
+            }
+
         }
 
         // -- Auto display prompt panel ---------------------------------------
@@ -235,10 +284,47 @@ export class PicturesPage extends AbstractPageElement {
         return filter;
     }
 
-    protected _onRefreshClick(): void {
-        this.refresh();
-        // Scroll to the top of the div
-        this._picturesDiv.scrollTo(0, 0);
+    protected _buildPictureElement(picture: PictureEntity, prompt: PromptEntity, project: ProjectEntity, promptItem?: PromptElement): PictureElement {
+        const item = new PictureElement(picture, {
+            prompt,
+            isPreferredSeed: isPreferredSeed(StaticDataProvider.entitiesHandler, project.id, picture.seed),
+            isLockable: project.lockable === true,
+            accept: async () => {
+                await StaticDataProvider.entitiesHandler.withTransaction(tr => {
+                    tr.update("pictures", picture, {
+                        status: asNamed(ComputationStatus.ACCEPTED)
+                    });
+                });
+                item.refresh();
+                promptItem?.refresh();
+                scrollToNextSibling(item);
+            },
+            reject: async () => {
+                await StaticDataProvider.entitiesHandler.withTransaction(tr => {
+                    tr.update("pictures", picture, {
+                        status: asNamed(ComputationStatus.REJECTED)
+                    });
+                });
+                item.refresh();
+                promptItem?.refresh();
+                scrollToNextSibling(item);
+            },
+            toggleSeed: async () => {
+                await StaticDataProvider.entitiesHandler.withTransaction(tr => {
+                    togglePreferredSeed(StaticDataProvider.entitiesHandler, tr, project.id, picture.seed);
+                });
+                item._options.isPreferredSeed = isPreferredSeed(StaticDataProvider.entitiesHandler, project.id, picture.seed);
+                item.refresh();
+            },
+            setAsFeatured: async () => {
+                await StaticDataProvider.entitiesHandler.withTransaction(tr => {
+                    tr.update("projects", project, {
+                        featuredAttachmentId: picture.attachmentId
+                    });
+                });
+            }
+        });
+        return item;
     }
 
     protected async _onZipClick(): Promise<void> {
