@@ -94,7 +94,13 @@ export class PicturesPage extends AbstractPageElement {
         // Pictures for the project (the ones associated to prompts of the project)
         const pictures: PictureEntity[] = [];
         for (const picture of StaticDataProvider.entitiesHandler.getCache("pictures").getItems()) {
-            const promptForPicture = promptsMap[picture.promptId];
+            const promptId = StaticDataProvider.entitiesHandler.getUpdatedId(picture.promptId);
+            if (promptId == null) {
+                // Prompt is not from the project since the map
+                // only contains prompts from the project
+                continue;
+            }
+            const promptForPicture = promptsMap[promptId];
             if (promptForPicture == null) {
                 // Prompt is not from the project since the map
                 // only contains prompts from the project
@@ -167,7 +173,12 @@ export class PicturesPage extends AbstractPageElement {
                 if (!filter(picture)) {
                     continue;
                 }
-                const prompt = promptsMap[picture.promptId]?.prompt;
+                const promptId = StaticDataProvider.entitiesHandler.getUpdatedId(picture.promptId);
+                if (promptId == null) {
+                    // Should never happen since we already filtered pictures
+                    continue;
+                }
+                const prompt = promptsMap[promptId]?.prompt;
                 if (prompt == null) {
                     continue;
                 }
@@ -362,21 +373,33 @@ export class PicturesPage extends AbstractPageElement {
         if (projectId == null) {
             return;
         }
+        // We go from the project id to the prompt ids ...
         const projectPromptIds: Set<number> = new Set();
         for (const prompt of StaticDataProvider.entitiesHandler.getItems("prompts")) {
             if (prompt.projectId === projectId) {
                 projectPromptIds.add(prompt.id);
             }
         }
-        await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
-            for (const picture of StaticDataProvider.entitiesHandler.getItems("pictures")) {
-                if (!projectPromptIds.has(picture.promptId)) {
-                    continue;
-                }
+        // ... and then we list the pictures to delete in the prompts
+        const picturesToDelete: PictureEntity[] = [];
+        for (const picture of StaticDataProvider.entitiesHandler.getItems("pictures")) {
+            const promptId = StaticDataProvider.entitiesHandler.getUpdatedId(picture.promptId);
+            if (promptId == null) {
+                // Should never happen since we already filtered pictures
+                continue;
+            }
+            if (!projectPromptIds.has(promptId)) {
+                continue;
+            }
 
-                if (picture.status === ComputationStatus.REJECTED || picture.status === ComputationStatus.ERROR) {
-                    deletePicture(StaticDataProvider.entitiesHandler, tr, picture);
-                }
+            if (picture.status === ComputationStatus.REJECTED || picture.status === ComputationStatus.ERROR) {
+                picturesToDelete.push(picture);
+            }
+        }
+        // Finally, we perform the deletion
+        await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
+            for (const picture of picturesToDelete) {
+                deletePicture(StaticDataProvider.entitiesHandler, tr, picture);
             }
         });
         this.refresh();
