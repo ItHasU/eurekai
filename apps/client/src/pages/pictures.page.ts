@@ -445,8 +445,9 @@ export class PicturesPage extends AbstractPageElement {
                         projectId,
                         orderIndex: asNamed(orderIndex)
                     });
-                    // Create pictures for all preferred seeds
-                    generateNextPictures(StaticDataProvider.entitiesHandler, tr, newPrompt, null);
+                    // Create pictures for 1 seed only, this will allow to test the prompt quickly
+                    // even if there are a lot of preferred seeds
+                    generateNextPictures(StaticDataProvider.entitiesHandler, tr, newPrompt, 1);
                 });
                 this._refreshImpl(projectId);
             }
