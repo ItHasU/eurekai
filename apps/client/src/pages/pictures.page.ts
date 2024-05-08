@@ -279,8 +279,11 @@ export class PicturesPage extends AbstractPageElement {
         let filter: (picture: PictureEntity) => boolean = function () { return true };
         const filterIndex = this._picturesFilterSelect.value;
         switch (filterIndex) {
+            case "none":
+                filter = function () { return false; }
+                break;
             case "all":
-                filter = function () { return true; }
+                filter = function (picture) { return picture.attachmentId != null; }
                 break;
             case "preferred":
                 filter = function (picture) { return picture.status >= ComputationStatus.DONE && preferredSeeds.has(picture.seed); };
