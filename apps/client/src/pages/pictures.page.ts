@@ -1,5 +1,5 @@
 import { asNamed } from "@dagda/shared/entities/named.types";
-import { AttachmentId, ComputationStatus, PictureEntity, ProjectEntity, PromptEntity, Seed } from "@eurekai/shared/src/entities";
+import { AttachmentId, ComputationStatus, PictureEntity, ProjectEntity, ProjectId, PromptEntity, Seed } from "@eurekai/shared/src/entities";
 import { deletePicture, generateNextPictures, isPreferredSeed, togglePreferredSeed, zipPictures } from "@eurekai/shared/src/pictures.data";
 import { PictureElement } from "src/components/picture.element";
 import { PromptElement } from "src/components/prompt.element";
@@ -75,6 +75,17 @@ export class PicturesPage extends AbstractPageElement {
             }
         });
 
+        // -- Render data -----------------------------------------------------
+        this._refreshImpl(projectId);
+
+        // -- Scroll to top ---------------------------------------------------
+        if (dataWereLoaded) {
+            this._picturesDiv.scrollTo(0, 0);
+        }
+    }
+
+    /** Render data from the cache (does not reload data) */
+    protected _refreshImpl(projectId: ProjectId): void {
         // -- Clear -----------------------------------------------------------
         this._picturesDiv.innerHTML = "";
 
@@ -254,7 +265,6 @@ export class PicturesPage extends AbstractPageElement {
                     item.refresh();
                 }
             }
-
         }
 
         // -- Auto display prompt panel ---------------------------------------
@@ -262,11 +272,6 @@ export class PicturesPage extends AbstractPageElement {
             this._openPromptPanel();
         } else {
             this._closePromptPanel();
-        }
-
-        // -- Scroll to top ---------------------------------------------------
-        if (dataWereLoaded) {
-            this._picturesDiv.scrollTo(0, 0);
         }
     }
 
@@ -417,28 +422,36 @@ export class PicturesPage extends AbstractPageElement {
     }
 
     protected async _onNewPromptClick(): Promise<void> {
-        const prompt = this._promptEditor.getPrompt();
-        const projectId = StaticDataProvider.getSelectedProject();
-        if (projectId != null) {
-            let orderIndex: number = 1;
-            for (const prompt of StaticDataProvider.entitiesHandler.getItems("prompts")) {
-                if (prompt.projectId === projectId) {
-                    orderIndex = Math.max(orderIndex, prompt.orderIndex + 1);
+        try {
+            const prompt = this._promptEditor.getPrompt();
+            const projectId = StaticDataProvider.getSelectedProject();
+            if (projectId == null) {
+                // Should never happen
+                return;
+            } else {
+                let orderIndex: number = 1;
+                for (const prompt of StaticDataProvider.entitiesHandler.getItems("prompts")) {
+                    if (StaticDataProvider.entitiesHandler.isSameId(prompt.projectId, projectId)) {
+                        orderIndex = Math.max(orderIndex, prompt.orderIndex + 1);
+                    }
                 }
-            }
-            await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
-                const newPrompt = tr.insert("prompts", {
-                    ...prompt,
-                    id: asNamed(0),
-                    projectId,
-                    orderIndex: asNamed(orderIndex)
+                await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
+                    const newPrompt = tr.insert("prompts", {
+                        ...prompt,
+                        id: asNamed(0),
+                        projectId,
+                        orderIndex: asNamed(orderIndex)
+                    });
+                    // Create pictures for all preferred seeds
+                    generateNextPictures(StaticDataProvider.entitiesHandler, tr, newPrompt, null);
                 });
-                // Create pictures for all preferred seeds
-                generateNextPictures(StaticDataProvider.entitiesHandler, tr, newPrompt, null);
-            });
-            await this.refresh();
+                this._refreshImpl(projectId);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            this._promptCard.classList.add("d-none");
         }
-        this._promptCard.classList.add("d-none");
     }
 
     protected _toggleGroupMode(mode: GroupMode): void {
