@@ -67,7 +67,8 @@ export class Generator {
             return false;
         } finally {
             // Re-schedule next
-            setTimeout(this._unqueue.bind(this), 5000);
+            NotificationHelper.broadcast<AppEvents>("generating", { running: false });
+            setTimeout(this._unqueue.bind(this), 2000);
         }
     }
 
