@@ -20,8 +20,7 @@
     </div>
   </div>
   <div class="card-footer p-0">
-    <!--  -->
-    <div class="btn-group-footer" role="group" aria-label="Select display mode" style="width: 100%;">
+    <div class="btn-group btn-group-footer" role="group" aria-label="Select display mode" style="width: 100%;">
       <button ref="reject" type="button" class="btn btn-danger form-control" title="Reject">
         <i class="bi bi-x-lg"></i>
       </button>
@@ -31,8 +30,61 @@
       <button ref="seed" type="button" class="btn btn-secondary form-control" title="Toggle preferred seed">
         <i class="bi bi-heart{{#if _options.isPreferredSeed}}-fill text-danger{{/if}}"></i>
       </button>
-      <button ref="featured" type="button" class="btn btn-secondary form-control" title="Set as featured image">
-        <i class="bi bi-image"></i></button>
+      <button type="button" class="btn btn-secondary dropdown-toggle form-control" data-bs-toggle="dropdown"
+        aria-expanded="false">
+        <i class="bi bi-star-half text-warning"></i>
+        <i class="bi bi-{{#if data.score}}{{data.score}}{{else}}slash{{/if}}-square"></i>
+      </button>
+      <ul class="dropdown-menu">
+        <li>
+          <a ref="star-0" class="dropdown-item" href="#">
+            <i class="bi bi-star"></i>
+            <i class="bi bi-star"></i>
+            <i class="bi bi-star"></i>
+            <i class="bi bi-star"></i>
+          </a>
+        </li>
+        <li>
+          <a ref="star-1" class="dropdown-item" href="#">
+            <i class="bi bi-star-fill text-warning"></i>
+            <i class="bi bi-star"></i>
+            <i class="bi bi-star"></i>
+            <i class="bi bi-star"></i>
+          </a>
+        </li>
+        <li>
+          <a ref="star-2" class="dropdown-item" href="#">
+            <i class="bi bi-star-fill text-warning"></i>
+            <i class="bi bi-star-fill text-warning"></i>
+            <i class="bi bi-star"></i>
+            <i class="bi bi-star"></i>
+          </a>
+        </li>
+        <li>
+          <a ref="star-3" class="dropdown-item" href="#">
+            <i class="bi bi-star-fill text-warning"></i>
+            <i class="bi bi-star-fill text-warning"></i>
+            <i class="bi bi-star-fill text-warning"></i>
+            <i class="bi bi-star"></i>
+          </a>
+        </li>
+        <li>
+          <a ref="star-4" class="dropdown-item" href="#">
+            <i class="bi bi-star-fill text-warning"></i>
+            <i class="bi bi-star-fill text-warning"></i>
+            <i class="bi bi-star-fill text-warning"></i>
+            <i class="bi bi-star-fill text-warning"></i>
+          </a>
+        </li>
+        <li>
+          <hr class="dropdown-divider">
+        </li>
+        <li>
+          <a ref="featured" class="dropdown-item" href="#" title="Set as featured image">
+            <i class="bi bi-image"></i>&nbsp;Feature img.</button>
+          </a>
+        </li>
+      </ul>
     </div>
   </div>
 </div>

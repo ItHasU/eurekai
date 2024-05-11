@@ -1,4 +1,5 @@
-import { ComputationStatus, PictureEntity, PromptEntity } from "@eurekai/shared/src/entities";
+import { asNamed } from "@dagda/shared/entities/named.types";
+import { ComputationStatus, PictureEntity, PromptEntity, Score } from "@eurekai/shared/src/entities";
 import { AbstractDTOElement } from "./abstract.dto.element";
 
 enum SwipeMode {
@@ -31,7 +32,8 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> {
         accept: () => void,
         reject: () => void,
         toggleSeed: () => void,
-        setAsFeatured: () => void
+        setAsFeatured: () => void,
+        setScore: (score: Score) => void
     }) {
         super(data, require("./picture.element.html").default);
         // Preload the image, it will only be displayed when element is visible
@@ -56,6 +58,11 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> {
         this._bindClick("reject", this._options.reject);
         this._bindClick("seed", this._options.toggleSeed);
         this._bindClick("featured", this._options.setAsFeatured);
+        this._bindClick("star-0", this._options.setScore.bind(undefined, asNamed(0)));
+        this._bindClick("star-1", this._options.setScore.bind(undefined, asNamed(1)));
+        this._bindClick("star-2", this._options.setScore.bind(undefined, asNamed(2)));
+        this._bindClick("star-3", this._options.setScore.bind(undefined, asNamed(3)));
+        this._bindClick("star-4", this._options.setScore.bind(undefined, asNamed(4)));
 
         // Get elements related to images at the top of the card
         const img: HTMLImageElement = this.querySelector(".card-img-top > img") as HTMLImageElement;

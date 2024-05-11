@@ -38,6 +38,7 @@ export function generateNextPictures(handler: EntitiesHandler<AppTables, AppCont
             promptId: prompt.id,
             seed: [...missingPreferredSeeds.values()][0] ?? Math.floor(Math.random() * Number.MAX_SAFE_INTEGER),
             status: asNamed(ComputationStatus.PENDING),
+            score: asNamed(0),
             attachmentId: null
         };
 

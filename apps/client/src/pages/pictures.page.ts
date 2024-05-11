@@ -341,6 +341,14 @@ export class PicturesPage extends AbstractPageElement {
                         featuredAttachmentId: picture.attachmentId
                     });
                 });
+            },
+            setScore: async (score) => {
+                await StaticDataProvider.entitiesHandler.withTransaction(tr => {
+                    tr.update("pictures", picture, {
+                        score
+                    });
+                });
+                item.refresh();
             }
         });
         return item;

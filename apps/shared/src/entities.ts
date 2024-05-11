@@ -82,7 +82,10 @@ export const APP_MODEL = new EntitiesModel({
     }),
     BASE64_DATA: {
         rawType: JSTypes.string
-    }
+    },
+    SCORE: EntitiesModel.type<JSTypes.custom, 0 | 1 | 2 | 3 | 4>({
+        rawType: JSTypes.custom
+    }),
 }, {
     users: {
         id: { type: "USER_ID", identity: true },
@@ -113,6 +116,7 @@ export const APP_MODEL = new EntitiesModel({
         promptId: { type: "PROMPT_ID", foreignTable: "prompts" },
         seed: { type: "SEED" },
         status: { type: "COMPUTATION_STATUS" },
+        score: { type: "SCORE" },
         attachmentId: { type: "ATTACHMENT_ID", optional: true, foreignTable: "attachments" }
     },
     attachments: {
@@ -139,6 +143,7 @@ export type AttachmentId = typeof APP_MODEL.types["ATTACHMENT_ID"];
 export type SeedId = typeof APP_MODEL.types["SEED_ID"];
 
 export type Seed = typeof APP_MODEL.types["SEED"];
+export type Score = typeof APP_MODEL.types["SCORE"];
 
 //#endregion
 
