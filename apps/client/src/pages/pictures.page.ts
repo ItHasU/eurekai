@@ -1,8 +1,9 @@
 import { asNamed } from "@dagda/shared/entities/named.types";
-import { AttachmentId, ComputationStatus, PictureEntity, ProjectEntity, ProjectId, PromptEntity, Seed } from "@eurekai/shared/src/entities";
+import { AttachmentId, ComputationStatus, PictureEntity, ProjectEntity, ProjectId, PromptEntity, Score, Seed } from "@eurekai/shared/src/entities";
 import { deletePicture, generateNextPictures, isPreferredSeed, togglePreferredSeed, zipPictures } from "@eurekai/shared/src/pictures.data";
 import { PictureElement } from "src/components/picture.element";
 import { PromptElement } from "src/components/prompt.element";
+import { ScoreElement } from "src/components/score.element";
 import { SeedElement } from "src/components/seed.element";
 import { PromptEditor } from "src/editors/prompt.editor";
 import { StaticDataProvider } from "src/tools/dataProvider";
@@ -10,7 +11,8 @@ import { AbstractPageElement } from "./abstract.page.element";
 
 enum GroupMode {
     PROMPT,
-    SEED
+    SEED,
+    STARS
 }
 
 function scrollToNextSibling(node: HTMLElement): void {
@@ -56,6 +58,7 @@ export class PicturesPage extends AbstractPageElement {
         this._bindClickForRef("clearRejectedButton", this._onClearRejectedButtonClick.bind(this));
         this._bindClickForRef("groupByPromptButton", this._toggleGroupMode.bind(this, GroupMode.PROMPT));
         this._bindClickForRef("groupBySeedButton", this._toggleGroupMode.bind(this, GroupMode.SEED));
+        this._bindClickForRef("groupByStarsButton", this._toggleGroupMode.bind(this, GroupMode.STARS));
         this._picturesFilterSelect.addEventListener("change", this.refresh.bind(this, false));
     }
 
@@ -176,7 +179,7 @@ export class PicturesPage extends AbstractPageElement {
                     item.refresh();
                 }
             }
-        } else {
+        } else if (this._group === GroupMode.SEED) {
             // -- Render per seed ---------------------------------------------
             const picturesBySeed: Map<Seed, { picture: PictureEntity, prompt: PromptEntity }[]> = new Map();
 
@@ -245,6 +248,10 @@ export class PicturesPage extends AbstractPageElement {
                     let res = 0;
 
                     if (res === 0) {
+                        return p1.picture.seed - p2.picture.seed;
+                    }
+
+                    if (res === 0) {
                         return p1.prompt.orderIndex - p2.prompt.orderIndex;
                     }
 
@@ -254,6 +261,76 @@ export class PicturesPage extends AbstractPageElement {
 
                     if (res === 0) {
                         return p1.picture.id - p2.picture.id;
+                    }
+                    return res;
+                });
+
+                for (const { picture, prompt } of picturesForSeed) {
+                    const item = this._buildPictureElement(picture, prompt, project);
+                    item.classList.add("col-sm-12", "col-md-6", "col-lg-3");
+                    this._picturesDiv.appendChild(item);
+                    item.refresh();
+                }
+            }
+        } else if (this._group === GroupMode.STARS) {
+            // -- Render per seed ---------------------------------------------
+            const picturesByScore: Map<Score, { picture: PictureEntity, prompt: PromptEntity }[]> = new Map();
+
+            for (const picture of pictures) {
+                if (!filter(picture)) {
+                    continue;
+                }
+                const promptId = StaticDataProvider.entitiesHandler.getUpdatedId(picture.promptId);
+                if (promptId == null) {
+                    // Should never happen since we already filtered pictures
+                    continue;
+                }
+                const prompt = promptsMap[promptId]?.prompt;
+                if (prompt == null) {
+                    continue;
+                }
+
+                const picturesForScore = picturesByScore.get(picture.score) ?? [];
+                picturesForScore.push({ picture, prompt });
+                picturesByScore.set(picture.score, picturesForScore);
+            }
+
+            const scores: Score[] = [asNamed(4), asNamed(3), asNamed(2), asNamed(1), asNamed(0)];
+
+            for (const score of scores) {
+                // -- Add a line break --
+                const div = document.createElement("div");
+                div.classList.add("w-100");
+                this._picturesDiv.appendChild(div);
+
+                const picturesForSeed = picturesByScore.get(score);
+                if (picturesForSeed == null) {
+                    continue;
+                }
+
+                // -- Add seed --
+                const scoreItem = new ScoreElement({
+                    score,
+                    picturesCount: picturesForSeed.length
+                });
+                scoreItem.classList.add("col-12");
+                scoreItem.refresh();
+                this._picturesDiv.appendChild(scoreItem);
+
+                // -- Add pictures --
+                picturesForSeed.sort((p1, p2) => {
+                    let res = 0;
+
+                    if (res === 0) {
+                        return -(p1.prompt.orderIndex - p2.prompt.orderIndex);
+                    }
+
+                    if (res === 0) {
+                        return -(p1.prompt.id - p2.prompt.id);
+                    }
+
+                    if (res === 0) {
+                        return -(p1.picture.id - p2.picture.id);
                     }
                     return res;
                 });
@@ -321,7 +398,8 @@ export class PicturesPage extends AbstractPageElement {
             reject: async () => {
                 await StaticDataProvider.entitiesHandler.withTransaction(tr => {
                     tr.update("pictures", picture, {
-                        status: asNamed(ComputationStatus.REJECTED)
+                        status: asNamed(ComputationStatus.REJECTED),
+                        score: asNamed(0)
                     });
                 });
                 item.refresh();
