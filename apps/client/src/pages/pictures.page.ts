@@ -38,6 +38,8 @@ export class PicturesPage extends AbstractPageElement {
     protected readonly _picturesFilterSelect: HTMLSelectElement;
     protected readonly _promptCard: HTMLDivElement;
     protected readonly _promptEditor: PromptEditor;
+
+    protected _displayedProjectId: ProjectId | null = null;
     protected _group: GroupMode = GroupMode.PROMPT;
 
     constructor() {
@@ -66,6 +68,11 @@ export class PicturesPage extends AbstractPageElement {
     protected override async _refresh(): Promise<void> {
         // -- Make sure cache is updated --
         const projectId = StaticDataProvider.getSelectedProject();
+        if (!StaticDataProvider.entitiesHandler.isSameId(projectId, this._displayedProjectId)) {
+            this._displayedProjectId = projectId ?? null;
+            this._group = GroupMode.STARS;
+        }
+
         if (projectId == null) {
             return;
         }
