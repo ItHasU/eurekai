@@ -39,7 +39,7 @@ export class PicturesPage extends AbstractPageElement {
     protected readonly _promptCard: HTMLDivElement;
     protected readonly _promptEditor: PromptEditor;
 
-    protected _displayedProjectId: ProjectId | null = null;
+    protected _isFirstDisplay: boolean = true;
     protected _group: GroupMode = GroupMode.PROMPT;
 
     constructor() {
@@ -68,10 +68,6 @@ export class PicturesPage extends AbstractPageElement {
     protected override async _refresh(): Promise<void> {
         // -- Make sure cache is updated --
         const projectId = StaticDataProvider.getSelectedProject();
-        if (!StaticDataProvider.entitiesHandler.isSameId(projectId, this._displayedProjectId)) {
-            this._displayedProjectId = projectId ?? null;
-            this._group = GroupMode.STARS;
-        }
 
         if (projectId == null) {
             return;
@@ -106,6 +102,15 @@ export class PicturesPage extends AbstractPageElement {
             // Nothing to display
             return;
         }
+
+        // Set mode to STARS is unpinned (means not currently active)
+        if (this._isFirstDisplay) {
+            this._isFirstDisplay = false;
+            if (project.pinned === false) {
+                this._group = GroupMode.STARS;
+            }
+        }
+
         // Prompts for the project (there might be others in cache)
         const prompts = StaticDataProvider.entitiesHandler.getCache("prompts").getItems().filter(prompt => prompt.projectId === projectId);
         const promptsMap: { [id: number]: { prompt: PromptEntity, pictures: PictureEntity[] } } = {};
