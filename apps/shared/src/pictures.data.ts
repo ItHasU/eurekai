@@ -6,45 +6,46 @@ import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity,
 
 /** 
  * Generate a certain amount of images 
+ * If requested quantity is not null, will generate random images
  * If requested quantity is null, will generate for all preferred seeds
  */
-export function generateNextPictures(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, prompt: PromptEntity, count: number | null | "preferred"): void {
-    // -- Get a list of preferred seeds --
-    const missingPreferredSeeds: Set<Seed> = new Set();
-    for (const seed of handler.getItems("seeds")) {
-        if (handler.isSameId(seed.projectId, prompt.projectId)) {
-            missingPreferredSeeds.add(seed.seed);
+export function generateNextPictures(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, prompt: PromptEntity, count: number | "preferred"): void {
+    // -- Generate the list of seeds to create --
+    const seeds: Seed[] = [];
+
+    if (count === "preferred") {
+        // -- Get a list of preferred seeds --
+        const missingPreferredSeeds: Set<Seed> = new Set();
+        for (const seed of handler.getItems("seeds")) {
+            if (handler.isSameId(seed.projectId, prompt.projectId)) {
+                missingPreferredSeeds.add(seed.seed);
+            }
+        }
+
+        for (const picture of handler.getItems("pictures")) {
+            if (handler.isSameId(picture.promptId, prompt.id) && picture.status !== ComputationStatus.ERROR) {
+                missingPreferredSeeds.delete(picture.seed);
+            }
+        }
+
+        seeds.push(...missingPreferredSeeds);
+    } else {
+        // -- Generate random seeds --
+        for (let i = 0; i < count; i++) {
+            seeds.push(asNamed(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)));
         }
     }
 
-    for (const picture of handler.getItems("pictures")) {
-        if (handler.isSameId(picture.promptId, prompt.id) && picture.status !== ComputationStatus.ERROR) {
-            missingPreferredSeeds.delete(picture.seed);
-        }
-    }
 
-    // -- Create new pictures --
-    if (count === null) {
-        // If count is null, just create the missing preferred seeds + 1 random
-        count = missingPreferredSeeds.size + 1;
-    } else if (count === "preferred") {
-        // Only create the missing preferred seeds
-        count = missingPreferredSeeds.size;
-    }
-
-    for (let i = 0; i < count; i++) {
+    for (const seed of seeds) {
         const newPicture: PictureEntity = {
             id: asNamed(0),
             promptId: prompt.id,
-            seed: [...missingPreferredSeeds.values()][0] ?? Math.floor(Math.random() * Number.MAX_SAFE_INTEGER),
+            seed: asNamed(seed),
             status: asNamed(ComputationStatus.PENDING),
             score: asNamed(0),
             attachmentId: null
         };
-
-        // Remove seed has it has already been handled
-        // We don't care if its a preferred seed or not, the set will handle both
-        missingPreferredSeeds.delete(newPicture.seed);
 
         tr.insert("pictures", newPicture);
     }
