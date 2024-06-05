@@ -8,7 +8,7 @@ module.exports.plugins.push(new WebpackPwaManifest({
     name: 'eurekAI',
     short_name: 'eurekAI',
     description: "Génération d'image",
-    background_color: '#ffffff',
+    background_color: 'rgb(43, 48, 53)',
     crossorigin: 'use-credentials', //can be null, use-credentials or anonymous
     icons: [
         {
