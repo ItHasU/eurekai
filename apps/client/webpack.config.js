@@ -18,5 +18,6 @@ module.exports.plugins.push(new WebpackPwaManifest({
     ],
     inject: true,
     ios: true,
-    publicPath: '.'
+    publicPath: '.',
+    display: "fullscreen",
 }));
