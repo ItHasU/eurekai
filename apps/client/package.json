@@ -12,7 +12,8 @@
     "@dagda/build": "*",
     "@eurekai/shared": "*",
     "@types/bootstrap": "^5.2.6",
-    "@types/diff-match-patch": "^1.0.36"
+    "@types/diff-match-patch": "^1.0.36",
+    "webpack-pwa-manifest": "^4.3.0"
   },
   "dependencies": {
     "@dagda/client": "*",
