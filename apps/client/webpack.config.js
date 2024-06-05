@@ -17,7 +17,11 @@ module.exports.plugins.push(new WebpackPwaManifest({
         }
     ],
     inject: true,
-    ios: true,
+    ios: {
+        "apple-mobile-web-app-capable": "yes",
+        "apple-mobile-web-app-status-bar-style": "black-translucent",
+        "apple-mobile-web-app-title": "eurekAI"
+    },
     publicPath: '.',
     display: "fullscreen",
 }));
