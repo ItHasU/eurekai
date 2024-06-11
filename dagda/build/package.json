@@ -5,6 +5,7 @@
     "author": "Matthieu Aubry",
     "license": "ISC",
     "scripts": {},
-    "dependencies": {},
-    "devDependencies": {}
+    "devDependencies": {
+        "copy-webpack-plugin": "^12.0.2"
+    }
 }

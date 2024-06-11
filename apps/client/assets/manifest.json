@@ -1,0 +1,21 @@
+{
+  "icons": [
+    {
+      "src": "/assets/icon.png",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/maskable_icon.png",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "name": "eurekAI",
+  "short_name": "eurekAI",
+  "orientation": "portrait",
+  "display": "fullscreen",
+  "start_url": "/",
+  "description": "Génération d'image",
+  "background_color": "rgb(43, 48, 53)",
+  "theme_color": "rgb(43, 48, 53)"
+}

@@ -1,9 +1,10 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 /** Inspired by https://github.com/appzuka/project-references-example */
-function getWebpackConfig(dirname, entry = "src/index.ts") {
+function getWebpackConfig(dirname, entry = "src/index.ts", assets = "assets/") {
   return {
     mode: "development", // or "production"
     devtool: "inline-source-map",
@@ -30,6 +31,22 @@ function getWebpackConfig(dirname, entry = "src/index.ts") {
         {
           test: /\.html$/i,
           loader: "html-loader",
+          options: {
+            sources: {
+              list: [
+                "...",
+                {
+                  tag: "link",
+                  attribute: "href",
+                  type: "src",
+                  filter: (tag, attribute, attributes, resourcePath) => {
+                    const imgPath = attributes[1].value;
+                    return !imgPath.startsWith("/" + assets);
+                  },
+                },
+              ],
+            },
+          }
         },
         {
           test: /\.css$/i,
@@ -48,14 +65,22 @@ function getWebpackConfig(dirname, entry = "src/index.ts") {
       // },
       extensions: [".js", ".ts"],
       plugins: [
-        new TsconfigPathsPlugin({})
+        new TsconfigPathsPlugin({}),
       ],
       alias: {
         handlebars: 'handlebars/dist/handlebars.min.js'
       }
     },
     plugins: [
-      new HtmlWebpackPlugin({ template: "./src/index.html" })
+      new HtmlWebpackPlugin({ template: "./src/index.html" }),
+      new CopyWebpackPlugin({
+        patterns: [
+          {
+            from: path.resolve(dirname, assets),
+            to: "assets"
+          }
+        ]
+      })
     ]
   };
 
