@@ -10,8 +10,6 @@
         "test": "mocha .tsc-build/**/*.spec.js"
     },
     "devDependencies": {
-        "@dagda/build": "*",
-        "@types/mocha": "^10.0.6",
-        "mocha": "^10.2.0"
+        "@dagda/build": "*"
     }
 }
