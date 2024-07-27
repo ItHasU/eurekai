@@ -2,7 +2,7 @@ import { EntitiesHandler } from "@dagda/shared/entities/handler";
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { SQLTransaction } from "@dagda/shared/sql/transaction";
 import JSZip from "jszip";
-import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity, PictureId, ProjectId, PromptEntity, PromptId, Seed, SeedEntity, SeedId } from "./entities";
+import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity, PictureId, ProjectEntity, ProjectId, PromptEntity, PromptId, Seed, SeedEntity, SeedId } from "./entities";
 
 /** 
  * Generate a certain amount of images 
@@ -48,6 +48,14 @@ export function generateNextPictures(handler: EntitiesHandler<AppTables, AppCont
         };
 
         tr.insert("pictures", newPicture);
+    }
+
+    // Mark project as pinned when new pictures are added. This makes the project easier to find.
+    if (seeds.length > 0) {
+        const project: ProjectEntity | undefined = handler.getById("projects", prompt.projectId);
+        if (project != null) {
+            tr.update("projects", project, { pinned: asNamed(true) });
+        }
     }
 }
 
