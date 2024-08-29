@@ -18,6 +18,12 @@ export class DallE extends AbstractDiffuser {
     }
 
     /** @inheritdoc */
+    public override getLock(options: ImageDescription): string | null {
+        // Can generate has many images as necessary in parallel
+        return null;
+    }
+
+    /** @inheritdoc */
     public override getModelInfo(): ModelInfo {
         return {
             uid: this._model,

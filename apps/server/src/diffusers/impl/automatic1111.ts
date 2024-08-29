@@ -69,6 +69,16 @@ export abstract class Automatic1111 extends AbstractDiffuser {
         super();
     }
 
+    //#region Lock
+
+    /** @inheritdoc */
+    public override getLock(options: ImageDescription): string | null {
+        // Make sure that the server is only called once at a time
+        return this._options.apiURL;
+    }
+
+    //#endregion
+
     //#region Image generation
 
     /** @inheritdoc */

@@ -13,6 +13,8 @@ export enum ComputationStatus {
 
     /** Waiting for computation */
     PENDING,
+    /** Computing as started */
+    COMPUTING,
     /** Response received from the generator */
     DONE,
     /** Error received from the generator */

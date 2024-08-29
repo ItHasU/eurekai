@@ -70,6 +70,7 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
                     this.errorCount++;
                     break;
                 case ComputationStatus.PENDING:
+                case ComputationStatus.COMPUTING:
                     this.pendingCount++;
                     break;
                 case ComputationStatus.DONE:

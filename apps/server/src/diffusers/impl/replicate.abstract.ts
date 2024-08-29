@@ -20,6 +20,12 @@ export abstract class ReplicateAbstract<T extends object> extends AbstractDiffus
     }
 
     /** @inheritdoc */
+    public override getLock(options: ImageDescription): string | null {
+        // Can generate has many images as necessary in parallel
+        return null;
+    }
+
+    /** @inheritdoc */
     public override getModelInfo(): ModelInfo {
         return {
             uid: `replicate_${this._model}`,
