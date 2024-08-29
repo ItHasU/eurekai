@@ -20,6 +20,20 @@ import { buildServerEntitiesHandler } from "./entities.handler";
 export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, port: number): Promise<void> {
     const app = express();
 
+    // -- Update pictures with status computing --
+    // Mark all pictures with status computing to error as once the server is restarted
+    // there is no way to handle pictures with this state.
+    // Note : We could also have passed the status to pending, but if the server reboots due to an
+    // error during generation, this could create an infinite loop and the user would not be 
+    // notified of the problem.
+    try {
+        await db.run(`UPDATE ${qt("pictures")} SET ${qf("pictures", "status", false)}=${ComputationStatus.ERROR} WHERE ${qf("pictures", "status", false)}=${ComputationStatus.COMPUTING}`);
+    } catch (e) {
+        console.error("An error occurred while handing computing pictures at startup");
+        console.error(e);
+    }
+
+    // -- Create the authentication handler --
     const auth: AuthHandler = new AuthHandler(app, baseURL, async (profile: passport.Profile) => {
         try {
             const handler = buildServerEntitiesHandler(db);
