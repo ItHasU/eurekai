@@ -105,8 +105,8 @@ export class Generator {
         await this._handler.withTransaction(async (tr) => {
             // -- Notify the clients we are at work --
             // We notify on each image for newly connected clients
-            this._queuedPictures++;
-            NotificationHelper.broadcast<AppEvents>("generating", { running: true });
+            this._queuedPictureCount++;
+            NotificationHelper.broadcast<AppEvents>("generating", { count: this._queuedPictureCount });
 
             try {
                 // -- Get the prompt --
@@ -154,15 +154,19 @@ export class Generator {
                 // Image generation failed, try to mark picture as failed
                 console.error(`Failed to generate image for picture ${picture.id}`);
                 console.error(e);
-                tr.update("pictures", picture, {
-                    status: asNamed(ComputationStatus.ERROR)
-                });
-            } finally {
-                this._queuedPictures--;
-                if (this._queuedPictures <= 0) {
-                    this._queuedPictures = 0; // Failsafe if we decrease too much
-                    NotificationHelper.broadcast<AppEvents>("generating", { running: false });
+                try {
+                    tr.update("pictures", picture, {
+                        status: asNamed(ComputationStatus.ERROR)
+                    });
+                } catch (e) {
+                    console.error(e);
                 }
+            } finally {
+                this._queuedPictureCount--;
+                if (this._queuedPictureCount <= 0) {
+                    this._queuedPictureCount = 0; // Failsafe if we decrease too much
+                }
+                NotificationHelper.broadcast<AppEvents>("generating", { count: this._queuedPictureCount });
             }
         });
     }

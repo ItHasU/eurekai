@@ -1,3 +1,6 @@
 export type AppEvents = {
-    generating: { running: boolean };
+    generating: {
+        /** Count of images pending for generation */
+        count: number
+    };
 }
