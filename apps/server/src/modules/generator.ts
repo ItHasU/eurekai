@@ -9,9 +9,15 @@ import { AbstractDiffuser, ImageDescription } from "src/diffusers/diffuser";
 import { buildServerEntitiesHandler } from "./entities.handler";
 
 export class Generator {
+    /** Handler for querying the database */
     protected _handler: ReturnType<typeof buildServerEntitiesHandler>;
+    /** 
+     * Map of last promise for each lock.
+     * When registered, the promise will have an empty catch method allowing to make sure promises can be queued.
+     */
     protected readonly _lastPromiseByLock: Map<string, Promise<void>> = new Map();
-    protected _queuedPictures: number = 0;
+    /** Count pictures currently waiting to be generated */
+    protected _queuedPictureCount: number = 0;
 
     constructor(protected _db: AbstractSQLRunner) {
         this._handler = buildServerEntitiesHandler(this._db);
