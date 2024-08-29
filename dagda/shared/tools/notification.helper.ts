@@ -50,8 +50,17 @@ export class NotificationHelper {
         EventHandlerImpl.on<Notifications, NotificationKind>(NotificationHelper._eventHandlerData as EventHandlerData<Notifications>, kind, listener);
     }
 
+    /** 
+     * Broadcast a message if a notification helper is instantiated and set.
+     * Errors (if any) are catch and reported by this function.
+     */
     public static broadcast<Notifications extends Record<string, unknown>, NotificationKind extends keyof Notifications = keyof Notifications>(kind: NotificationKind, data: Notifications[NotificationKind]): void {
-        NotificationHelper._instance?.broadcast(kind as string, data);
+        try {
+            NotificationHelper._instance?.broadcast(kind as string, data);
+        } catch (e) {
+            console.error("Failed to trigger notification");
+            console.error(e);
+        }
     }
 
     //#endregion

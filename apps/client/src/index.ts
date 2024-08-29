@@ -74,9 +74,11 @@ class App {
 
         // -- Generation display --
         const generationSpan = document.getElementById("generationSpan");
-        if (generationSpan) {
+        const generationCount = document.getElementById("generationCount");
+        if (generationSpan && generationCount) {
             NotificationHelper.on<AppEvents>("generating", (event) => {
-                generationSpan.classList.toggle("d-none", !event.data.running);
+                generationSpan.classList.toggle("d-none", event.data.count === 0);
+                generationCount.innerText = "" + event.data.count;
             });
         }
     }
