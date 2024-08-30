@@ -13,8 +13,6 @@ export enum ComputationStatus {
 
     /** Waiting for computation */
     PENDING,
-    /** Computing as started */
-    COMPUTING,
     /** Response received from the generator */
     DONE,
     /** Error received from the generator */
@@ -29,7 +27,9 @@ export enum ComputationStatus {
      * Rejected by the user
      * (Only accessible if image was previously DONE)
      */
-    REJECTED
+    REJECTED,
+    /** Computing as started */
+    COMPUTING
 }
 
 //#endregion
