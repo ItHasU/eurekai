@@ -61,6 +61,11 @@ export class Generator {
                     }
                 }
             });
+            // Here we make sure all images have been marked to avoid restarting the computation
+            // on the next queue. In fact, the cache will be marked dirty automatically on the next
+            // call the _dequeue and sometime the SQL server can be a little slow and modifications
+            // are not finished in the 1s timelapse.
+            await this._handler.waitForSubmit();
 
             // -- Sort pictures --
             picturesPending.sort((p1, p2) => {
@@ -169,6 +174,8 @@ export class Generator {
                 NotificationHelper.broadcast<AppEvents>("generating", { count: this._queuedPictureCount });
             }
         });
+        // Here, no need to wait for the transaction to be done.
+        // The client will automatically be notified when the SQL transaction is finished.
     }
 
     /** 
