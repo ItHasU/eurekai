@@ -3,6 +3,7 @@ import { wait } from "@dagda/shared/tools/async";
 import { exec } from "child_process";
 import { } from "node:process";
 import { Automatic1111, SDModel } from "./automatic1111";
+import { Flux } from "./flux";
 import { SD } from "./sd";
 import { SDXL } from "./sdxl";
 
@@ -69,11 +70,14 @@ export async function getAllModels(apiURL: string, wolScript?: string): Promise<
     const sdxl_refiners: SDModel[] = [];
     const sdxl_models: SDModel[] = [];
     const sd_models: SDModel[] = [];
+    const flux_models: SDModel[] = [];
 
     const models = await getModels(apiURL);
     for (const model of models) {
         const name = model.title.toLocaleLowerCase();
-        if (name.includes("refiner")) {
+        if (name.includes("flux")) {
+            flux_models.push(model);
+        } else if (name.includes("refiner")) {
             sdxl_refiners.push(model);
         } else if (name.includes("xl")) {
             sdxl_models.push(model);
@@ -84,6 +88,9 @@ export async function getAllModels(apiURL: string, wolScript?: string): Promise<
 
     // -- Create all combinaision of models --
     const diffusers: Automatic1111[] = [];
+    for (const flux_model of flux_models) {
+        diffusers.push(new Flux(apiURL, flux_model, wolScript));
+    }
     for (const sdxl_model of sdxl_models) {
         for (const sdxl_refiner of sdxl_refiners) {
             diffusers.push(new SDXL(apiURL, sdxl_model, sdxl_refiner, wolScript));

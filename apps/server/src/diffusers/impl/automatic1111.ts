@@ -37,7 +37,10 @@ export interface Txt2ImgOptions {
     save_images?: boolean;
 
     refiner_checkpoint?: string,
-    refiner_switch_at?: number
+    refiner_switch_at?: number,
+
+    distilled_cfg_scale?: number,
+    scheduler?: string
 }
 
 //#endregion
