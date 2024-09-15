@@ -35,6 +35,10 @@ export class Generator {
             const picturesPending = this._handler.getItems("pictures").filter(pic => pic.status === asNamed(ComputationStatus.PENDING)); // Filter old pictures in cache
             if (picturesPending.length === 0) {
                 // Shortcut to exit on no new picture to generate
+                if (this._queuedPictureCount <= 0) {
+                    // Just in case, we send 0 for client that may have lost connection
+                    NotificationHelper.broadcast<AppEvents>("generating", { count: 0 });
+                }
                 return;
             }
 
