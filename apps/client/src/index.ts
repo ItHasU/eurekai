@@ -10,6 +10,7 @@ import { PictureElement } from "./components/picture.element";
 import { PromptElement } from "./components/prompt.element";
 import { PromptEditor } from "./editors/prompt.editor";
 import { AbstractPageElement } from "./pages/abstract.page.element";
+import { MaintenancePage } from "./pages/maintenance.page";
 import { PicturesPage } from "./pages/pictures.page";
 import { ProjectsPage } from "./pages/projects.page";
 import { StaticDataProvider } from "./tools/dataProvider";
@@ -55,6 +56,7 @@ class App {
         // -- Bind pages --
         this._pageDiv = document.getElementById("pageDiv") as HTMLDivElement;
         this._bindPage("projectsButton", ProjectsPage);
+        this._bindPage("maintenanceButton", MaintenancePage);
 
         this.setPage(ProjectsPage);
 

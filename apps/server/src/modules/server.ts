@@ -9,12 +9,15 @@ import { Data } from "@dagda/shared/entities/types";
 import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
 import { APP_MODEL, AppContexts, AppTables, AttachmentEntity, ComputationStatus, PictureEntity, ProjectEntity, PromptEntity, SeedEntity, UserEntity } from "@eurekai/shared/src/entities";
 import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api";
+import { SYSTEM_URL, SystemAPI, SystemInfo } from "@eurekai/shared/src/system.api";
 import express, { Application } from "express";
 import { resolve } from "node:path";
 import passport from "passport";
 import { DiffusersRegistry } from "src/diffusers";
 import { qf, qt } from "./db";
 import { buildServerEntitiesHandler } from "./entities.handler";
+
+const APP_START_TIME_MS = new Date().getTime();
 
 /** Initialize an Express app and register the routes */
 export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, port: number): Promise<void> {
@@ -77,7 +80,7 @@ export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, por
     registerAdapterAPI<AppTables, AppContexts>(app, APP_MODEL, db, sqlFetch);
 
     // -- Register models routes --
-    _registerModelsAPI(app);
+    _registerAPIs(app);
 
     // -- Register attachments route --
     app.get("/attachment/:id", async (req, res) => {
@@ -144,7 +147,7 @@ export async function sqlFetch(helper: AbstractSQLRunner, filter: AppContexts): 
     }
 }
 
-function _registerModelsAPI(app: Application): void {
+function _registerAPIs(app: Application): void {
     registerAPI<ModelsAPI>(app, MODELS_URL, {
         getModels: async (refresh: boolean): Promise<ModelInfo[]> => {
             if (refresh) {
@@ -158,4 +161,12 @@ function _registerModelsAPI(app: Application): void {
             return res;
         }
     });
+
+    registerAPI<SystemAPI>(app, SYSTEM_URL, {
+        getSystemInfo: function (): Promise<SystemInfo> {
+            return Promise.resolve({
+                uptime: Math.floor((new Date().getTime() - APP_START_TIME_MS) / 1000)
+            });
+        }
+    })
 }
