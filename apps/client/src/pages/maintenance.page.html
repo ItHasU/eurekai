@@ -3,10 +3,27 @@
         <h3>Maintenance</h3>
     </div>
     <div class="row mt-2">
-        <!-- Project creation form -->
-        <div class="form-floating mb-3">
-            <input type="text" readonly class="form-control-plaintext" id="uptimeInput" placeholder="hh:mm:ss">
+        <h4>Statistics</h4>
+        <div class="form-floating col">
+            <input type="text" readonly class="form-control-plaintext" id="startedAtInput">
+            <label for="startedAtInput">Started at</label>
+        </div>
+        <div class="form-floating col">
+            <input type="text" readonly class="form-control-plaintext" id="uptimeInput">
             <label for="uptimeInput">Uptime</label>
+        </div>
+    </div>
+    <div class="row mt-2">
+        <h4>
+            Last error
+            <button id="errorButton" class="btn btn-outline-danger">Trigger an error</button>
+        </h4>
+        <div class="col">
+            <div class="card bg-black text-secondary">
+                <div class="card-body" style="height: 30em; overflow-y: scroll;">
+                    <pre id="errorPre"></pre>
+                </div>
+            </div>
         </div>
     </div>
 </div>

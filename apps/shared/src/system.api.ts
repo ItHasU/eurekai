@@ -1,10 +1,13 @@
 export const SYSTEM_URL = "system";
 
 export interface SystemInfo {
-    /** Uptime in seconds */
-    uptime: number;
+    /** Start date */
+    startTimeMilliseconds: number;
+    /** List of uncaught errors */
+    errors: string[];
 }
 
 export type SystemAPI = {
     getSystemInfo: () => Promise<SystemInfo>;
+    triggerError: () => Promise<void>;
 }

@@ -162,11 +162,24 @@ function _registerAPIs(app: Application): void {
         }
     });
 
+    const lastErrors: string[] = [];
+    process.on('uncaughtException', (err) => {
+        lastErrors.push("" + err);
+        console.error(err);
+    });
+
     registerAPI<SystemAPI>(app, SYSTEM_URL, {
         getSystemInfo: function (): Promise<SystemInfo> {
             return Promise.resolve({
-                uptime: Math.floor((new Date().getTime() - APP_START_TIME_MS) / 1000)
+                startTimeMilliseconds: APP_START_TIME_MS,
+                errors: lastErrors
             });
+        },
+        triggerError: function (): Promise<void> {
+            setTimeout(() => {
+                throw new Error("Uncaught exception test");
+            }, 0);
+            return Promise.resolve();
         }
     })
 }
