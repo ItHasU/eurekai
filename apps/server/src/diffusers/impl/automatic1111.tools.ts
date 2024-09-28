@@ -67,7 +67,6 @@ export async function getAllModelsWithWOL(apiURL: string, wolScript?: string): P
 /** Fetch models from Automatic 1111 and try to best guess all the available models */
 export async function getAllModels(apiURL: string, wolScript?: string): Promise<Automatic1111[]> {
     // -- Fetch models and spread them --
-    const sdxl_refiners: SDModel[] = [];
     const sdxl_models: SDModel[] = [];
     const sd_models: SDModel[] = [];
     const flux_models: SDModel[] = [];
@@ -77,8 +76,6 @@ export async function getAllModels(apiURL: string, wolScript?: string): Promise<
         const name = model.title.toLocaleLowerCase();
         if (name.includes("flux")) {
             flux_models.push(model);
-        } else if (name.includes("refiner")) {
-            sdxl_refiners.push(model);
         } else if (name.includes("xl")) {
             sdxl_models.push(model);
         } else {
@@ -92,9 +89,7 @@ export async function getAllModels(apiURL: string, wolScript?: string): Promise<
         diffusers.push(new Flux(apiURL, flux_model, wolScript));
     }
     for (const sdxl_model of sdxl_models) {
-        for (const sdxl_refiner of sdxl_refiners) {
-            diffusers.push(new SDXL(apiURL, sdxl_model, sdxl_refiner, wolScript));
-        }
+        diffusers.push(new SDXL(apiURL, sdxl_model, wolScript));
     }
     for (const sd_model of sd_models) {
         diffusers.push(new SD(apiURL, sd_model, wolScript));

@@ -13,7 +13,7 @@ const DEFAULT_PARAMETERS: GenerateImageOptions = {
 /** Stable diffusion XL model */
 export class SDXL extends Automatic1111 {
 
-    constructor(apiURL: string, model: SDModel, protected _refiner: SDModel, wolScript?: string) {
+    constructor(apiURL: string, model: SDModel, wolScript?: string) {
         super({
             apiURL,
             model,
@@ -22,9 +22,6 @@ export class SDXL extends Automatic1111 {
             template: {
                 ...DEFAULT_PARAMETERS,
                 steps: 30
-                // Disable the refiner for now
-                // refiner_checkpoint: _refiner.title,
-                // refiner_switch_at: 0.66
             }
         });
     }
@@ -32,8 +29,8 @@ export class SDXL extends Automatic1111 {
     /** @inheritdoc */
     public override getModelInfo(): ModelInfo {
         return {
-            uid: `SDXL-${this._options.model.hash}-${this._refiner.hash}`,
-            displayName: `[SDXL] ${this._options.model.model_name}`, // + ${this._refiner.model_name} Refiner is not used anymore
+            uid: `SDXL-${this._options.model.hash}}`,
+            displayName: `[SDXL] ${this._options.model.model_name}`,
             size: this._options.size
         };
     }
