@@ -156,7 +156,7 @@ export class Generator {
                 // Queue the generation of the picture
                 const nextPromise = previousPromise.then(this._generatePictureImpl.bind(this, tr, diffuser, picture, prompt, img));
                 if (lock != null) {
-                    this._lastPromiseByLock.set(lock, nextPromise.catch(void (0))); // Don't care for errors here
+                    this._lastPromiseByLock.set(lock, nextPromise.catch(() => { })); // Don't care for errors here
                 }
                 await nextPromise;
             } catch (e) {
