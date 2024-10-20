@@ -2,7 +2,7 @@ import { registerAPI } from "@dagda/server/api";
 import { AuthHandler } from "@dagda/server/express/auth";
 import { registerAdapterAPI } from "@dagda/server/sql/api.adapter";
 import { AbstractSQLRunner } from "@dagda/server/sql/runner";
-import { getEnvString } from "@dagda/server/tools/config";
+import { getEnvStringOptional } from "@dagda/server/tools/config";
 import { ServerNotificationImpl } from "@dagda/server/tools/notification.impl";
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { Data } from "@dagda/shared/entities/types";
@@ -37,39 +37,48 @@ export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, por
     }
 
     // -- Create the authentication handler --
-    const auth: AuthHandler = new AuthHandler(app, baseURL, async (profile: passport.Profile) => {
-        try {
-            const handler = buildServerEntitiesHandler(db);
-            await handler.fetch({ type: "users", "options": undefined });
-            // Search for the user
-            const userEntity = handler.getItems("users").find(user => user.uid === profile.id);
-            if (userEntity == null) {
-                // We need to create the user
-                await handler.withTransaction((tr) => {
-                    tr.insert("users", {
-                        id: asNamed(0),
-                        uid: asNamed(profile.id),
-                        displayName: asNamed(profile.displayName),
-                        enabled: asNamed(false)
-                    });
-                });
-                await handler.waitForSubmit();
-                return false;
-            } else {
-                return userEntity.enabled;
-            }
-        } catch (err) {
-            console.error(err);
-            return false;
-        }
-    });
     // Read the google client id and secret from the environment variables
-    const clientID = getEnvString("GOOGLE_CLIENT_ID");
-    const clientSecret = getEnvString("GOOGLE_CLIENT_SECRET");
-    if (!clientID || !clientSecret) {
-        throw new Error("Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET environment variables");
+    const clientID = getEnvStringOptional("GOOGLE_CLIENT_ID");
+    const clientSecret = getEnvStringOptional("GOOGLE_CLIENT_SECRET");
+    if (clientID == null || clientSecret == null) {
+        console.warn(`GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET not found in environment variables, authentication is disabled`);
+        const noAuth = getEnvStringOptional("NO_AUTH");
+        if (noAuth == null) {
+            throw "For security reason, NO_AUTH variable is required when auth variables are left empty";
+        } else {
+            console.log("Authentication is disabled on purpose, continuing...");
+        }
+    } else {
+        const auth: AuthHandler = new AuthHandler(app, baseURL, async (profile: passport.Profile) => {
+            try {
+                const handler = buildServerEntitiesHandler(db);
+                await handler.fetch({ type: "users", "options": undefined });
+                // Search for the user
+                const userEntity = handler.getItems("users").find(user => user.uid === profile.id);
+                if (userEntity == null) {
+                    // We need to create the user
+                    await handler.withTransaction((tr) => {
+                        tr.insert("users", {
+                            id: asNamed(0),
+                            uid: asNamed(profile.id),
+                            displayName: asNamed(profile.displayName),
+                            enabled: asNamed(false)
+                        });
+                    });
+                    await handler.waitForSubmit();
+                    return false;
+                } else {
+                    return userEntity.enabled;
+                }
+            } catch (err) {
+                console.error(err);
+                return false;
+            }
+        });
+        auth.registerGoogleStrategy(clientID, clientSecret);
     }
-    auth.registerGoogleStrategy(clientID, clientSecret);
+
+    // -- JSON parsing middleware --
     app.use(express.json());
 
     // -- Register client files routes --
