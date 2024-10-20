@@ -14,6 +14,7 @@ import { MaintenancePage } from "./pages/maintenance.page";
 import { PicturesPage } from "./pages/pictures.page";
 import { ProjectsPage } from "./pages/projects.page";
 import { StaticDataProvider } from "./tools/dataProvider";
+import { showNotificationIfPossible } from "./tools/notification";
 
 interface PageConstructor {
     new(): AbstractPageElement;
@@ -78,9 +79,17 @@ class App {
         const generationSpan = document.getElementById("generationSpan");
         const generationCount = document.getElementById("generationCount");
         if (generationSpan && generationCount) {
+            let previousCount = 0;
             NotificationHelper.on<AppEvents>("generating", (event) => {
                 generationSpan.classList.toggle("d-none", event.data.count === 0);
                 generationCount.innerText = "" + event.data.count;
+                if (previousCount != 0 && event.data.count === 0) {
+                    showNotificationIfPossible({
+                        body: `All images generated`
+                    });
+                    previousCount = 0;
+                }
+                previousCount = event.data.count;
             });
         }
     }
@@ -101,6 +110,10 @@ class App {
         this._currentPage = new pageConstructor();
         this._pageDiv.appendChild(this._currentPage);
         this._currentPage.refresh(); // Catched by the page
+    }
+
+    public refresh(): void {
+        this._currentPage?.refresh();
     }
 
     protected _toggleLocked(locked?: boolean): void {
