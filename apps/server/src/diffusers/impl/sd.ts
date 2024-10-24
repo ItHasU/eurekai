@@ -1,4 +1,3 @@
-import { ModelInfo } from "@eurekai/shared/src/models.api";
 import { Automatic1111, GenerateImageOptions, SDModel } from "./automatic1111";
 
 const DEFAULT_PARAMETERS: GenerateImageOptions = {
@@ -14,7 +13,7 @@ const DEFAULT_PARAMETERS: GenerateImageOptions = {
 export class SD extends Automatic1111 {
 
     constructor(apiURL: string, model: SDModel, wolScript?: string) {
-        super({
+        super("SD", {
             apiURL,
             model,
             size: 512, // SD 1.5
@@ -30,12 +29,4 @@ export class SD extends Automatic1111 {
         });
     }
 
-    /** @inheritdoc */
-    public override getModelInfo(): ModelInfo {
-        return {
-            uid: `SD-${this._options.model.hash}`,
-            displayName: `[SD] ${this._options.model.model_name}`,
-            size: this._options.size
-        };
-    }
 }

@@ -1,6 +1,7 @@
 import { jsonPost } from "@dagda/server/tools/fetch";
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { AppTypes } from "@eurekai/shared/src/entities";
+import { ModelInfo } from "@eurekai/shared/src/models.api";
 import { AbstractDiffuser, ImageDescription } from "../diffuser";
 import { getAllModelsWithWOL } from "./automatic1111.tools";
 
@@ -68,8 +69,13 @@ export interface ModelOptions {
 
 export abstract class Automatic1111 extends AbstractDiffuser {
 
-    constructor(protected readonly _options: ModelOptions) {
+    constructor(private _baseModelString: string, protected readonly _options: ModelOptions) {
         super();
+
+        const steps = new RegExp(/(\d+)[_-]*step/i).exec(this._options.model.filename);
+        if (steps?.[1] != null) {
+            this._options.template.steps = +steps[1];
+        }
     }
 
     //#region Lock
@@ -78,6 +84,15 @@ export abstract class Automatic1111 extends AbstractDiffuser {
     public override getLock(options: ImageDescription): string | null {
         // Make sure that the server is only called once at a time
         return this._options.apiURL;
+    }
+
+    /** @inheritdoc */
+    public override getModelInfo(): ModelInfo {
+        return {
+            uid: `${this._baseModelString}-${this._options.model.hash}`,
+            displayName: `[${this._baseModelString}] ${this._options.model.model_name}`, // + ${this._refiner.model_name} Refiner is not used anymore
+            size: this._options.size
+        };
     }
 
     //#endregion

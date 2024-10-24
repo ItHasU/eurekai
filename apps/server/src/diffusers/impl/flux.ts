@@ -1,4 +1,3 @@
-import { ModelInfo } from "@eurekai/shared/src/models.api";
 import { Automatic1111, GenerateImageOptions, SDModel } from "./automatic1111";
 
 const DEFAULT_PARAMETERS: GenerateImageOptions = {
@@ -16,7 +15,7 @@ const DEFAULT_PARAMETERS: GenerateImageOptions = {
 export class Flux extends Automatic1111 {
 
     constructor(apiURL: string, model: SDModel, wolScript?: string) {
-        super({
+        super("FLUX", {
             apiURL,
             model,
             size: 1024,
@@ -28,12 +27,4 @@ export class Flux extends Automatic1111 {
         });
     }
 
-    /** @inheritdoc */
-    public override getModelInfo(): ModelInfo {
-        return {
-            uid: `FLUX-${this._options.model.hash}`,
-            displayName: `[FLUX] ${this._options.model.model_name}`, // + ${this._refiner.model_name} Refiner is not used anymore
-            size: this._options.size
-        };
-    }
 }
