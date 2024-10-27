@@ -2,6 +2,7 @@ import { asNamed } from "@dagda/shared/entities/named.types";
 import { wait } from "@dagda/shared/tools/async";
 import { ComputationStatus, PictureEntity, ProjectId, PromptEntity } from "@eurekai/shared/src/entities";
 import { APP } from "src";
+import { bindTouchEvents } from "src/components/picture.element";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { AbstractPageElement } from "./abstract.page.element";
 import { PicturesPage } from "./pictures.page";
@@ -22,6 +23,11 @@ export class QuickPage extends AbstractPageElement {
         // -- Get components --
         this._pictureDiv = this.querySelector("#pictureDiv") as HTMLImageElement;
         this._overlayDiv = this.querySelector("#overlayDiv") as HTMLDivElement;
+
+        bindTouchEvents(this._pictureDiv.parentElement!, this._overlayDiv, {
+            accept: this._updateImage.bind(this, ComputationStatus.ACCEPTED),
+            reject: this._updateImage.bind(this, ComputationStatus.REJECTED)
+        });
     }
 
     public override connectedCallback(): void {

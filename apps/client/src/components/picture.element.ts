@@ -22,8 +22,6 @@ const ACTION_SWIPE_MARGIN = 0.2;
 
 export class PictureElement extends AbstractDTOElement<PictureEntity> {
 
-    protected _swipeMode: SwipeMode = SwipeMode.NONE;
-
     constructor(data: PictureEntity, public readonly _options: {
         prompt: PromptEntity | undefined,
         /** Pass true so image can be blurred if app is locked */
@@ -79,84 +77,8 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> {
         // Handle accept / reject swipe moves
         // Prevent scrolling when touching outside the center of the image
         const feedbackDiv: HTMLDivElement = this.querySelector(".card-img-top > div") as HTMLDivElement;
-        containerDiv.addEventListener("touchstart", (ev) => {
-            if (ev.touches.length != 1) {
-                // Don't care about multi-touch
-                this._swipeMode = SwipeMode.NONE;
-                return;
-            }
 
-            // Get the position of the touch point
-            const touch = ev.touches[0];
-            const x = touch.clientX;
-            // Do a ratio with the image width
-            const ratio = x / containerDiv.clientWidth;
-            // If the touch is in the center of the image
-            if (ratio < ACTION_SWIPE_MARGIN) {
-                // Prevent scrolling, show reject icon
-                this._swipeMode = SwipeMode.REJECT_STARTED;
-                ev.preventDefault();
-            } else if (ratio > (1 - ACTION_SWIPE_MARGIN)) {
-                // Prevent scrolling, show accept icon
-                this._swipeMode = SwipeMode.ACCEPT_STARTED;
-                ev.preventDefault();
-            } else {
-                // At the center, leave the default behavior
-                this._swipeMode = SwipeMode.NONE;
-            }
-            feedbackDiv.style.background = colors[this._swipeMode];
-        });
-        containerDiv.addEventListener("touchmove", (ev) => {
-            if (ev.touches.length < 1) {
-                // Don't care about multi-touch
-                this._swipeMode = SwipeMode.NONE;
-                feedbackDiv.style.background = colors[this._swipeMode];
-                return;
-            }
-
-            if (this._swipeMode != SwipeMode.NONE) {
-                // Prevent default behavior
-                ev.preventDefault();
-            }
-
-            // Get the position of the touch point
-            const touch = ev.touches[0];
-            const x = touch.clientX;
-            // Do a ratio with the image width
-            const ratio = x / containerDiv.clientWidth;
-            // If the touch is in the center of the image
-            if (this._swipeMode == SwipeMode.REJECT_STARTED && ratio > ACTION_SWIPE_MARGIN) {
-                // We crossed the accept limit, reject the image
-                this._swipeMode = SwipeMode.REJECT_DONE;
-            } else if (this._swipeMode == SwipeMode.REJECT_DONE && ratio < ACTION_SWIPE_MARGIN) {
-                // Cancel the reject mode
-                this._swipeMode = SwipeMode.REJECT_STARTED;
-            } else if (this._swipeMode == SwipeMode.ACCEPT_STARTED && ratio < (1 - ACTION_SWIPE_MARGIN)) {
-                // We crossed the reject limit, accept the image
-                this._swipeMode = SwipeMode.ACCEPT_DONE;
-            } else if (this._swipeMode == SwipeMode.ACCEPT_DONE && ratio > (1 - ACTION_SWIPE_MARGIN)) {
-                // Cancel the accept mode
-                this._swipeMode = SwipeMode.ACCEPT_STARTED;
-            } else {
-                // Nothing to do
-            }
-
-            feedbackDiv.style.background = colors[this._swipeMode];
-        });
-        containerDiv.addEventListener("touchend", (ev) => {
-            if (this._swipeMode == SwipeMode.ACCEPT_DONE) {
-                // We crossed the accept limit, accept the image
-                this._options.accept();
-            } else if (this._swipeMode == SwipeMode.REJECT_DONE) {
-                // We crossed the reject limit, reject the image
-                this._options.reject();
-            } else {
-                // Nothing to do
-            }
-            // Reset the swipe mode
-            this._swipeMode = SwipeMode.NONE;
-            feedbackDiv.style.background = colors[this._swipeMode];
-        });
+        bindTouchEvents(containerDiv, feedbackDiv, this._options);
         containerDiv.addEventListener("click", (ev) => {
             ev.stopPropagation();
             // Toggle prompt display
@@ -167,3 +89,90 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> {
 }
 
 customElements.define("custom-picture", PictureElement);
+
+/** Function to add generic Accept/Reject gestures on a picture */
+export function bindTouchEvents(containerDiv: HTMLElement, feedbackDiv: HTMLDivElement, _options: {
+    accept: () => void,
+    reject: () => void,
+}): void {
+    let _swipeMode: SwipeMode = SwipeMode.NONE;
+
+    containerDiv.addEventListener("touchstart", (ev) => {
+        if (ev.touches.length != 1) {
+            // Don't care about multi-touch
+            _swipeMode = SwipeMode.NONE;
+            return;
+        }
+
+        // Get the position of the touch point
+        const touch = ev.touches[0];
+        const x = touch.clientX;
+        // Do a ratio with the image width
+        const ratio = x / containerDiv.clientWidth;
+        // If the touch is in the center of the image
+        if (ratio < ACTION_SWIPE_MARGIN) {
+            // Prevent scrolling, show reject icon
+            _swipeMode = SwipeMode.REJECT_STARTED;
+            ev.preventDefault();
+        } else if (ratio > (1 - ACTION_SWIPE_MARGIN)) {
+            // Prevent scrolling, show accept icon
+            _swipeMode = SwipeMode.ACCEPT_STARTED;
+            ev.preventDefault();
+        } else {
+            // At the center, leave the default behavior
+            _swipeMode = SwipeMode.NONE;
+        }
+        feedbackDiv.style.background = colors[_swipeMode];
+    });
+    containerDiv.addEventListener("touchmove", (ev) => {
+        if (ev.touches.length < 1) {
+            // Don't care about multi-touch
+            _swipeMode = SwipeMode.NONE;
+            feedbackDiv.style.background = colors[_swipeMode];
+            return;
+        }
+
+        if (_swipeMode != SwipeMode.NONE) {
+            // Prevent default behavior
+            ev.preventDefault();
+        }
+
+        // Get the position of the touch point
+        const touch = ev.touches[0];
+        const x = touch.clientX;
+        // Do a ratio with the image width
+        const ratio = x / containerDiv.clientWidth;
+        // If the touch is in the center of the image
+        if (_swipeMode == SwipeMode.REJECT_STARTED && ratio > ACTION_SWIPE_MARGIN) {
+            // We crossed the accept limit, reject the image
+            _swipeMode = SwipeMode.REJECT_DONE;
+        } else if (_swipeMode == SwipeMode.REJECT_DONE && ratio < ACTION_SWIPE_MARGIN) {
+            // Cancel the reject mode
+            _swipeMode = SwipeMode.REJECT_STARTED;
+        } else if (_swipeMode == SwipeMode.ACCEPT_STARTED && ratio < (1 - ACTION_SWIPE_MARGIN)) {
+            // We crossed the reject limit, accept the image
+            _swipeMode = SwipeMode.ACCEPT_DONE;
+        } else if (_swipeMode == SwipeMode.ACCEPT_DONE && ratio > (1 - ACTION_SWIPE_MARGIN)) {
+            // Cancel the accept mode
+            _swipeMode = SwipeMode.ACCEPT_STARTED;
+        } else {
+            // Nothing to do
+        }
+
+        feedbackDiv.style.background = colors[_swipeMode];
+    });
+    containerDiv.addEventListener("touchend", (ev) => {
+        if (_swipeMode == SwipeMode.ACCEPT_DONE) {
+            // We crossed the accept limit, accept the image
+            _options.accept();
+        } else if (_swipeMode == SwipeMode.REJECT_DONE) {
+            // We crossed the reject limit, reject the image
+            _options.reject();
+        } else {
+            // Nothing to do
+        }
+        // Reset the swipe mode
+        _swipeMode = SwipeMode.NONE;
+        feedbackDiv.style.background = colors[_swipeMode];
+    });
+}
