@@ -1,9 +1,7 @@
 import { asNamed } from "@dagda/shared/entities/named.types";
-import { ComputationStatus, PictureEntity, ProjectEntity, ProjectId, PromptEntity } from "@eurekai/shared/src/entities";
-import { isPreferredSeed, togglePreferredSeed } from "@eurekai/shared/src/pictures.data";
+import { wait } from "@dagda/shared/tools/async";
+import { ComputationStatus, PictureEntity, ProjectId, PromptEntity } from "@eurekai/shared/src/entities";
 import { APP } from "src";
-import { PictureElement } from "src/components/picture.element";
-import { PromptElement } from "src/components/prompt.element";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { AbstractPageElement } from "./abstract.page.element";
 import { PicturesPage } from "./pictures.page";
@@ -12,12 +10,30 @@ import { PicturesPage } from "./pictures.page";
 export class QuickPage extends AbstractPageElement {
 
     protected readonly _pictureDiv: HTMLImageElement;
+    protected readonly _overlayDiv: HTMLDivElement;
+    protected readonly _keydownCallback = this._onKeydownCallback.bind(this);
+
+    protected _nextPicture: PictureEntity | null = null;
 
     constructor() {
         super(require("./quick.page.html").default);
         this.classList.add("d-flex", "flex-column", "h-100");
+
         // -- Get components --
         this._pictureDiv = this.querySelector("#pictureDiv") as HTMLImageElement;
+        this._overlayDiv = this.querySelector("#overlayDiv") as HTMLDivElement;
+    }
+
+    public override connectedCallback(): void {
+        super.connectedCallback();
+
+        // Bind keyboard callback when connected
+        window.addEventListener("keydown", this._keydownCallback);
+    }
+
+    public disconnectedCallback(): void {
+        // Unbind keyboard callback when disconnected to avoid triggering callbacks when done
+        window.removeEventListener("keydown", this._keydownCallback);
     }
 
     /** @inheritdoc */
@@ -32,7 +48,7 @@ export class QuickPage extends AbstractPageElement {
 
         // -- Async part ------------------------------------------------------
         await StaticDataProvider.getModels();
-        const dataWereLoaded = await StaticDataProvider.entitiesHandler.fetch({
+        await StaticDataProvider.entitiesHandler.fetch({
             type: "project",
             options: {
                 projectId
@@ -46,7 +62,8 @@ export class QuickPage extends AbstractPageElement {
     /** Render data from the cache (does not reload data) */
     protected _refreshImpl(projectId: ProjectId): void {
         // -- Clear -----------------------------------------------------------
-        this._pictureDiv.innerHTML = "";
+        this._pictureDiv.src = "";
+        this._overlayDiv.style.backgroundColor = "";
 
         // -- Prepare data ----------------------------------------------------
         // Project
@@ -55,9 +72,10 @@ export class QuickPage extends AbstractPageElement {
             // Nothing to display
             return;
         }
+        this._pictureDiv.classList.toggle("lockable", project.lockable);
 
         // -- Get the next picture to display --
-        let nextPicture: PictureEntity | null = null;
+        this._nextPicture = null;
         let nextPicturePrompt: PromptEntity | null = null;
         for (const picture of StaticDataProvider.entitiesHandler.getCache("pictures").getItems()) {
             if (picture.status !== asNamed(ComputationStatus.DONE)) {
@@ -77,65 +95,60 @@ export class QuickPage extends AbstractPageElement {
                 continue;
             }
 
-            nextPicture = picture;
+            this._nextPicture = picture;
             break;
         }
 
-        if (nextPicture != null && nextPicturePrompt != null) {
-            this._pictureDiv.src = `/attachment/${nextPicture.attachmentId}`;
+        if (this._nextPicture != null && nextPicturePrompt != null) {
+            this._pictureDiv.src = `/attachment/${this._nextPicture.attachmentId}`;
         } else {
             APP.setPage(PicturesPage);
         }
     }
 
-    protected _buildPictureElement(picture: PictureEntity, prompt: PromptEntity, project: ProjectEntity, promptItem?: PromptElement): PictureElement {
-        const item = new PictureElement(picture, {
-            prompt,
-            isPreferredSeed: isPreferredSeed(StaticDataProvider.entitiesHandler, project.id, picture.seed),
-            isLockable: project.lockable === true,
-            accept: async () => {
-                await StaticDataProvider.entitiesHandler.withTransaction(tr => {
-                    tr.update("pictures", picture, {
-                        status: asNamed(ComputationStatus.ACCEPTED)
-                    });
+    protected async _updateImage(status: ComputationStatus): Promise<void> {
+        switch (status) {
+            case ComputationStatus.ACCEPTED:
+                this._overlayDiv.style.backgroundColor = "rgb(0,255,0)";
+                break;
+            case ComputationStatus.REJECTED:
+                this._overlayDiv.style.backgroundColor = "rgb(255,0,0)";
+                break;
+            default:
+                this._overlayDiv.style.backgroundColor = "";
+                break;
+        }
+        await StaticDataProvider.entitiesHandler.withTransaction(tr => {
+            if (this._nextPicture != null) {
+                tr.update("pictures", this._nextPicture, {
+                    status: asNamed(status)
                 });
-                this.refresh();
-            },
-            reject: async () => {
-                await StaticDataProvider.entitiesHandler.withTransaction(tr => {
-                    tr.update("pictures", picture, {
-                        status: asNamed(ComputationStatus.REJECTED),
-                        score: asNamed(0)
-                    });
-                });
-                this.refresh();
-            },
-            toggleSeed: async () => {
-                await StaticDataProvider.entitiesHandler.withTransaction(tr => {
-                    togglePreferredSeed(StaticDataProvider.entitiesHandler, tr, project.id, picture.seed);
-                });
-                item._options.isPreferredSeed = isPreferredSeed(StaticDataProvider.entitiesHandler, project.id, picture.seed);
-                item.refresh();
-            },
-            setAsFeatured: async () => {
-                await StaticDataProvider.entitiesHandler.withTransaction(tr => {
-                    tr.update("projects", project, {
-                        featuredAttachmentId: picture.attachmentId
-                    });
-                });
-            },
-            setScore: async (score) => {
-                await StaticDataProvider.entitiesHandler.withTransaction(tr => {
-                    tr.update("pictures", picture, {
-                        score
-                    });
-                });
-                item.refresh();
             }
         });
-        return item;
+        await wait(200);
+        // Make sure to reset the picture
+        this._nextPicture = null;
+        await this.refresh();
     }
 
+    protected _onKeydownCallback(evt: KeyboardEvent): void {
+        Promise.resolve().then(async () => {
+            switch (evt.key) {
+                case "Escape":
+                    evt.preventDefault();
+                    APP.setPage(PicturesPage);
+                    break;
+                case "ArrowLeft":
+                    evt.preventDefault();
+                    await this._updateImage(ComputationStatus.REJECTED);
+                    break;
+                case "ArrowRight":
+                    evt.preventDefault();
+                    await this._updateImage(ComputationStatus.ACCEPTED);
+                    break;
+            }
+        }).catch(e => console.error(e));
+    }
 }
 
 customElements.define("quick-page", QuickPage);

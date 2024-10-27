@@ -1,6 +1,12 @@
-<div class="flex-grow-1" style="text-align:center; overflow: hidden;">
-    <img class="img-fluid" style="max-height: 100%;">
+<div class="flex-grow-1" style="position: relative; text-align:center; overflow: hidden;">
+    <img id="pictureDiv" class="img-fluid" style="max-height: 100%;">
+    <div id="overlayDiv"
+        style="position: absolute; top: 0px; left: 0px; width: 100%; height: 100%; opacity: 20%; pointer-events: none;">
+    </div>
 </div>
-<div class="row" style="height: 1em; border: 1px solid red;">
-    Bottom toolbar
+<div class="row">
+    <div class="col text-secondary">
+        Use <span class="text-danger">left arrow to reject</span>, <span class="text-success">right arrow to
+            accept</span>.
+    </div>
 </div>
