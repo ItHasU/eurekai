@@ -1,6 +1,7 @@
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { AttachmentId, ComputationStatus, PictureEntity, ProjectEntity, ProjectId, PromptEntity, Score, Seed } from "@eurekai/shared/src/entities";
 import { deletePicture, generateNextPictures, isPreferredSeed, togglePreferredSeed, zipPictures } from "@eurekai/shared/src/pictures.data";
+import { APP } from "src";
 import { PictureElement } from "src/components/picture.element";
 import { PromptElement } from "src/components/prompt.element";
 import { ScoreElement } from "src/components/score.element";
@@ -8,6 +9,7 @@ import { SeedElement } from "src/components/seed.element";
 import { PromptEditor } from "src/editors/prompt.editor";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { AbstractPageElement } from "./abstract.page.element";
+import { QuickPage } from "./quick.page";
 
 enum GroupMode {
     PROMPT,
@@ -57,6 +59,7 @@ export class PicturesPage extends AbstractPageElement {
         this._bindClickForRef("closePromptButton", this._closePromptPanel.bind(this));
         this._bindClickForRef("newPromptButton", this._onNewPromptClick.bind(this));
         this._bindClickForRef("zipButton", this._onZipClick.bind(this));
+        this._bindClickForRef("quickButton", this._onQuickClick.bind(this));
         this._bindClickForRef("clearRejectedButton", this._onClearRejectedButtonClick.bind(this));
         this._bindClickForRef("groupByPromptButton", this._toggleGroupMode.bind(this, GroupMode.PROMPT));
         this._bindClickForRef("groupBySeedButton", this._toggleGroupMode.bind(this, GroupMode.SEED));
@@ -473,6 +476,14 @@ export class PicturesPage extends AbstractPageElement {
         } catch (e) {
             console.error(e);
         }
+    }
+
+    protected async _onQuickClick(): Promise<void> {
+        const projectId = StaticDataProvider.getSelectedProject();
+        if (!projectId) {
+            return;
+        }
+        APP.setPage(QuickPage);
     }
 
     protected async _onClearRejectedButtonClick(): Promise<void> {
