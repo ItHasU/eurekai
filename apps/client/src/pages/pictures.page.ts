@@ -74,6 +74,7 @@ export class PicturesPage extends AbstractPageElement {
         }
 
         // -- Async part ------------------------------------------------------
+        await StaticDataProvider.getModels();
         const dataWereLoaded = await StaticDataProvider.entitiesHandler.fetch({
             type: "project",
             options: {
