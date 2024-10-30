@@ -1,0 +1,15 @@
+{
+    "extends": "@dagda/build/tsconfig-webworker.json",
+    "compilerOptions": {
+        "baseUrl": ".",
+        "outDir": "./.tsc-build/",
+    },
+    "include": [
+        "./src/**/*.ts"
+    ],
+    "references": [
+        {
+            "path": "../shared"
+        }
+    ]
+}

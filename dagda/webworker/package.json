@@ -1,0 +1,16 @@
+{
+  "name": "@dagda/webworker",
+  "version": "1.0.0",
+  "description": "WebWorker tools",
+  "author": "Matthieu Aubry",
+  "license": "ISC",
+  "scripts": {
+    "build": "webpack",
+    "w": "webpack --watch"
+  },
+  "devDependencies": {
+    "@dagda/build": "*",
+    "@dagda/shared": "*"
+  },
+  "dependencies": {}
+}

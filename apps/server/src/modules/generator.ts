@@ -1,3 +1,4 @@
+import { PushHelper } from "@dagda/server/push/push.helper";
 import { AbstractSQLRunner } from "@dagda/server/sql/runner";
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { SQLTransaction } from "@dagda/shared/sql/transaction";
@@ -18,8 +19,9 @@ export class Generator {
     protected readonly _lastPromiseByLock: Map<string, Promise<void>> = new Map();
     /** Count pictures currently waiting to be generated */
     protected _queuedPictureCount: number = 0;
+    protected _pushNotificationSent: boolean = true;
 
-    constructor(protected _db: AbstractSQLRunner) {
+    constructor(protected _db: AbstractSQLRunner, protected _pushHelper?: PushHelper) {
         this._handler = buildServerEntitiesHandler(this._db);
         this._dequeue();
     }
@@ -38,9 +40,15 @@ export class Generator {
                 if (this._queuedPictureCount <= 0) {
                     // Just in case, we send 0 for client that may have lost connection
                     NotificationHelper.broadcast<AppEvents>("generating", { count: 0 });
+                    if (this._pushNotificationSent === false) {
+                        this._pushNotificationSent = true;
+                        this._pushHelper?.notifyAll("All images were generated");
+                    }
                 }
                 return;
             }
+
+            this._pushNotificationSent = false; // Reload push notification
 
             // -- Mark pending prompt as computing --
             // This is a failsafe code that will mark all pictures as computing.

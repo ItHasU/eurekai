@@ -1,3 +1,4 @@
+import { PushHelper } from "@dagda/server/push/push.helper";
 import { getEnvNumber, getEnvString } from "@dagda/server/tools/config";
 import { DiffusersRegistry } from "./diffusers";
 import { ENV_VARIABLES_NUMBER, ENV_VARIABLES_STR } from "./modules/config";
@@ -8,6 +9,7 @@ import { initHTTPServer } from "./modules/server";
 async function main(): Promise<void> {
     // -- Initialize db -------------------------------------------------------
     const db = await initDatabaseHelper();
+    const pushHelper: PushHelper = new PushHelper();
 
     // -- Initialize the models -----------------------------------------------
     try {
@@ -24,12 +26,12 @@ async function main(): Promise<void> {
     }
 
     // -- Generate ------------------------------------------------------------
-    new Generator(db);
+    new Generator(db, pushHelper);
 
     // -- Initialize HTTP server ----------------------------------------------
     const baseURL = getEnvString<ENV_VARIABLES_STR>("BASE_URL");
     const port = getEnvNumber<ENV_VARIABLES_NUMBER>("PORT");
-    await initHTTPServer(db, baseURL, port);
+    await initHTTPServer(db, pushHelper, baseURL, port);
 
     console.log(`Server started, connect to ${baseURL}`);
 }

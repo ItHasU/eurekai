@@ -1,0 +1,1 @@
+module.exports = require("@dagda/build/webpack-webworker.config")(__dirname);

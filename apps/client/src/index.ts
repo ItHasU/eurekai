@@ -23,6 +23,7 @@ interface PageConstructor {
 // -- Make sure components are loaded --
 ProjectsPage;
 PicturesPage;
+MaintenancePage;
 
 PromptElement;
 PictureElement;
@@ -92,6 +93,9 @@ class App {
                 previousCount = event.data.count;
             });
         }
+
+        // -- Service worker --
+        this._installServiceWorker();
     }
 
     protected _bindPage(buttonId: string, pageConstructor: PageConstructor): void {
@@ -120,6 +124,15 @@ class App {
         document.body.classList.toggle("locked", locked);
     }
 
+    protected _installServiceWorker(): void {
+        Promise.resolve().then(async () => {
+            try {
+                await navigator.serviceWorker.register("/sw/main.js", { scope: "/sw/" });
+            } catch (e) {
+                console.error("Failed to register service worker", e);
+            }
+        });
+    }
 }
 
 /** Singleton of the App */

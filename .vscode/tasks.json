@@ -10,7 +10,8 @@
 			"dependsOrder": "parallel",
 			"dependsOn": [
 				"Watch server",
-				"Watch client"
+				"Watch client",
+				"Watch service worker"
 			]
 		},
 		{
@@ -36,15 +37,15 @@
 			],
 		},
 		{
-			"label": "Watch worker",
-			"detail": "webpack - worker db",
+			"label": "Watch service worker",
+			"detail": "webpack - apps/service-worker",
 			"type": "npm",
 			"script": "w",
-			"path": "dagda/worker-db",
+			"path": "apps/service-worker",
 			"group": "build",
 			"problemMatcher": [
 				"$tsc"
-			]
+			],
 		},
 		{
 			"label": "Watch tests",

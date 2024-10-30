@@ -1,5 +1,6 @@
 import { registerAPI } from "@dagda/server/api";
 import { AuthHandler } from "@dagda/server/express/auth";
+import { PushHelper } from "@dagda/server/push/push.helper";
 import { registerAdapterAPI } from "@dagda/server/sql/api.adapter";
 import { AbstractSQLRunner } from "@dagda/server/sql/runner";
 import { getEnvStringOptional } from "@dagda/server/tools/config";
@@ -20,7 +21,7 @@ import { buildServerEntitiesHandler } from "./entities.handler";
 const APP_START_TIME_MS = new Date().getTime();
 
 /** Initialize an Express app and register the routes */
-export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, port: number): Promise<void> {
+export async function initHTTPServer(db: AbstractSQLRunner, pushHelper: PushHelper, baseURL: string, port: number): Promise<void> {
     const app = express();
 
     // -- Update pictures with status computing --
@@ -85,11 +86,15 @@ export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, por
     const path: string = resolve("./apps/client/dist");
     app.use(express.static(path));
 
+    // -- Register service worker files routes --
+    app.use("/sw", express.static(resolve("./apps/service-worker/dist")));
+
     // -- Register SQL routes --
     registerAdapterAPI<AppTables, AppContexts>(app, APP_MODEL, db, sqlFetch);
 
     // -- Register models routes --
     _registerAPIs(app);
+    pushHelper.installRouter(app);
 
     // -- Register attachments route --
     app.get("/attachment/:id", async (req, res) => {
@@ -157,6 +162,7 @@ export async function sqlFetch(helper: AbstractSQLRunner, filter: AppContexts): 
 }
 
 function _registerAPIs(app: Application): void {
+    // -- Models API ----------------------------------------------------------
     registerAPI<ModelsAPI>(app, MODELS_URL, {
         getModels: async (refresh: boolean): Promise<ModelInfo[]> => {
             if (refresh) {
@@ -171,6 +177,7 @@ function _registerAPIs(app: Application): void {
         }
     });
 
+    // -- Maintenance API -----------------------------------------------------
     const lastErrors: string[] = [];
     process.on('uncaughtException', (err) => {
         lastErrors.push("" + err);
@@ -190,5 +197,7 @@ function _registerAPIs(app: Application): void {
             }, 0);
             return Promise.resolve();
         }
-    })
+    });
+
+    // -- WebPush API ---------------------------------------------------------
 }

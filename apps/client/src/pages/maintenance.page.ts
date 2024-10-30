@@ -1,4 +1,5 @@
 import { apiCall } from "@dagda/client/api";
+import { PUSH_URL, PushAPI, WebPushSubscription } from "@dagda/shared/push/types";
 import { SYSTEM_URL, SystemAPI } from "@eurekai/shared/src/system.api";
 import { showNotificationIfPossible } from "src/tools/notification";
 import { AbstractPageElement } from "./abstract.page.element";
@@ -35,6 +36,19 @@ export class MaintenancePage extends AbstractPageElement {
 
         this._notificationButton.addEventListener("click", async () => {
             try {
+                // -- Request push notification registration --
+                const registrationReady = await navigator.serviceWorker.getRegistration("/sw/main.js");
+                const applicationServerKey = await apiCall<PushAPI, "getServerKey">(PUSH_URL, "getServerKey");
+                const subscription = await registrationReady?.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey
+                });
+                if (subscription) {
+                    console.log(subscription);
+                    console.log(subscription?.toJSON());
+                    await apiCall<PushAPI, "subscribe">(PUSH_URL, "subscribe", subscription.toJSON() as WebPushSubscription);
+                }
+
                 // -- Request permission --
                 const permission: NotificationPermission = await Notification.requestPermission();
                 this._refresh_notificationButton(permission);
