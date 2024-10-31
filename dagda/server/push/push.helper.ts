@@ -1,4 +1,4 @@
-import { PUSH_URL, PushAPI } from "@dagda/shared/push/types";
+import { PUSH_URL, PushAPI } from "@dagda/shared/push/api";
 import { deepEqual } from "@dagda/shared/tools/objects";
 import { Application } from "express";
 import { generateVAPIDKeys, PushSubscription, RequestOptions, sendNotification, SendResult } from "web-push";
