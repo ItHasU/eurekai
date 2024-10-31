@@ -36,7 +36,7 @@ export class AuthHandler {
         // -- Configure the app to reject any unauthenticated request ---------
         this._app.use((req, res, next) => {
             // Send unauthorized if not logged in
-            if (req.path.startsWith("/login")) {
+            if (req.path.startsWith("/login") || req.path.startsWith("/assets/")) {
                 // Allow login routes
                 next();
             } else if (!req.user) {

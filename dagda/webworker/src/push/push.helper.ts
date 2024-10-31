@@ -58,7 +58,7 @@ export class PushHelper {
         const permission: NotificationPermission = Notification.permission;
         if (permission === "granted") {
             try {
-                new Notification(this._appName, {
+                this._serviceWorker.registration.showNotification(this._appName, {
                     ...this._notificationOptions,
                     body: text
                 });
