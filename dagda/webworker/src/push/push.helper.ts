@@ -43,7 +43,7 @@ export class PushHelper {
         if (subscription == null) {
             // Not registered yet ...
             // ... request an api key from the server ...
-            const applicationServerKey = await apiCall<PushAPI, "getServerKey">(PUSH_URL, "getServerKey");
+            const applicationServerKey = await apiCall<PushAPI<void>, "getServerKey">(PUSH_URL, "getServerKey");
             // ... and subscribe with the key
             subscription = await this._pushManager.subscribe({
                 userVisibleOnly: true,
@@ -51,7 +51,7 @@ export class PushHelper {
             });
         }
 
-        await apiCall<PushAPI, "subscribe">(PUSH_URL, "subscribe", subscription.toJSON() as WebPushSubscription);
+        await apiCall<PushAPI<void>, "subscribe">(PUSH_URL, "subscribe", void (0), subscription.toJSON() as WebPushSubscription);
     }
 
     public notify(text: string): void {

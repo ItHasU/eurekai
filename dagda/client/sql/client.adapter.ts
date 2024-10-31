@@ -3,9 +3,9 @@ import { TablesDefinition } from "@dagda/shared/entities/types";
 import { SQLAdapterAPI, SQL_URL } from "@dagda/shared/sql/api";
 
 export function generateFetchFunction<Tables extends TablesDefinition, Contexts>(): SQLAdapterAPI<Tables, Contexts>["fetch"] {
-    return apiCall.bind(null, SQL_URL, "fetch");
+    return apiCall.bind(null, SQL_URL, "fetch", void (0));
 }
 
 export function generateSubmitFunction<Tables extends TablesDefinition, Contexts>(): SQLAdapterAPI<Tables, Contexts>["submit"] {
-    return apiCall.bind(null, SQL_URL, "submit");
+    return apiCall.bind(null, SQL_URL, "submit", void (0));
 }

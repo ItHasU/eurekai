@@ -8,7 +8,7 @@ export function buildServerEntitiesHandler(db: AbstractSQLRunner) {
     const handler = new EntitiesHandler<AppTables, AppContexts>(APP_MODEL, {
         contextEquals: appContextEquals,
         contextIntersects: appContextEquals,
-        fetch: filter => sqlFetch(db, filter),
+        fetch: sqlFetch.bind(null, db),
         submit: generateSubmit(db, APP_MODEL)
     });
     return handler

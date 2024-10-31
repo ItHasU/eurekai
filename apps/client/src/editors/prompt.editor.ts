@@ -50,7 +50,7 @@ export class PromptEditor extends HTMLElement {
     //#region Models ----------------------------------------------------------
 
     protected _fillModelsSelect(forceRefresh: boolean = false): void {
-        apiCall<ModelsAPI, "getModels">(MODELS_URL, "getModels", forceRefresh).then((models) => {
+        apiCall<ModelsAPI<void>, "getModels">(MODELS_URL, "getModels", void (0), forceRefresh).then((models) => {
             this._modelsSelect.innerHTML = '';
             for (const model of models) {
                 const option = `<option value="${model.uid}">${model.displayName}</option>`;

@@ -14,13 +14,13 @@ export interface WebPushSubscription {
     };
 }
 
-export type PushAPI = {
+export type PushAPI<O> = {
     /** Get the server's public API key */
-    getServerKey(): Promise<string>;
+    getServerKey(options: O): Promise<string>;
 
     /** 
      * Subscribe to push notifications.
      * @returns true if subscription is newly registered, false if subscription was already registered.
      */
-    subscribe(subscription: WebPushSubscription): Promise<boolean>;
+    subscribe(options: O, subscription: WebPushSubscription): Promise<boolean>;
 }

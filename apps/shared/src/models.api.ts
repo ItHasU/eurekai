@@ -6,6 +6,6 @@ export interface ModelInfo {
 
 export const MODELS_URL = "models";
 
-export type ModelsAPI = {
-    getModels: (refresh: boolean) => Promise<ModelInfo[]>;
+export type ModelsAPI<H> = {
+    getModels: (h: H, refresh: boolean) => Promise<ModelInfo[]>;
 }

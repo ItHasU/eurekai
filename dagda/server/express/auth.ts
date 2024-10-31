@@ -1,4 +1,4 @@
-import { Express, Router } from 'express';
+import { Express, Request, Router } from 'express';
 import * as session from "express-session";
 import passport from 'passport';
 import * as google from 'passport-google-oauth20';
@@ -22,6 +22,10 @@ export class AuthHandler {
 
     public constructor(protected readonly _app: Express, protected _baseURL: string, protected _verifier: Verifier) {
         this._initialize();
+    }
+
+    public static getUserUID(req: Request): string | null {
+        return (req.user as any)?.["id"]?.["id"] ?? null;
     }
 
     protected _initialize(): void {

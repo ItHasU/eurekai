@@ -32,7 +32,7 @@ export class StaticDataProvider {
 
     public static getModels(forceRefresh: boolean = false): Promise<ModelInfo[]> {
         if (forceRefresh || this._modelsCacheP == null) {
-            this._modelsCacheP = apiCall<ModelsAPI, "getModels">(MODELS_URL, "getModels", forceRefresh).then((modelCache) => {
+            this._modelsCacheP = apiCall<ModelsAPI<void>, "getModels">(MODELS_URL, "getModels", void (0), forceRefresh).then((modelCache) => {
                 this._modelsCache = modelCache;
                 return modelCache;
             }).catch(e => {

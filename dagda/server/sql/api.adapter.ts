@@ -1,8 +1,9 @@
 import { EntitiesModel } from "@dagda/shared/entities/model";
 import { Data, TablesDefinition } from "@dagda/shared/entities/types";
-import { SQLAdapterAPI, SQL_URL } from "@dagda/shared/sql/api";
+import { SQL_URL } from "@dagda/shared/sql/api";
+import { SQLTransactionData } from "@dagda/shared/sql/transaction";
 import { Application } from "express";
-import { registerAPI } from "../api";
+import { registerAPI, RequestHandle } from "../api";
 import { AbstractSQLRunner, SQLConnection } from "./runner";
 import { generateSubmit } from "./sql.adapter";
 
@@ -16,8 +17,13 @@ export function registerAdapterAPI<Tables extends TablesDefinition, Contexts>(
     runner: AbstractSQLRunner<SQLConnection>,
     fetch: (helper: AbstractSQLRunner<SQLConnection>, filter: Contexts) => Promise<Data<Tables>>
 ): void {
-    registerAPI<SQLAdapterAPI<Tables, Contexts>>(app, SQL_URL, {
-        submit: generateSubmit(runner, model),
-        fetch: fetch.bind(null, runner)
+    const fSubmit = generateSubmit(runner, model);
+    registerAPI(app, SQL_URL, {
+        submit: function (h: RequestHandle, transactionData: SQLTransactionData<Tables, Contexts>) {
+            return fSubmit(transactionData);
+        },
+        fetch: function (h: RequestHandle, filter: Contexts) {
+            return fetch(runner, filter);
+        }
     });
 }

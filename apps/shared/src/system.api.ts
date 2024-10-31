@@ -7,7 +7,7 @@ export interface SystemInfo {
     errors: string[];
 }
 
-export type SystemAPI = {
-    getSystemInfo: () => Promise<SystemInfo>;
-    triggerError: () => Promise<void>;
+export type SystemAPI<H> = {
+    getSystemInfo: (h: H) => Promise<SystemInfo>;
+    triggerError: (h: H) => Promise<void>;
 }

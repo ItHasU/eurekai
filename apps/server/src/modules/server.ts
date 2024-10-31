@@ -1,6 +1,6 @@
-import { registerAPI } from "@dagda/server/api";
+import { registerAPI, RequestHandle } from "@dagda/server/api";
 import { AuthHandler } from "@dagda/server/express/auth";
-import { PushHelper } from "@dagda/server/push/push.helper";
+import { AbstractPushHelper } from "@dagda/server/push/push.helper";
 import { registerAdapterAPI } from "@dagda/server/sql/api.adapter";
 import { AbstractSQLRunner } from "@dagda/server/sql/runner";
 import { getEnvStringOptional } from "@dagda/server/tools/config";
@@ -9,7 +9,7 @@ import { asNamed } from "@dagda/shared/entities/named.types";
 import { Data } from "@dagda/shared/entities/types";
 import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
 import { APP_MODEL, AppContexts, AppTables, AttachmentEntity, ComputationStatus, PictureEntity, ProjectEntity, PromptEntity, SeedEntity, UserEntity } from "@eurekai/shared/src/entities";
-import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api";
+import { ModelInfo, MODELS_URL, ModelsAPI } from "@eurekai/shared/src/models.api";
 import { SYSTEM_URL, SystemAPI, SystemInfo } from "@eurekai/shared/src/system.api";
 import express, { Application } from "express";
 import { resolve } from "node:path";
@@ -21,7 +21,7 @@ import { buildServerEntitiesHandler } from "./entities.handler";
 const APP_START_TIME_MS = new Date().getTime();
 
 /** Initialize an Express app and register the routes */
-export async function initHTTPServer(db: AbstractSQLRunner, pushHelper: PushHelper, baseURL: string, port: number): Promise<void> {
+export async function initHTTPServer(db: AbstractSQLRunner, pushHelper: AbstractPushHelper, baseURL: string, port: number): Promise<void> {
     const app = express();
 
     // -- Update pictures with status computing --
@@ -93,7 +93,7 @@ export async function initHTTPServer(db: AbstractSQLRunner, pushHelper: PushHelp
     registerAdapterAPI<AppTables, AppContexts>(app, APP_MODEL, db, sqlFetch);
 
     // -- Register models routes --
-    _registerAPIs(app);
+    _registerAPIs(app, pushHelper);
     pushHelper.installRouter(app);
 
     // -- Register attachments route --
@@ -161,10 +161,10 @@ export async function sqlFetch(helper: AbstractSQLRunner, filter: AppContexts): 
     }
 }
 
-function _registerAPIs(app: Application): void {
+function _registerAPIs(app: Application, pushHelper: AbstractPushHelper): void {
     // -- Models API ----------------------------------------------------------
-    registerAPI<ModelsAPI>(app, MODELS_URL, {
-        getModels: async (refresh: boolean): Promise<ModelInfo[]> => {
+    registerAPI<ModelsAPI<RequestHandle>>(app, MODELS_URL, {
+        getModels: async (h: RequestHandle, refresh: boolean): Promise<ModelInfo[]> => {
             if (refresh) {
                 await DiffusersRegistry.fetchAllModels();
             }
@@ -181,11 +181,12 @@ function _registerAPIs(app: Application): void {
     const lastErrors: string[] = [];
     process.on('uncaughtException', (err) => {
         lastErrors.push("" + err);
+        pushHelper.notifyAll("Error: " + err);
         console.error(err);
     });
 
-    registerAPI<SystemAPI>(app, SYSTEM_URL, {
-        getSystemInfo: function (): Promise<SystemInfo> {
+    registerAPI<SystemAPI<RequestHandle>>(app, SYSTEM_URL, {
+        getSystemInfo: function (h): Promise<SystemInfo> {
             return Promise.resolve({
                 startTimeMilliseconds: APP_START_TIME_MS,
                 errors: lastErrors

@@ -1,6 +1,6 @@
 
 /** Base typing for a list of methods */
-type BaseMethods = { [MethodName: string]: (...args: any) => any };
+type BaseMethods = { [MethodName: string]: (h: void, ...args: any) => any };
 
 type PromiseReturn<T> = T extends Promise<infer R> ? R : T;
 
@@ -10,7 +10,7 @@ export async function apiCall<Methods extends BaseMethods, MethodName extends ke
 
     const response = await fetch(URL, {
         method: "POST",
-        body: JSON.stringify(args),
+        body: JSON.stringify(args.slice(1)), // Remove first arg that is the handle
         headers: {
             'Content-Type': 'application/json',
         }

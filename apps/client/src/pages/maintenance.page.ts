@@ -25,7 +25,7 @@ export class MaintenancePage extends AbstractPageElement {
         this._errorButton.addEventListener("click", async () => {
             try {
                 console.log("Triggering an error");
-                await apiCall<SystemAPI, "triggerError">(SYSTEM_URL, "triggerError");
+                await apiCall<SystemAPI<void>, "triggerError">(SYSTEM_URL, "triggerError");
             } catch (e) {
                 console.error(e);
             } finally {
@@ -51,7 +51,7 @@ export class MaintenancePage extends AbstractPageElement {
 
     /** @inheritdoc */
     protected override async _refresh(): Promise<void> {
-        const info = await apiCall<SystemAPI, "getSystemInfo">(SYSTEM_URL, "getSystemInfo");
+        const info = await apiCall<SystemAPI<void>, "getSystemInfo">(SYSTEM_URL, "getSystemInfo");
 
         this._startedAtInput.value = new Date(info.startTimeMilliseconds).toLocaleString();
         this._uptimeInput.value = secondsToHms(Math.floor((new Date().getTime() - info.startTimeMilliseconds) / 1000));

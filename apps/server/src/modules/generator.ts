@@ -1,4 +1,4 @@
-import { PushHelper } from "@dagda/server/push/push.helper";
+import { AbstractPushHelper } from "@dagda/server/push/push.helper";
 import { AbstractSQLRunner } from "@dagda/server/sql/runner";
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { SQLTransaction } from "@dagda/shared/sql/transaction";
@@ -21,7 +21,7 @@ export class Generator {
     protected _queuedPictureCount: number = 0;
     protected _pushNotificationSent: boolean = true;
 
-    constructor(protected _db: AbstractSQLRunner, protected _pushHelper?: PushHelper) {
+    constructor(protected _db: AbstractSQLRunner, protected _pushHelper?: AbstractPushHelper) {
         this._handler = buildServerEntitiesHandler(this._db);
         this._dequeue();
     }
