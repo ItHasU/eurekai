@@ -1,6 +1,6 @@
 import { apiCall } from "@dagda/client/api";
 import { asNamed } from "@dagda/shared/entities/named.types";
-import { PromptEntity, PromptId } from "@eurekai/shared/src/entities";
+import { PromptEntity, PromptId, Seed } from "@eurekai/shared/src/entities";
 import { MODELS_URL, ModelsAPI } from "@eurekai/shared/src/models.api";
 import { htmlStringToElement } from "src/components/tools";
 import { StaticDataProvider } from "src/tools/dataProvider";
@@ -24,6 +24,7 @@ export class PromptEditor extends HTMLElement {
     protected readonly _negativeInput: HTMLInputElement;
     protected readonly _widthInput: HTMLInputElement;
     protected readonly _heightInput: HTMLInputElement;
+    protected readonly _seedInput: HTMLInputElement;
     protected readonly _ratioSelect: HTMLUListElement;
     protected readonly _modelsSelect: HTMLSelectElement;
     protected readonly _modelsButton: HTMLButtonElement;
@@ -36,6 +37,7 @@ export class PromptEditor extends HTMLElement {
         this._negativeInput = this.querySelector("#negativeInput") as HTMLInputElement;
         this._widthInput = this.querySelector("#widthInput") as HTMLInputElement;
         this._heightInput = this.querySelector("#heightInput") as HTMLInputElement;
+        this._seedInput = this.querySelector("#seedInput") as HTMLInputElement;
         this._ratioSelect = this.querySelector("#ratioSelect") as HTMLUListElement;
         this._modelsSelect = this.querySelector("#modelsSelect") as HTMLSelectElement;
         this._modelsButton = this.querySelector("#modelsButton") as HTMLButtonElement;
@@ -96,7 +98,7 @@ export class PromptEditor extends HTMLElement {
 
     //#region Prompt set/get --------------------------------------------------
 
-    public setPrompt(prompt?: PromptEntity): void {
+    public setPrompt(prompt?: PromptEntity, seed?: Seed): void {
         // -- Set all fields to passed prompt --
         this._parentId = prompt?.id ?? null;
         this._positiveInput.value = prompt?.prompt ?? "";
@@ -104,6 +106,7 @@ export class PromptEditor extends HTMLElement {
         this._widthInput.value = "" + (prompt?.width ?? DEFAULT_SIZE);
         this._heightInput.value = "" + (prompt?.height ?? DEFAULT_SIZE);
         this._modelsSelect.value = prompt?.model ?? "";
+        this._seedInput.value = "" + (seed ?? "");
     }
 
     public getPrompt(): Omit<PromptEntity, "id" | "projectId" | "orderIndex"> {
@@ -123,6 +126,15 @@ export class PromptEditor extends HTMLElement {
             height: asNamed(height),
             model: asNamed(model)
         };
+    }
+
+    public getSeed(): Seed | undefined {
+        const seedInteger: number = Math.floor(+this._seedInput.value);
+        if (isNaN(seedInteger) || !Number.isInteger(seedInteger)) {
+            return undefined;
+        } else {
+            return asNamed(seedInteger);
+        }
     }
 
     //#endregion

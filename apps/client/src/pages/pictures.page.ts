@@ -174,7 +174,7 @@ export class PicturesPage extends AbstractPageElement {
                 // -- Render prompt --
                 const promptItem = new PromptElement(prompt);
                 promptItem.on("clone", (evt) => {
-                    this._openPromptPanel(evt.data.prompt);
+                    this._openPromptPanel(evt.data.prompt, evt.data.seed);
                 });
                 promptItem.on("delete", () => {
                     this.refresh();
@@ -445,6 +445,9 @@ export class PicturesPage extends AbstractPageElement {
                 item.refresh();
             }
         });
+        item.on("clone", (evt) => {
+            this._openPromptPanel(evt.data.prompt, evt.data.seed);
+        });
         return item;
     }
 
@@ -523,9 +526,9 @@ export class PicturesPage extends AbstractPageElement {
         this.refresh();
     }
 
-    protected _openPromptPanel(prompt?: PromptEntity): void {
+    protected _openPromptPanel(prompt?: PromptEntity, seed?: Seed): void {
         // -- Set fields --
-        this._promptEditor.setPrompt(prompt);
+        this._promptEditor.setPrompt(prompt, seed);
         // -- Display the panel --
         this._promptCard.classList.remove("d-none");
     }
@@ -537,6 +540,7 @@ export class PicturesPage extends AbstractPageElement {
     protected async _onNewPromptClick(): Promise<void> {
         try {
             const prompt = this._promptEditor.getPrompt();
+            const firstSeed = this._promptEditor.getSeed();
             const projectId = StaticDataProvider.getSelectedProject();
             if (projectId == null) {
                 // Should never happen
@@ -557,7 +561,7 @@ export class PicturesPage extends AbstractPageElement {
                     });
                     // Create pictures for 1 seed only, this will allow to test the prompt quickly
                     // even if there are a lot of preferred seeds
-                    generateNextPictures(StaticDataProvider.entitiesHandler, tr, newPrompt, 1);
+                    generateNextPictures(StaticDataProvider.entitiesHandler, tr, newPrompt, 1, firstSeed);
                 });
                 this._refreshImpl(projectId);
             }

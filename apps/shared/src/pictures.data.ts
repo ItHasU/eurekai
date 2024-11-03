@@ -9,7 +9,7 @@ import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity,
  * If requested quantity is not null, will generate random images
  * If requested quantity is null, will generate for all preferred seeds
  */
-export function generateNextPictures(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, prompt: PromptEntity, count: number | "preferred"): void {
+export function generateNextPictures(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, prompt: PromptEntity, count: number | "preferred", firstSeed?: Seed): void {
     // -- Generate the list of seeds to create --
     const seeds: Seed[] = [];
 
@@ -32,7 +32,10 @@ export function generateNextPictures(handler: EntitiesHandler<AppTables, AppCont
     } else {
         // -- Generate random seeds --
         for (let i = 0; i < count; i++) {
-            seeds.push(asNamed(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)));
+            seeds.push(firstSeed ?? asNamed(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)));
+            if (firstSeed != null) {
+                firstSeed++;
+            }
         }
     }
 

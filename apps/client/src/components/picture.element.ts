@@ -1,6 +1,8 @@
 import { asNamed } from "@dagda/shared/entities/named.types";
+import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "@dagda/shared/tools/events";
 import { ComputationStatus, PictureEntity, PromptEntity, Score } from "@eurekai/shared/src/entities";
 import { AbstractDTOElement } from "./abstract.dto.element";
+import { PromptEvents } from "./prompt.element";
 
 enum SwipeMode {
     NONE,
@@ -20,10 +22,12 @@ const colors: Record<SwipeMode, string> = {
 
 const ACTION_SWIPE_MARGIN = 0.2;
 
-export class PictureElement extends AbstractDTOElement<PictureEntity> {
+type PictureEvents = Pick<PromptEvents, "clone">;
+
+export class PictureElement extends AbstractDTOElement<PictureEntity> implements EventHandler<PictureEvents> {
 
     constructor(data: PictureEntity, public readonly _options: {
-        prompt: PromptEntity | undefined,
+        prompt: PromptEntity,
         /** Pass true so image can be blurred if app is locked */
         isLockable: boolean,
         isPreferredSeed: boolean,
@@ -50,12 +54,25 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> {
         return this.data.status >= ComputationStatus.REJECTED;
     }
 
+    //#region Events ----------------------------------------------------------
+
+    protected _eventData: EventHandlerData<PictureEvents> = {};
+
+    public on<EventName extends keyof PictureEvents>(eventName: EventName, listener: EventListener<PictureEvents[EventName]>): void {
+        EventHandlerImpl.on(this._eventData, eventName, listener);
+    }
+
+    //#endregion
+
     public override refresh(): void {
         super.refresh();
         this._bindClick("accept", this._options.accept);
         this._bindClick("reject", this._options.reject);
         this._bindClick("seed", this._options.toggleSeed);
         this._bindClick("featured", this._options.setAsFeatured);
+        this._bindClick("clone", () => {
+            EventHandlerImpl.fire(this._eventData, "clone", { prompt: this._options.prompt, seed: this.data.seed });
+        });
         this._bindClick("star-0", this._options.setScore.bind(undefined, asNamed(0)));
         this._bindClick("star-1", this._options.setScore.bind(undefined, asNamed(1)));
         this._bindClick("star-2", this._options.setScore.bind(undefined, asNamed(2)));

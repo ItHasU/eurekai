@@ -1,5 +1,5 @@
 import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "@dagda/shared/tools/events";
-import { ComputationStatus, ProjectEntity, PromptEntity } from "@eurekai/shared/src/entities";
+import { ComputationStatus, ProjectEntity, PromptEntity, Seed } from "@eurekai/shared/src/entities";
 import { ModelInfo } from "@eurekai/shared/src/models.api";
 import { deletePrompt, generateNextPictures, movePromptToProject, updateSeeds } from "@eurekai/shared/src/pictures.data";
 import { diff_match_patch } from "diff-match-patch";
@@ -11,7 +11,7 @@ const DIFF = new diff_match_patch();
 
 export type PromptEvents = {
     /** Triggered when the user asks for a clone */
-    clone: { prompt: PromptEntity };
+    clone: { prompt: PromptEntity, seed?: Seed };
     /** Triggered when prompt needs to be deleted from the current view */
     delete: { prompt: PromptEntity };
 }
