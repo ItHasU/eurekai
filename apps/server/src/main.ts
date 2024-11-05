@@ -1,4 +1,4 @@
-import { PushHelper } from "@dagda/server/push/push.helper";
+import { MemoryPushHelper } from "@dagda/server/push/impl/memory.push.helper";
 import { getEnvNumber, getEnvString } from "@dagda/server/tools/config";
 import { DiffusersRegistry } from "./diffusers";
 import { ENV_VARIABLES_NUMBER, ENV_VARIABLES_STR } from "./modules/config";
@@ -9,7 +9,7 @@ import { initHTTPServer } from "./modules/server";
 async function main(): Promise<void> {
     // -- Initialize db -------------------------------------------------------
     const db = await initDatabaseHelper();
-    const pushHelper: PushHelper = new PushHelper();
+    const pushHelper: MemoryPushHelper = new MemoryPushHelper();
 
     // -- Initialize the models -----------------------------------------------
     try {
