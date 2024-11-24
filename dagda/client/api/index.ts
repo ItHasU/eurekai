@@ -1,6 +1,9 @@
+/** Request parameters */
+type RequestParams = {
+};
 
 /** Base typing for a list of methods */
-type BaseMethods = { [MethodName: string]: (h: void, ...args: any) => any };
+type BaseMethods = { [MethodName: string]: (params: RequestParams, ...args: any) => any };
 
 type PromiseReturn<T> = T extends Promise<infer R> ? R : T;
 
