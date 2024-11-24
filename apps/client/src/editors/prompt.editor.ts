@@ -129,8 +129,8 @@ export class PromptEditor extends HTMLElement {
     }
 
     public getSeed(): Seed | undefined {
-        const seedInteger: number = Math.floor(+this._seedInput.value);
-        if (isNaN(seedInteger) || !Number.isInteger(seedInteger)) {
+        const seedInteger: number = parseInt(this._seedInput.value);
+        if (isNaN(seedInteger)) {
             return undefined;
         } else {
             return asNamed(seedInteger);
