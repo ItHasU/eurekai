@@ -69,6 +69,71 @@
         .btn-group-footer .btn:last-child {
             border-radius: 0 0 var(--bs-card-inner-border-radius) 0;
         }
+
+        stars-page .picture-container {
+            /** Center picture in the container */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        stars-page .preview {
+            aspect-ratio: 1;
+            position: relative;
+            border: 1px dashed rgb(var(--bs-warning-rgb));
+            /** Center picture in the container */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        stars-page .preview span {
+            position: absolute;
+            bottom: 0px;
+            width: 100%;
+            text-align: center;
+            left: 0px;
+        }
+
+        @media (min-aspect-ratio: 1) {
+            /* Landscape */
+
+            stars-page {
+                flex-direction: row;
+            }
+
+            stars-page .picture-container {
+                height: 100%;
+            }
+
+            stars-page .preview-container {
+                flex-direction: column-reverse;
+            }
+
+            stars-page .preview {
+                height: 25%;
+            }
+        }
+
+        @media (max-aspect-ratio: 1) {
+            /* Portrait */
+
+            stars-page {
+                flex-direction: column-reverse;
+            }
+
+            stars-page .picture-container {
+                height: 75%;
+            }
+
+            stars-page .preview-container {
+                flex-direction: row;
+            }
+
+            stars-page .preview {
+                width: 25%;
+            }
+        }
     </style>
 </head>
 

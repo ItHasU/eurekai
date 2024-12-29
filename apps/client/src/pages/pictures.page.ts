@@ -10,6 +10,7 @@ import { PromptEditor } from "src/editors/prompt.editor";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { AbstractPageElement } from "./abstract.page.element";
 import { QuickPage } from "./quick.page";
+import { StarsPage } from "./stars.page";
 
 enum GroupMode {
     PROMPT,
@@ -60,6 +61,7 @@ export class PicturesPage extends AbstractPageElement {
         this._bindClickForRef("newPromptButton", this._onNewPromptClick.bind(this));
         this._bindClickForRef("zipButton", this._onZipClick.bind(this));
         this._bindClickForRef("quickButton", this._onQuickClick.bind(this));
+        this._bindClickForRef("starsButton", this._onStarsClick.bind(this));
         this._bindClickForRef("clearRejectedButton", this._onClearRejectedButtonClick.bind(this));
         this._bindClickForRef("groupByPromptButton", this._toggleGroupMode.bind(this, GroupMode.PROMPT));
         this._bindClickForRef("groupBySeedButton", this._toggleGroupMode.bind(this, GroupMode.SEED));
@@ -487,6 +489,14 @@ export class PicturesPage extends AbstractPageElement {
             return;
         }
         APP.setPage(QuickPage);
+    }
+
+    protected async _onStarsClick(): Promise<void> {
+        const projectId = StaticDataProvider.getSelectedProject();
+        if (!projectId) {
+            return;
+        }
+        APP.setPage(StarsPage);
     }
 
     protected async _onClearRejectedButtonClick(): Promise<void> {
