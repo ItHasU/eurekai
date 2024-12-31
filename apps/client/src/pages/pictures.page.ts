@@ -112,6 +112,9 @@ export class PicturesPage extends AbstractPageElement {
         // Set mode to STARS is unpinned (means not currently active)
         if (this._isFirstDisplay) {
             this._isFirstDisplay = false;
+            if (project.lockable) {
+                this._picturesFilterSelect.value = "none";
+            }
             if (project.pinned === false) {
                 this._group = GroupMode.STARS;
             }
