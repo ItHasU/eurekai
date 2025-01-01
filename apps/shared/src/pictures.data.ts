@@ -86,6 +86,10 @@ export function togglePreferredSeed(handler: EntitiesHandler<AppTables, AppConte
     }
 }
 
+export function unstarPicture(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, picture: PictureEntity): void {
+    tr.update("pictures", picture, { score: asNamed(0) });
+}
+
 export function deletePicture(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, picture: PictureEntity): void {
     tr.delete("pictures", picture.id);
     if (picture.attachmentId) {

@@ -1,11 +1,13 @@
 import { asNamed } from "@dagda/shared/entities/named.types";
-import { AttachmentId, ComputationStatus, PictureEntity, ProjectEntity, ProjectId, PromptEntity, Score, Seed } from "@eurekai/shared/src/entities";
-import { deletePicture, generateNextPictures, isPreferredSeed, togglePreferredSeed, zipPictures } from "@eurekai/shared/src/pictures.data";
+import { SQLTransaction } from "@dagda/shared/sql/transaction";
+import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity, ProjectEntity, ProjectId, PromptEntity, Score, Seed } from "@eurekai/shared/src/entities";
+import { deletePicture, generateNextPictures, isPreferredSeed, togglePreferredSeed, unstarPicture, zipPictures } from "@eurekai/shared/src/pictures.data";
 import { APP } from "src";
 import { PictureElement } from "src/components/picture.element";
 import { PromptElement } from "src/components/prompt.element";
 import { ScoreElement } from "src/components/score.element";
 import { SeedElement } from "src/components/seed.element";
+import { showConfirm } from "src/components/tools";
 import { PromptEditor } from "src/editors/prompt.editor";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { AbstractPageElement } from "./abstract.page.element";
@@ -62,6 +64,7 @@ export class PicturesPage extends AbstractPageElement {
         this._bindClickForRef("zipButton", this._onZipClick.bind(this));
         this._bindClickForRef("quickButton", this._onQuickClick.bind(this));
         this._bindClickForRef("starsButton", this._onStarsClick.bind(this));
+        this._bindClickForRef("resetStarsButton", this._onResetStarsClick.bind(this));
         this._bindClickForRef("clearRejectedButton", this._onClearRejectedButtonClick.bind(this));
         this._bindClickForRef("groupByPromptButton", this._toggleGroupMode.bind(this, GroupMode.PROMPT));
         this._bindClickForRef("groupBySeedButton", this._toggleGroupMode.bind(this, GroupMode.SEED));
@@ -502,38 +505,39 @@ export class PicturesPage extends AbstractPageElement {
         APP.setPage(StarsPage);
     }
 
-    protected async _onClearRejectedButtonClick(): Promise<void> {
-        const projectId = StaticDataProvider.getSelectedProject();
-        if (projectId == null) {
-            return;
-        }
-        // We go from the project id to the prompt ids ...
-        const projectPromptIds: Set<number> = new Set();
-        for (const prompt of StaticDataProvider.entitiesHandler.getItems("prompts")) {
-            if (prompt.projectId === projectId) {
-                projectPromptIds.add(prompt.id);
+    protected async _onResetStarsClick(): Promise<void> {
+        await this._withCurrentProjectPictures(async (tr, pictures) => {
+            if (pictures.length === 0) {
+                // No pictures to delete
+                return;
             }
-        }
-        // ... and then we list the pictures to delete in the prompts
-        const picturesToDelete: PictureEntity[] = [];
-        for (const picture of StaticDataProvider.entitiesHandler.getItems("pictures")) {
-            const promptId = StaticDataProvider.entitiesHandler.getUpdatedId(picture.promptId);
-            if (promptId == null) {
-                // Should never happen since we already filtered pictures
-                continue;
+            const confirmed = await showConfirm({
+                title: "Reset stars",
+                message: `Reset stars from ${pictures.length} picture(s)`
+            });
+            if (confirmed === true) {
+                for (const picture of pictures) {
+                    unstarPicture(StaticDataProvider.entitiesHandler, tr, picture);
+                }
             }
-            if (!projectPromptIds.has(promptId)) {
-                continue;
-            }
+        });
+        this.refresh();
+    }
 
-            if (picture.status === ComputationStatus.REJECTED || picture.status === ComputationStatus.ERROR) {
-                picturesToDelete.push(picture);
+    protected async _onClearRejectedButtonClick(): Promise<void> {
+        await this._withCurrentProjectPictures(async (tr, pictures) => {
+            const picturesToDelete = pictures.filter(picture => picture.status === ComputationStatus.REJECTED || picture.status === ComputationStatus.ERROR);
+            if (picturesToDelete.length === 0) {
+                return;
             }
-        }
-        // Finally, we perform the deletion
-        await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
-            for (const picture of picturesToDelete) {
-                deletePicture(StaticDataProvider.entitiesHandler, tr, picture);
+            const confirmed = await showConfirm({
+                title: "Delete pictures",
+                message: `Delete ${picturesToDelete.length} picture(s)`
+            });
+            if (confirmed === true) {
+                for (const picture of picturesToDelete) {
+                    deletePicture(StaticDataProvider.entitiesHandler, tr, picture);
+                }
             }
         });
         this.refresh();
@@ -588,6 +592,45 @@ export class PicturesPage extends AbstractPageElement {
     protected _toggleGroupMode(mode: GroupMode): void {
         this._group = mode;
         this.refresh();
+    }
+
+    protected _withCurrentProjectPictures(cb: (tr: SQLTransaction<AppTables, AppContexts>, pictures: PictureEntity[]) => void): void {
+        // -- Check that a project is selected --
+        const projectId = StaticDataProvider.getSelectedProject();
+        if (projectId == null) {
+            return;
+        }
+
+        Promise.resolve().then(async function () {
+            // We go from the project id to the prompt ids ...
+            const projectPromptIds: Set<number> = new Set();
+            for (const prompt of StaticDataProvider.entitiesHandler.getItems("prompts")) {
+                if (StaticDataProvider.entitiesHandler.isSameId(prompt.projectId, projectId)) {
+                    const updatedPromptId = StaticDataProvider.entitiesHandler.getUpdatedId(prompt.id);
+                    if (updatedPromptId != null) {
+                        projectPromptIds.add(updatedPromptId);
+                    }
+                }
+            }
+            console.log(projectPromptIds);
+            // ... and then we list the pictures in the prompts
+            const pictures: PictureEntity[] = [];
+            for (const picture of StaticDataProvider.entitiesHandler.getItems("pictures")) {
+                const promptId = StaticDataProvider.entitiesHandler.getUpdatedId(picture.promptId);
+                if (promptId == null) {
+                    // Should never happen since we already filtered pictures
+                    continue;
+                }
+                if (!projectPromptIds.has(promptId)) {
+                    continue;
+                }
+                pictures.push(picture);
+            }
+            await StaticDataProvider.entitiesHandler.withTransaction(async function (tr) {
+                await cb(tr, pictures);
+            });
+        }).catch(e => console.error(e));
+
     }
 }
 

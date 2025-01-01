@@ -47,8 +47,15 @@ export abstract class AbstractPageElement extends HTMLElement {
 
     //#region Tools
 
-    protected _bindClickForRef(ref: string, cb: () => void): void {
-        (this.querySelector(`*[ref="${ref}"]`) as HTMLButtonElement | undefined)?.addEventListener("click", cb);
+    /** Bind callback to element with ref passed. Callback is surrounded by a try/catch. */
+    protected _bindClickForRef(ref: string, cb: () => Promise<void> | void): void {
+        (this.querySelector(`*[ref="${ref}"]`) as HTMLButtonElement | undefined)?.addEventListener("click", async function () {
+            try {
+                await cb();
+            } catch (e) {
+                console.error(e);
+            }
+        });
     }
 
     //#endregion
