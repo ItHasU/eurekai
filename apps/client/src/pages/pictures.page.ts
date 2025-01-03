@@ -540,6 +540,8 @@ export class PicturesPage extends AbstractPageElement {
                 }
             }
         });
+        // Make sure the pictures are deleted before refreshing, else might refetch them
+        await StaticDataProvider.entitiesHandler.waitForSubmit();
         this.refresh();
     }
 

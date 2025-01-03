@@ -109,7 +109,7 @@ export class SQLTransaction<Tables extends TablesDefinition, Contexts> {
 
     public delete<TableName extends keyof Tables>(table: TableName, id: number): void {
         // -- Perform the action on the cache --
-        const cache = this._cacheHandler.getCache(table).delete(id)
+        this._cacheHandler.getCache(table).delete(id);
 
         // -- Store the operation --
         this.operations.push({
