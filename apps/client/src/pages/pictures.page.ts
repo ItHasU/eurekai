@@ -614,7 +614,6 @@ export class PicturesPage extends AbstractPageElement {
                     }
                 }
             }
-            console.log(projectPromptIds);
             // ... and then we list the pictures in the prompts
             const pictures: PictureEntity[] = [];
             for (const picture of StaticDataProvider.entitiesHandler.getItems("pictures")) {
