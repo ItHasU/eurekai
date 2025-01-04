@@ -175,7 +175,7 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
         });
         const genMoveButtonCallback = (withChildren: boolean) => {
             return async () => {
-                const projects = StaticDataProvider.entitiesHandler.getItems("projects");
+                const projects = StaticDataProvider.entitiesHandler.getItems("projects").sort((a, b) => -(a.id - b.id)); // Last first
                 const selectedProject = await showSelect<ProjectEntity>(projects, {
                     valueKey: "id",
                     displayString: "name",
