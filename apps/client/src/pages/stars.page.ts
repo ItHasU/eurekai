@@ -145,6 +145,24 @@ export class StarsPage extends AbstractPageElement {
 
     protected _onKeydownCallback(evt: KeyboardEvent): void {
         Promise.resolve().then(async () => {
+            switch (evt.key) {
+                case "1":
+                case "&": // Here is the key for 1 on a French keyboard
+                    this._affectScore(asNamed(1));
+                    break;
+                case "2":
+                case "é": // Here is the key for 2 on a French keyboard
+                    this._affectScore(asNamed(2));
+                    break;
+                case "3":
+                case "\"": // Here is the key for 3 on a French keyboard
+                    this._affectScore(asNamed(3));
+                    break;
+                case "4":
+                case "'": // Here is the key for 4 on a French keyboard
+                    this._affectScore(asNamed(4));
+                    break;
+            }
         }).catch(e => console.error(e));
     }
 }
