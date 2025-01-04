@@ -124,14 +124,14 @@ export class PicturesPage extends AbstractPageElement {
         }
 
         // Prompts for the project (there might be others in cache)
-        const prompts = StaticDataProvider.entitiesHandler.getCache("prompts").getItems().filter(prompt => prompt.projectId === projectId);
+        const prompts = StaticDataProvider.entitiesHandler.getItems("prompts").filter(prompt => prompt.projectId === projectId);
         const promptsMap: { [id: number]: { prompt: PromptEntity, pictures: PictureEntity[] } } = {};
         for (const prompt of prompts) {
             promptsMap[prompt.id] = { prompt, pictures: [] };
         }
         // Pictures for the project (the ones associated to prompts of the project)
         const pictures: PictureEntity[] = [];
-        for (const picture of StaticDataProvider.entitiesHandler.getCache("pictures").getItems()) {
+        for (const picture of StaticDataProvider.entitiesHandler.getItems("pictures")) {
             const promptId = StaticDataProvider.entitiesHandler.getUpdatedId(picture.promptId);
             if (promptId == null) {
                 // Prompt is not from the project since the map
@@ -150,6 +150,7 @@ export class PicturesPage extends AbstractPageElement {
                 pictures.push(picture);
             }
         }
+
         // -- Preferred seeds --
         const preferredSeeds: Set<number> = new Set(StaticDataProvider.entitiesHandler.getItems("seeds").filter(s => StaticDataProvider.entitiesHandler.isSameId(s.projectId, projectId)).map(s => s.seed));
         // -- Get the filter --
@@ -521,7 +522,7 @@ export class PicturesPage extends AbstractPageElement {
                 }
             }
         });
-        this.refresh();
+        await this.refresh();
     }
 
     protected async _onClearRejectedButtonClick(): Promise<void> {
@@ -540,9 +541,7 @@ export class PicturesPage extends AbstractPageElement {
                 }
             }
         });
-        // Make sure the pictures are deleted before refreshing, else might refetch them
-        await StaticDataProvider.entitiesHandler.waitForSubmit();
-        this.refresh();
+        await this.refresh();
     }
 
     protected _openPromptPanel(prompt?: PromptEntity, seed?: Seed): void {
@@ -596,42 +595,39 @@ export class PicturesPage extends AbstractPageElement {
         this.refresh();
     }
 
-    protected _withCurrentProjectPictures(cb: (tr: SQLTransaction<AppTables, AppContexts>, pictures: PictureEntity[]) => void): void {
+    protected async _withCurrentProjectPictures(cb: (tr: SQLTransaction<AppTables, AppContexts>, pictures: PictureEntity[]) => Promise<void> | void): Promise<void> {
         // -- Check that a project is selected --
         const projectId = StaticDataProvider.getSelectedProject();
         if (projectId == null) {
             return;
         }
 
-        Promise.resolve().then(async function () {
-            // We go from the project id to the prompt ids ...
-            const projectPromptIds: Set<number> = new Set();
-            for (const prompt of StaticDataProvider.entitiesHandler.getItems("prompts")) {
-                if (StaticDataProvider.entitiesHandler.isSameId(prompt.projectId, projectId)) {
-                    const updatedPromptId = StaticDataProvider.entitiesHandler.getUpdatedId(prompt.id);
-                    if (updatedPromptId != null) {
-                        projectPromptIds.add(updatedPromptId);
-                    }
+        // We go from the project id to the prompt ids ...
+        const projectPromptIds: Set<number> = new Set();
+        for (const prompt of StaticDataProvider.entitiesHandler.getItems("prompts")) {
+            if (StaticDataProvider.entitiesHandler.isSameId(prompt.projectId, projectId)) {
+                const updatedPromptId = StaticDataProvider.entitiesHandler.getUpdatedId(prompt.id);
+                if (updatedPromptId != null) {
+                    projectPromptIds.add(updatedPromptId);
                 }
             }
-            // ... and then we list the pictures in the prompts
-            const pictures: PictureEntity[] = [];
-            for (const picture of StaticDataProvider.entitiesHandler.getItems("pictures")) {
-                const promptId = StaticDataProvider.entitiesHandler.getUpdatedId(picture.promptId);
-                if (promptId == null) {
-                    // Should never happen since we already filtered pictures
-                    continue;
-                }
-                if (!projectPromptIds.has(promptId)) {
-                    continue;
-                }
-                pictures.push(picture);
+        }
+        // ... and then we list the pictures in the prompts
+        const pictures: PictureEntity[] = [];
+        for (const picture of StaticDataProvider.entitiesHandler.getItems("pictures")) {
+            const promptId = StaticDataProvider.entitiesHandler.getUpdatedId(picture.promptId);
+            if (promptId == null) {
+                // Should never happen since we already filtered pictures
+                continue;
             }
-            await StaticDataProvider.entitiesHandler.withTransaction(async function (tr) {
-                await cb(tr, pictures);
-            });
-        }).catch(e => console.error(e));
-
+            if (!projectPromptIds.has(promptId)) {
+                continue;
+            }
+            pictures.push(picture);
+        }
+        await StaticDataProvider.entitiesHandler.withTransaction(async function (tr) {
+            await cb(tr, pictures);
+        });
     }
 }
 
