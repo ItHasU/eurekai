@@ -28,7 +28,12 @@ export class AuthHandler {
         // -- Configure the app required middlewares --------------------------
         this._app.use(session.default({
             store: new session.MemoryStore(),
-            secret: _randomSecret(24) // Use random since sessions are not persisted
+            secret: _randomSecret(24), // Use random since sessions are not persisted
+            resave: true,
+            rolling: true,
+            cookie: {
+                maxAge: 30 * 1000 * 60 * 60 * 24 // 30 days
+            }
         }));
         this._app.use(passport.initialize());
         this._app.use(passport.session());
