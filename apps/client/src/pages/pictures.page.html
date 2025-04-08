@@ -16,9 +16,6 @@
                         Quick evaluate...
                     </span>
                 </button>
-
-
-
                 <!-- Dropdown button for extra actions -->
                 <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"
                     aria-expanded="false" title="Actions...">
@@ -64,6 +61,38 @@
                         <a ref="zipButton" class="dropdown-item" href="javascript: void(0);">
                             <i class="bi bi-file-zip"></i>
                             Download zip
+                        </a>
+                    </li>
+                </ul>
+                <!-- Dropdown button for columns -->
+                <button type="button" id="densityButton" class="btn btn-outline-secondary dropdown-toggle"
+                    data-bs-toggle="dropdown" aria-expanded="false" title="Display density ...">
+                    <i class="bi bi-square"></i>
+                </button>
+                <ul class="dropdown-menu" id="densityMenu">
+                    <li>
+                        <a data-density="1" class="dropdown-item" href="javascript: void(0);">
+                            <i class="bi bi-square"></i>&nbsp;1 per row
+                        </a>
+                    </li>
+                    <li class="d-none d-sm-block">
+                        <a data-density="2" class="dropdown-item" href="javascript: void(0);">
+                            <i class="bi bi-grid"></i>&nbsp;2 per row
+                        </a>
+                    </li>
+                    <li class="d-none d-md-block">
+                        <a data-density="3" class="dropdown-item" href="javascript: void(0);">
+                            <i class="bi bi-grid-3x3-gap"></i>&nbsp;3 per row
+                        </a>
+                    </li>
+                    <li class="d-none d-lg-block">
+                        <a data-density="4" class="dropdown-item" href="javascript: void(0);">
+                            <i class="bi bi-4-square"></i>&nbsp;4 per row
+                        </a>
+                    </li>
+                    <li class="d-none d-xxl-block">
+                        <a data-density="6" class="dropdown-item" href="javascript: void(0);">
+                            <i class="bi bi-6-square"></i>&nbsp;6 per row
                         </a>
                     </li>
                 </ul>

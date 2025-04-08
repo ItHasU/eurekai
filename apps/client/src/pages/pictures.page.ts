@@ -43,9 +43,12 @@ export class PicturesPage extends AbstractPageElement {
     protected readonly _picturesFilterSelect: HTMLSelectElement;
     protected readonly _promptCard: HTMLDivElement;
     protected readonly _promptEditor: PromptEditor;
+    protected readonly _densityButton: HTMLButtonElement;
+    protected readonly _densityMenu: HTMLDivElement;
 
     protected _isFirstDisplay: boolean = true;
     protected _group: GroupMode = GroupMode.PROMPT;
+    protected _density: number = 1;
 
     constructor() {
         super(require("./pictures.page.html").default);
@@ -56,6 +59,9 @@ export class PicturesPage extends AbstractPageElement {
 
         this._promptCard = this.querySelector("#promptCard") as HTMLDivElement;
         this._promptEditor = this.querySelector("#promptEditor") as PromptEditor;
+
+        this._densityButton = this.querySelector("#densityButton") as HTMLButtonElement;
+        this._densityMenu = this.querySelector("#densityMenu") as HTMLDivElement;
 
         // -- Bind callbacks for buttons --
         this._bindClickForRef("addPromptButton", this._openPromptPanel.bind(this));
@@ -70,6 +76,17 @@ export class PicturesPage extends AbstractPageElement {
         this._bindClickForRef("groupBySeedButton", this._toggleGroupMode.bind(this, GroupMode.SEED));
         this._bindClickForRef("groupByStarsButton", this._toggleGroupMode.bind(this, GroupMode.STARS));
         this._picturesFilterSelect.addEventListener("change", this.refresh.bind(this, false));
+
+        // -- Bind callbacks for density --
+        this._density = parseInt(localStorage.getItem("density") ?? "1");
+        this._densityMenu.querySelectorAll("a[data-density]").forEach((a) => {
+            a.addEventListener("click", (evt) => {
+                const density = parseInt((evt.target as HTMLAnchorElement).dataset['density'] ?? "1");
+                this._density = Math.max(1, Math.min(6, density));
+                localStorage.setItem("density", this._density.toString());
+                this.refresh();
+            });
+        });
     }
 
     /** @inheritdoc */
@@ -103,6 +120,12 @@ export class PicturesPage extends AbstractPageElement {
     protected _refreshImpl(projectId: ProjectId): void {
         // -- Clear -----------------------------------------------------------
         this._picturesDiv.innerHTML = "";
+
+        // -- Density icon ----------------------------------------------------
+        const classList = this._densityButton.querySelector("i")?.classList;
+        if (classList) {
+            classList.value = this._densityMenu.querySelector(`a[data-density="${this._density}"] > i`)?.classList.value ?? "bi bi-x-square";
+        }
 
         // -- Prepare data ----------------------------------------------------
         // Project
@@ -199,7 +222,6 @@ export class PicturesPage extends AbstractPageElement {
                 for (const picture of picturesForPrompt) {
                     // -- Add the picture --
                     const item = this._buildPictureElement(picture, prompt, project, promptItem);
-                    item.classList.add("col-sm-12", "col-md-6", "col-lg-3");
                     this._picturesDiv.appendChild(item);
                     item.refresh();
                 }
@@ -292,7 +314,6 @@ export class PicturesPage extends AbstractPageElement {
 
                 for (const { picture, prompt } of picturesForSeed) {
                     const item = this._buildPictureElement(picture, prompt, project);
-                    item.classList.add("col-sm-12", "col-md-6", "col-lg-3");
                     this._picturesDiv.appendChild(item);
                     item.refresh();
                 }
@@ -362,7 +383,6 @@ export class PicturesPage extends AbstractPageElement {
 
                 for (const { picture, prompt } of picturesForSeed) {
                     const item = this._buildPictureElement(picture, prompt, project);
-                    item.classList.add("col-sm-12", "col-md-6", "col-lg-3");
                     this._picturesDiv.appendChild(item);
                     item.refresh();
                 }
@@ -454,6 +474,7 @@ export class PicturesPage extends AbstractPageElement {
                 item.refresh();
             }
         });
+        item.classList.add(`col-${Math.round(12 / this._density)}`);
         item.on("clone", (evt) => {
             this._openPromptPanel(evt.data.prompt, evt.data.seed);
         });
