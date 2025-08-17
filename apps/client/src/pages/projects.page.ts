@@ -1,5 +1,6 @@
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { deleteProject } from "@eurekai/shared/src/pictures.data";
+import Fuse from "fuse.js";
 import { APP } from "src";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { ProjectElement } from "../components/project.element";
@@ -45,6 +46,11 @@ export class ProjectsPage extends AbstractPageElement {
                 await this.refresh();
             }
         });
+
+        // Bind change event of the input to search feature
+        this._nameInput.addEventListener("input", () => {
+            this.refresh();
+        });
     }
 
     /** @inheritdoc */
@@ -52,8 +58,23 @@ export class ProjectsPage extends AbstractPageElement {
         await StaticDataProvider.entitiesHandler.fetch({ type: "projects", options: void (0) });
 
         // -- Fetch projects --
-        const projects = StaticDataProvider.entitiesHandler.getItems("projects");
-        projects.sort((a, b) => -(a.id - b.id));
+        const rawProjects = StaticDataProvider.entitiesHandler.getItems("projects");
+        rawProjects.sort((a, b) => -(a.id - b.id));
+
+        // -- Filter projects based on name input --
+        const searchTerm = this._nameInput.value.toLowerCase().trim();
+        let filteredProjects = rawProjects;
+        if (searchTerm) {
+            const fuse = new Fuse(rawProjects, {
+                keys: ["name"],
+                isCaseSensitive: false,
+                ignoreDiacritics: true,
+                findAllMatches: true,
+                shouldSort: true
+            });
+            // Filter projects
+            filteredProjects = fuse.search(searchTerm).map(item => item.item);
+        }
 
         // -- Render projects --
         // Clear projects
@@ -62,7 +83,7 @@ export class ProjectsPage extends AbstractPageElement {
         this._projectsArchivedDiv.innerHTML = "";
 
         // Render projects
-        for (const project of projects) {
+        for (const project of filteredProjects) {
             const element = new ProjectElement(project, {
                 rename: async (name: string) => {
                     await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
