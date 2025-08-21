@@ -15,7 +15,19 @@ export class DiffusersRegistry {
         // -- Clear --
         DiffusersRegistry._models.clear();
 
-        // -- Fetch A1111 models --
+        // -- Fetch ComfyUI models --------------------------------------------
+        try {
+            const comfy_apiUrl = getEnvString<ENV_VARIABLES_STR>("COMFY_URL");
+            const comfy_path = getEnvString<ENV_VARIABLES_STR>("COMFY_PATH");
+            const comfy_wolScript = getEnvStringOptional<ENV_VARIABLES_STR>("COMFY_WOL_SCRIPT");
+            if (comfy_apiUrl != null) {
+                const comfy_models = await getComfyModelsWithWOL(comfy_apiUrl, comfy_path, comfy_wolScript);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+
+        // -- Fetch A1111 models ----------------------------------------------
         try {
             const automatic1111_apiUrl = getEnvString<ENV_VARIABLES_STR>("API_URL");
             const automatic1111_wolScript = getEnvStringOptional<ENV_VARIABLES_STR>("API_WOL_SCRIPT");
@@ -29,7 +41,7 @@ export class DiffusersRegistry {
             console.error(e);
         }
 
-        // -- Fetch Replicate models --
+        // -- Fetch Replicate models ------------------------------------------
         try {
             const REPLICATE_API_TOKEN = getEnvString<ENV_VARIABLES_STR>("REPLICATE_TOKEN");
             {
@@ -48,7 +60,7 @@ export class DiffusersRegistry {
             console.error(e);
         }
 
-        // -- Fetch DALL-E models --
+        // -- Fetch DALL-E models ---------------------------------------------
         try {
             const API_KEY = getEnvString<ENV_VARIABLES_STR>("OPENAI_API_TOKEN");
             if (API_KEY != null) {
