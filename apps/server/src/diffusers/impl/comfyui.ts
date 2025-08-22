@@ -121,35 +121,39 @@ export class ComfyUIPool {
 
         await client.connect();
 
-        // -- Request images --
-        const resp = await client.enqueue_polling(prompt);
-        await client.waitForPrompt(resp.prompt_id);
+        try {
+            // -- Request images --
+            const resp = await client.enqueue_polling(prompt);
+            await client.waitForPrompt(resp.prompt_id);
 
-        // -- Fetch images --
-        const results: string[] = [];
-        for (const image of resp.images) {
-            switch (image.type) {
-                case "url": {
-                    const resp = await fetch(image.data);
-                    if (!resp.body) {
-                        throw new Error("No body in response");
+            // -- Fetch images --
+            const results: string[] = [];
+            for (const image of resp.images) {
+                switch (image.type) {
+                    case "url": {
+                        const resp = await fetch(image.data);
+                        if (!resp.body) {
+                            throw new Error("No body in response");
+                        }
+                        const buffer = await resp.arrayBuffer();
+                        const buf = Buffer.from(buffer);
+                        results.push(buf.toString("base64"));
+                        break;
                     }
-                    const buffer = await resp.arrayBuffer();
-                    const buf = Buffer.from(buffer);
-                    results.push(buf.toString("base64"));
-                    break;
+                    case "buff": {
+                        const buf = Buffer.from(image.data);
+                        results.push(buf.toString("base64"));
+                        break;
+                    }
+                    default:
+                        throw "Not implemented, ComfyUI return type";
                 }
-                case "buff": {
-                    const buf = Buffer.from(image.data);
-                    results.push(buf.toString("base64"));
-                    break;
-                }
-                default:
-                    throw "Not implemented, ComfyUI return type";
             }
-        }
 
-        return results;
+            return results;
+        } finally {
+            await client.close();
+        }
     }
 
 }
