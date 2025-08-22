@@ -95,7 +95,7 @@ export class ComfyUIPool {
 
     protected _client: Client | null = null;
 
-    constructor(protected _url: string) {
+    constructor(protected _host: string) {
     }
 
     public async generate(template: string, params: ImageDescription): Promise<string[]> {
@@ -111,7 +111,15 @@ export class ComfyUIPool {
         const prompt: Prompt = JSON.parse(promptStr);
 
         // -- Connect --
-        const client = await this._getClient();
+        const client = new Client({
+            api_host: this._host,
+            api_base: "",
+            sessionName: "",
+            fetch,
+            WebSocket
+        });
+
+        await client.connect();
 
         // -- Request images --
         const resp = await client.enqueue_polling(prompt);
@@ -144,19 +152,6 @@ export class ComfyUIPool {
         return results;
     }
 
-    protected async _getClient(): Promise<Client> {
-        if (this._client == null) {
-            this._client = new Client({
-                api_host: this._url,
-                api_base: "",
-                sessionName: "eurekai",
-                fetch,
-                WebSocket
-            });
-            await this._client.connect();
-        }
-        return this._client;
-    }
 }
 
 //#endregion
@@ -184,7 +179,7 @@ export interface Manifest {
  * @return The list of diffusers
  * @throws An error if anything fails in the process
  */
-export async function getAllComfyTemplatesWithWOL(comfyURL: string, comfyPath: string, wolScript?: string): Promise<ComfyUIDiffuser[]> {
+export async function getAllComfyTemplatesWithWOL(comfyHost: string, comfyPath: string, wolScript?: string): Promise<ComfyUIDiffuser[]> {
     // -- List all zip files --------------------------------------------------
     const zipFiles: string[] = [];
     try {
@@ -224,7 +219,7 @@ export async function getAllComfyTemplatesWithWOL(comfyURL: string, comfyPath: s
             const promptTemplate = await zip.files[promptFilename].async("string");
 
             diffusers.push(new ComfyUIDiffuser({
-                serverURL: comfyURL,
+                serverURL: comfyHost,
                 wolScript,
 
                 uid,

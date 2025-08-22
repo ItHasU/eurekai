@@ -18,11 +18,11 @@ export class DiffusersRegistry {
 
         // -- Fetch ComfyUI models --------------------------------------------
         try {
-            const comfy_apiUrl = getEnvString<ENV_VARIABLES_STR>("COMFY_URL");
+            const comfy_host = getEnvString<ENV_VARIABLES_STR>("COMFY_HOST");
             const comfy_path = getEnvString<ENV_VARIABLES_STR>("COMFY_PATH");
             const comfy_wolScript = getEnvStringOptional<ENV_VARIABLES_STR>("COMFY_WOL_SCRIPT");
-            if (comfy_apiUrl != null) {
-                const comfy_models = await getAllComfyTemplatesWithWOL(comfy_apiUrl, comfy_path, comfy_wolScript);
+            if (comfy_host != null) {
+                const comfy_models = await getAllComfyTemplatesWithWOL(comfy_host, comfy_path, comfy_wolScript);
                 for (const model of comfy_models) {
                     DiffusersRegistry.push(model);
                 }
