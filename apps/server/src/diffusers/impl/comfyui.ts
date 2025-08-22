@@ -160,14 +160,12 @@ export class ComfyUIPool {
 
 /** Manifest description */
 export interface Manifest {
-    /** UID */
-    uid: string;
     /** Short name displayed in the select */
     name: string;
     /** Size ratio (eg. 512, 1024) */
     size: number;
     /** Description */
-    description: string;
+    description?: string;
     /** Prompt filename (will use api.json by default) */
     filename?: string;
 }
@@ -199,6 +197,7 @@ export async function getAllComfyTemplatesWithWOL(comfyHost: string, comfyPath: 
         try {
             // -- Open zip file -----------------------------------------------
             const fileContent = await fs.readFile(zipFilePath);
+            const uid = path.basename(zipFilePath, ".zip");
 
             const zip = await JSZip.loadAsync(toArrayBuffer(fileContent));
             const manifestFile = zip.files["manifest.json"];
@@ -212,7 +211,6 @@ export async function getAllComfyTemplatesWithWOL(comfyHost: string, comfyPath: 
             const manifest: Manifest = JSON.parse(manifestStr);
             const name = manifest.name;
             const size = manifest.size;
-            const uid = manifest.uid;
 
             // -- Read prompt -------------------------------------------------
             const promptFilename = manifest.filename ?? "api.json";
