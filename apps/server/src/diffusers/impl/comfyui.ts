@@ -104,7 +104,7 @@ export class ComfyUIPool {
 
         // Replace parameters in the format $param$
         for (const param in params) {
-            const value = String(params[param as keyof ImageDescription] ?? "");
+            const value = JSON.stringify(params[param as keyof ImageDescription] ?? null);
             const pattern = `$${param}$`;
             promptStr = promptStr.replaceAll(pattern, value);
         }
