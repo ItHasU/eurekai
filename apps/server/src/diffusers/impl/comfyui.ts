@@ -150,6 +150,9 @@ export class ComfyUIPool {
                 }
             }
 
+            // -- Clean up --
+            await client.deleteItem("history", resp.prompt_id);
+
             return results;
         } finally {
             await client.close();
