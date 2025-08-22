@@ -7,7 +7,8 @@ import { Client } from "@stable-canvas/comfyui-client";
 import JSZip from "jszip";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { fetch, WebSocket } from "undici";
+import { fetch } from "undici";
+import { WebSocket } from "ws";
 
 //#region Diffuser
 
