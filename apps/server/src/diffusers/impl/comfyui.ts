@@ -7,6 +7,7 @@ import { Client } from "@stable-canvas/comfyui-client";
 import JSZip from "jszip";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fetch, WebSocket } from "undici";
 
 //#region Diffuser
 
@@ -29,8 +30,6 @@ interface ComfyUIDiffuserOption {
 export type Prompt = Record<string, unknown>;
 
 export class ComfyUIDiffuser extends AbstractDiffuser {
-
-    protected static readonly _connectionPool: Map<string, ComfyUIPool> = new Map();
 
     constructor(private readonly _options: ComfyUIDiffuserOption) {
         super();
@@ -56,17 +55,10 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
     /** @inheritdoc */
     public override async txt2img(image: ImageDescription): Promise<{ data: AppTypes["BASE64_DATA"] }> {
         // -- Generate image --
-        const options: Txt2ImgOptions = {
-            ...this._options.template,
-            prompt: image.prompt,
-            negative_prompt: image.negative_prompt,
-            width: image.width,
-            height: image.height,
-            seed: image.seed
-        };
+        const pool = ComfyUIDiffuser._getPool(this._options.serverURL);
 
         // -- Return image --
-        const images = await this._txt2img(options);
+        const images = await pool.generate(this._options.promptTemplate, image);
         if (images == null || images.length === 0) {
             throw "No image generated";
         } else {
@@ -76,10 +68,21 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
 
     //#endregion
 
+    //#region Pool connection
+
+    protected static readonly _connectionPool: Map<string, ComfyUIPool> = new Map();
+
     protected static _getPool(serverURL: string): ComfyUIPool {
-        throw "Not implemented";
+        let pool = ComfyUIDiffuser._connectionPool.get(serverURL);
+        if (pool != null) {
+            return pool;
+        }
+        pool = new ComfyUIPool(serverURL);
+        ComfyUIDiffuser._connectionPool.set(serverURL, pool);
+        return pool;
     }
 
+    //#endregion
 }
 
 //#endregion
@@ -91,30 +94,67 @@ export class ComfyUIPool {
 
     protected _client: Client | null = null;
 
-    constructor(protected _url: string) { }
+    constructor(protected _url: string) {
+    }
 
-    public async generate(template: string, params: ImageDescription): Promise<string> {
+    public async generate(template: string, params: ImageDescription): Promise<string[]> {
+        // -- Prepare prompt --
+        let promptStr = template;
+
+        // Replace parameters in the format $param$
+        for (const param in params) {
+            const value = String(params[param as keyof ImageDescription] ?? "");
+            const pattern = `$${param}$`;
+            promptStr = promptStr.replaceAll(pattern, value);
+        }
+        const prompt: Prompt = JSON.parse(promptStr);
+
         // -- Connect --
         const client = await this._getClient();
-
-        // -- Prepare prompt --
-        const prompt: Prompt = {};
 
         // -- Request images --
         const resp = await client.enqueue_polling(prompt);
         await client.waitForPrompt(resp.prompt_id);
 
         // -- Fetch images --
-        let index: number = 0;
+        const results: string[] = [];
         for (const image of resp.images) {
-            if (image.type === "url") {
-                save_url_to_file(image.data, `./${index}.png`);
+            switch (image.type) {
+                case "url": {
+                    const resp = await fetch(image.data);
+                    if (!resp.body) {
+                        throw new Error("No body in response");
+                    }
+                    const buffer = await resp.arrayBuffer();
+                    const buf = Buffer.from(buffer);
+                    results.push(buf.toString("base64"));
+                    break;
+                }
+                case "buff": {
+                    const buf = Buffer.from(image.data);
+                    results.push(buf.toString("base64"));
+                    break;
+                }
+                default:
+                    throw "Not implemented, ComfyUI return type";
             }
         }
+
+        return results;
     }
 
-    protected _getClient(): Promise<Client> {
-        return Promise.reject("Not implemented");
+    protected async _getClient(): Promise<Client> {
+        if (this._client == null) {
+            this._client = new Client({
+                api_host: this._url,
+                api_base: "",
+                sessionName: "eurekai",
+                fetch,
+                WebSocket
+            });
+            await this._client.connect();
+        }
+        return this._client;
     }
 }
 
@@ -162,9 +202,11 @@ export async function getAllComfyTemplatesWithWOL(comfyURL: string, comfyPath: s
     for (const zipFilePath of zipFiles) {
         try {
             // -- Open zip file -----------------------------------------------
-            const zip = await JSZip.loadAsync(zipFilePath);
+            const fileContent = await fs.readFile(zipFilePath);
+
+            const zip = await JSZip.loadAsync(toArrayBuffer(fileContent));
             const manifestFile = zip.files["manifest.json"];
-            if (manifestFile) {
+            if (manifestFile == null) {
                 console.error(`Invalid zip file, no manifest.json : ${zipFilePath}`);
                 continue;
             }
@@ -199,3 +241,12 @@ export async function getAllComfyTemplatesWithWOL(comfyURL: string, comfyPath: s
 }
 
 //#endregion
+
+function toArrayBuffer(buffer: Buffer): ArrayBuffer {
+    const arrayBuffer = new ArrayBuffer(buffer.length);
+    const view = new Uint8Array(arrayBuffer);
+    for (let i = 0; i < buffer.length; ++i) {
+        view[i] = buffer[i];
+    }
+    return arrayBuffer;
+}

@@ -2,6 +2,7 @@ import { getEnvString, getEnvStringOptional } from "@dagda/server/tools/config";
 import { ENV_VARIABLES_STR } from "src/modules/config";
 import { AbstractDiffuser } from "./diffuser";
 import { getAllModelsWithWOL } from "./impl/automatic1111.tools";
+import { getAllComfyTemplatesWithWOL } from "./impl/comfyui";
 import { DallE } from "./impl/dall-e";
 import { ReplicateFlux } from "./impl/replicateFLUX";
 import { ModelIdentifier, ReplicateSDXL } from "./impl/replicateSDXL";
@@ -21,7 +22,10 @@ export class DiffusersRegistry {
             const comfy_path = getEnvString<ENV_VARIABLES_STR>("COMFY_PATH");
             const comfy_wolScript = getEnvStringOptional<ENV_VARIABLES_STR>("COMFY_WOL_SCRIPT");
             if (comfy_apiUrl != null) {
-                const comfy_models = await getComfyModelsWithWOL(comfy_apiUrl, comfy_path, comfy_wolScript);
+                const comfy_models = await getAllComfyTemplatesWithWOL(comfy_apiUrl, comfy_path, comfy_wolScript);
+                for (const model of comfy_models) {
+                    DiffusersRegistry.push(model);
+                }
             }
         } catch (e) {
             console.error(e);
