@@ -3,8 +3,10 @@ import { AppTypes } from "@eurekai/shared/src/entities";
 import { ModelInfo } from "@eurekai/shared/src/models.api";
 import { AbstractDiffuser, ImageDescription } from "../diffuser";
 
+import { wait } from "@dagda/shared/tools/async";
 import { Client } from "@stable-canvas/comfyui-client";
 import JSZip from "jszip";
+import { exec } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fetch } from "undici";
@@ -55,16 +57,46 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
 
     /** @inheritdoc */
     public override async txt2img(image: ImageDescription): Promise<{ data: AppTypes["BASE64_DATA"] }> {
-        // -- Generate image --
-        const pool = ComfyUIDiffuser._getPool(this._options.serverURL);
+        const NB_RETRIES = 3;
+        const WOL_TIMEOUT = 10000; // ms
+        for (let tries = 0; tries < NB_RETRIES; tries++) {
+            try {
+                // -- Generate image --
+                const pool = ComfyUIDiffuser._getPool(this._options.serverURL);
 
-        // -- Return image --
-        const images = await pool.generate(this._options.promptTemplate, image);
-        if (images == null || images.length === 0) {
-            throw "No image generated";
-        } else {
-            return { data: asNamed(images[0]) };
+                // -- Return image --
+                const images = await pool.generate(this._options.promptTemplate, image);
+                if (images == null || images.length === 0) {
+                    throw "No image generated";
+                } else {
+                    return { data: asNamed(images[0]) };
+                }
+            } catch (e) {
+                // -- On failure, try to WakeOnLAN the remote machine --
+                if (this._options.wolScript) {
+                    console.error(e);
+                    console.error("An error occurred, trying to WOL the machine ...");
+                    // Execute the WOL script
+                    const wolScript = this._options.wolScript;
+                    await new Promise<boolean>((resolve, reject) => {
+                        console.log(`Sending WOL request (attempt ${tries + 1}/${NB_RETRIES})...`);
+                        console.log(wolScript);
+                        exec(wolScript, (error: any) => {
+                            if (error) {
+                                reject(error);
+                            } else {
+                                resolve(true);
+                            }
+                        });
+                    });
+                    await wait(WOL_TIMEOUT);
+                } else {
+                    throw e;
+                }
+            }
         }
+
+        throw `Failed to generate image after ${NB_RETRIES} tries`;
     }
 
     //#endregion
