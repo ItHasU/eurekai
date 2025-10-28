@@ -183,7 +183,13 @@ export class ComfyUIPool {
             }
 
             // -- Clean up --
-            await client.deleteItem("history", resp.prompt_id);
+            try {
+                await client.deleteItem("history", resp.prompt_id);
+            } catch (e) {
+                // We don't care about the error, we won't throw
+                console.error(`Failed to delete image from queue: ${resp.prompt_id}`);
+                console.error(e);
+            }
 
             return results;
         } finally {
