@@ -103,7 +103,8 @@ export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, por
                 var img = Buffer.from(attachment.data, 'base64');
 
                 res.writeHead(200, {
-                    'Content-Type': 'image/png',
+                    // Detect the png prefix else we expect the content to be a video
+                    'Content-Type': attachment.data.startsWith("iVBORw0K") ? 'image/png' : 'video/mp4',
                     'Content-Length': img.length,
                     'Cache-Control': 'max-age=86400' // 1 day in seconds
                 });
