@@ -160,8 +160,13 @@ export class ComfyUIPool {
 
         try {
             // -- Request images --
-            const resp = await client.enqueue_polling(prompt);
-            await client.waitForPrompt(resp.prompt_id, undefined, timeout_ms ?? undefined);
+            if (timeout_ms != null) {
+                console.log(`Will wait for ${timeout_ms} ms`);
+            }
+            const resp = await client.enqueue_polling(prompt, {
+                timeout_ms
+            });
+            await client.waitForPrompt(resp.prompt_id, undefined, timeout_ms);
 
             // -- Fetch images --
             const results: string[] = [];
