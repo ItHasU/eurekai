@@ -46,7 +46,7 @@ export class DallE extends AbstractDiffuser {
             size
         });
 
-        if (output.data.length != 1) {
+        if (output.data?.length != 1) {
             console.error(output);
             throw new Error(`Expecting only one image`);
         }
