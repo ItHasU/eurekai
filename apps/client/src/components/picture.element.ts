@@ -100,24 +100,26 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> implements
 
             case PictureType.VIDEO: {
                 const video: HTMLVideoElement = htmlStringToElement<HTMLVideoElement>(`<video class="w-100 h-100" src="/attachment/${this.data.attachmentId}" muted controls playsinline disableremoteplayback disablepictureinpicture></video>`)!;
+                function restoreControls() {
+                    setTimeout(() => {
+                        video.controls = true;
+                    }, 750); // Leave some time for user to appreciate the end of the video
+                }
                 video.addEventListener("play", () => {
                     video.controls = false;
                 });
-                video.addEventListener("ended", () => {
-                    video.controls = true;
-                });
-                video.addEventListener("pause", () => {
-                    video.controls = true;
-                });
+                video.addEventListener("ended", restoreControls);
+                video.addEventListener("pause", restoreControls);
                 containerDiv.append(video);
                 break;
             }
 
-            default:
+            default: {
                 // Not implemented
                 const text: HTMLParagraphElement = htmlStringToElement<HTMLParagraphElement>(`<p>Not implemented (${this.data.type})</p>`)!;
                 containerDiv.append(text);
                 break;
+            }
         }
 
 
