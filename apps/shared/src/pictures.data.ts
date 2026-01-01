@@ -2,7 +2,7 @@ import { EntitiesHandler } from "@dagda/shared/entities/handler";
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { SQLTransaction } from "@dagda/shared/sql/transaction";
 import JSZip from "jszip";
-import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity, PictureId, ProjectEntity, ProjectId, PromptEntity, PromptId, Seed, SeedEntity, SeedId } from "./entities";
+import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity, PictureId, PictureType, ProjectEntity, ProjectId, PromptEntity, PromptId, Seed, SeedEntity, SeedId } from "./entities";
 
 /** 
  * Generate a certain amount of images 
@@ -43,6 +43,7 @@ export function generateNextPictures(handler: EntitiesHandler<AppTables, AppCont
     for (const seed of seeds) {
         const newPicture: PictureEntity = {
             id: asNamed(0),
+            type: asNamed(PictureType.UNKNOWN), // Here we don't know yet the kind of picture generated
             promptId: prompt.id,
             seed: asNamed(seed),
             status: asNamed(ComputationStatus.PENDING),
