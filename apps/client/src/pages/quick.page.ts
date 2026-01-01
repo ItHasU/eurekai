@@ -1,6 +1,6 @@
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { wait } from "@dagda/shared/tools/async";
-import { ComputationStatus, PictureEntity, ProjectId, PromptEntity } from "@eurekai/shared/src/entities";
+import { ComputationStatus, PictureEntity, PictureType, ProjectId, PromptEntity } from "@eurekai/shared/src/entities";
 import { APP } from "src";
 import { bindTouchEvents } from "src/components/picture.element";
 import { StaticDataProvider } from "src/tools/dataProvider";
@@ -86,6 +86,10 @@ export class QuickPage extends AbstractPageElement {
         for (const picture of StaticDataProvider.entitiesHandler.getCache("pictures").getItems()) {
             if (picture.status !== asNamed(ComputationStatus.DONE)) {
                 // Only keep pictures that require evaluation
+                continue;
+            }
+            if (picture.type !== asNamed(PictureType.IMAGE)) {
+                // Only keep pictures
                 continue;
             }
 
