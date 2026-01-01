@@ -26,6 +26,8 @@ interface ComfyUIDiffuserOption {
     name: string;
     /** Is output video */
     video: boolean;
+    /** Override waiting timeout (default to 5 minutes) */
+    timeout_ms?: number;
     /** Size ratio (eg 512, 1024) */
     size: number;
     /** Prompt template */
@@ -68,7 +70,7 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
                 const pool = ComfyUIDiffuser._getPool(this._options.serverURL);
 
                 // -- Return image --
-                const images = await pool.generate(this._options.promptTemplate, image);
+                const images = await pool.generate(this._options.promptTemplate, image, this._options.timeout_ms);
                 if (images == null || images.length === 0) {
                     throw "No image generated";
                 } else {
@@ -133,7 +135,7 @@ export class ComfyUIPool {
     constructor(protected _host: string) {
     }
 
-    public async generate(template: string, params: ImageDescription): Promise<string[]> {
+    public async generate(template: string, params: ImageDescription, timeout_ms?: number): Promise<string[]> {
         // -- Prepare prompt --
         let promptStr = template;
 
@@ -154,12 +156,14 @@ export class ComfyUIPool {
             WebSocket
         });
 
-        await client.connect();
+        await client.connect({
+            timeout_ms: 0
+        });
 
         try {
             // -- Request images --
             const resp = await client.enqueue_polling(prompt);
-            await client.waitForPrompt(resp.prompt_id);
+            await client.waitForPrompt(resp.prompt_id, undefined, timeout_ms ?? undefined);
 
             // -- Fetch images --
             const results: string[] = [];
@@ -218,6 +222,8 @@ export interface Manifest {
     filename?: string;
     /** Is output video ? (will use false by default) */
     video?: boolean;
+    /** Override timeout in milliseconds */
+    timeout_ms?: number;
 }
 
 /** 
@@ -262,6 +268,7 @@ export async function getAllComfyTemplatesWithWOL(comfyHost: string, comfyPath: 
             const name = manifest.name;
             const size = manifest.size;
             const video: boolean = manifest.video ?? false;
+            const timeout_ms = manifest.timeout_ms;
 
             // -- Read prompt -------------------------------------------------
             const promptFilename = manifest.filename ?? "api.json";
@@ -275,6 +282,7 @@ export async function getAllComfyTemplatesWithWOL(comfyHost: string, comfyPath: 
                 name,
                 size,
                 video,
+                timeout_ms,
                 promptTemplate
             }));
         } catch (e) {
