@@ -2,7 +2,7 @@ import { AbstractSQLRunner } from "@dagda/server/sql/runner";
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { SQLTransaction } from "@dagda/shared/sql/transaction";
 import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
-import { AppContexts, AppTables, ComputationStatus, PictureEntity, PictureType, PromptEntity } from "@eurekai/shared/src/entities";
+import { AppContexts, AppTables, ComputationStatus, PICTURE_TYPE, PictureEntity, PictureType, PromptEntity } from "@eurekai/shared/src/entities";
 import { AppEvents } from "@eurekai/shared/src/events";
 import { DiffusersRegistry } from "src/diffusers";
 import { AbstractDiffuser, ImageDescription } from "src/diffusers/diffuser";
@@ -195,14 +195,18 @@ export class Generator {
         // await writeFile(`${new Date().getTime()}.png`, Buffer.from(imageData, 'base64'));
 
         // -- Save --
+        // We mark both picture and attachment. Picture for client display and attachment for mime-type
+        const type: PICTURE_TYPE = asNamed(diffuser.getModelInfo().video === true ? PictureType.VIDEO : PictureType.IMAGE);
+
         const attachment = tr.insert("attachments", {
             id: asNamed(0),
+            type,
             data: imageData.data
         });
 
         tr.update("pictures", picture, {
             status: asNamed(ComputationStatus.DONE),
-            type: asNamed(diffuser.getModelInfo().video === true ? PictureType.VIDEO : PictureType.IMAGE),
+            type,
             attachmentId: attachment.id
         });
         if (imageData.revisedWidth != null) {

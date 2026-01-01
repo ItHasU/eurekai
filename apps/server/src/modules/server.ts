@@ -7,7 +7,7 @@ import { ServerNotificationImpl } from "@dagda/server/tools/notification.impl";
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { Data } from "@dagda/shared/entities/types";
 import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
-import { APP_MODEL, AppContexts, AppTables, AttachmentEntity, ComputationStatus, PictureEntity, ProjectEntity, PromptEntity, SeedEntity, UserEntity } from "@eurekai/shared/src/entities";
+import { APP_MODEL, AppContexts, AppTables, AttachmentEntity, ComputationStatus, PictureEntity, PictureType, ProjectEntity, PromptEntity, SeedEntity, UserEntity } from "@eurekai/shared/src/entities";
 import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api";
 import { SYSTEM_URL, SystemAPI, SystemInfo } from "@eurekai/shared/src/system.api";
 import express, { Application } from "express";
@@ -99,12 +99,14 @@ export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, por
             const attachment = await db.get<AttachmentEntity>(`SELECT * FROM ${qt("attachments")} WHERE ${qf("attachments", "id")}=$1`, id);
             if (!attachment) {
                 res.status(404).send(`Attachment ${id} not found`);
+            } else if (attachment.type === PictureType.UNKNOWN) {
+                res.status(500).send(`Attachment ${id} with unknown type (retry later)`);
             } else {
                 var img = Buffer.from(attachment.data, 'base64');
 
                 res.writeHead(200, {
                     // Detect the png prefix else we expect the content to be a video
-                    'Content-Type': attachment.data.startsWith("iVBORw0K") ? 'image/png' : 'video/mp4',
+                    'Content-Type': attachment.type === PictureType.VIDEO ? 'video/mp4' : 'image/png' /* Fallback to image */,
                     'Content-Length': img.length,
                     'Cache-Control': 'max-age=86400' // 1 day in seconds
                 });

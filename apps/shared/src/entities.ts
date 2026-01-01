@@ -134,6 +134,7 @@ export const APP_MODEL = new EntitiesModel({
     },
     attachments: {
         id: { type: "ATTACHMENT_ID", identity: true },
+        type: { type: "PICTURE_TYPE" },
         data: { type: "BASE64_DATA" }
     },
     seeds: {
@@ -157,6 +158,7 @@ export type SeedId = typeof APP_MODEL.types["SEED_ID"];
 
 export type Seed = typeof APP_MODEL.types["SEED"];
 export type Score = typeof APP_MODEL.types["SCORE"];
+export type PICTURE_TYPE = typeof APP_MODEL.types["PICTURE_TYPE"];
 
 //#endregion
 
