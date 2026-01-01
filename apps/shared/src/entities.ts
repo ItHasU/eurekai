@@ -32,6 +32,13 @@ export enum ComputationStatus {
     COMPUTING
 }
 
+/** Picture type */
+export enum PictureType {
+    UNKNOWN = 0,
+    IMAGE,
+    VIDEO
+}
+
 //#endregion
 
 //#region Entities model ------------------------------------------------------
@@ -82,6 +89,9 @@ export const APP_MODEL = new EntitiesModel({
     COMPUTATION_STATUS: EntitiesModel.type<JSTypes.custom, ComputationStatus>({
         rawType: JSTypes.custom
     }),
+    PICTURE_TYPE: EntitiesModel.type<JSTypes.custom, PictureType>({
+        rawType: JSTypes.custom
+    }),
     BASE64_DATA: {
         rawType: JSTypes.string
     },
@@ -115,6 +125,7 @@ export const APP_MODEL = new EntitiesModel({
     },
     pictures: {
         id: { type: "PICTURE_ID", identity: true },
+        type: { type: "PICTURE_TYPE" },
         promptId: { type: "PROMPT_ID", foreignTable: "prompts" },
         seed: { type: "SEED" },
         status: { type: "COMPUTATION_STATUS" },

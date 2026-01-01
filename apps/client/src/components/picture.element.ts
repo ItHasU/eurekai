@@ -1,8 +1,9 @@
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "@dagda/shared/tools/events";
-import { ComputationStatus, PictureEntity, PromptEntity, Score } from "@eurekai/shared/src/entities";
+import { ComputationStatus, PictureEntity, PictureType, PromptEntity, Score } from "@eurekai/shared/src/entities";
 import { AbstractDTOElement } from "./abstract.dto.element";
 import { PromptEvents } from "./prompt.element";
+import { htmlStringToElement } from "./tools";
 
 enum SwipeMode {
     NONE,
@@ -80,15 +81,45 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> implements
         this._bindClick("star-4", this._options.setScore.bind(undefined, asNamed(4)));
 
         // Get elements related to images at the top of the card
-        const img: HTMLImageElement = this.querySelector(".card-img-top > img") as HTMLImageElement;
-        const containerDiv: HTMLDivElement = img.parentElement! as HTMLDivElement; // Here we know that we have a parent element for sure due to the CSS selector
-
+        const containerDiv = this._getElementByRef<HTMLDivElement>("picturePlaceholder")!;
         if (this.data.attachmentId == null) {
-            // No attachment, no src to set for the image
+            // No attachment, don't show anything
+            return;
         }
-        else {
-            img.src = `/attachment/${this.data.attachmentId}`;
+        switch (this.data.type) {
+            case PictureType.UNKNOWN: {
+                // FIXME video
+                break;
+            }
+
+            case PictureType.IMAGE: {
+                const img: HTMLImageElement = htmlStringToElement<HTMLImageElement>(`<img class="w-100 h-100" src="/attachment/${this.data.attachmentId}">`)!;
+                containerDiv.append(img);
+                break;
+            }
+
+            case PictureType.VIDEO: {
+                const video: HTMLVideoElement = htmlStringToElement<HTMLVideoElement>(`<video class="w-100 h-100" src="/attachment/${this.data.attachmentId}" muted controls playsinline disableremoteplayback disablepictureinpicture></video>`)!;
+                video.addEventListener("play", () => {
+                    video.controls = false;
+                });
+                video.addEventListener("ended", () => {
+                    video.controls = true;
+                });
+                video.addEventListener("pause", () => {
+                    video.controls = true;
+                });
+                containerDiv.append(video);
+                break;
+            }
+
+            default:
+                // Not implemented
+                const text: HTMLParagraphElement = htmlStringToElement<HTMLParagraphElement>(`<p>Not implemented (${this.data.type})</p>`)!;
+                containerDiv.append(text);
+                break;
         }
+
 
         // -- Handle swipe --
         // Handle accept / reject swipe moves
@@ -96,7 +127,7 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> implements
         const feedbackDiv: HTMLDivElement = this.querySelector(".card-img-top > div") as HTMLDivElement;
 
         bindTouchEvents(containerDiv, feedbackDiv, this._options);
-        containerDiv.addEventListener("click", (ev) => {
+        containerDiv.addEventListener("dblclick", (ev) => {
             ev.stopPropagation();
             // Toggle prompt display
             this.querySelector(".prompt")?.classList.toggle("d-none");
