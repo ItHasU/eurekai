@@ -24,6 +24,8 @@ interface ComfyUIDiffuserOption {
     uid: string;
     /** Name */
     name: string;
+    /** Is output video */
+    video: boolean;
     /** Size ratio (eg 512, 1024) */
     size: number;
     /** Prompt template */
@@ -51,6 +53,7 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
         return {
             uid: `comfy_${this._options.uid}`,
             displayName: `[Comfy] ${this._options.name}`,
+            video: this._options.video,
             size: this._options.size
         };
     }
@@ -213,6 +216,8 @@ export interface Manifest {
     description?: string;
     /** Prompt filename (will use api.json by default) */
     filename?: string;
+    /** Is output video ? (will use false by default) */
+    video?: boolean;
 }
 
 /** 
@@ -256,6 +261,7 @@ export async function getAllComfyTemplatesWithWOL(comfyHost: string, comfyPath: 
             const manifest: Manifest = JSON.parse(manifestStr);
             const name = manifest.name;
             const size = manifest.size;
+            const video: boolean = manifest.video ?? false;
 
             // -- Read prompt -------------------------------------------------
             const promptFilename = manifest.filename ?? "api.json";
@@ -268,6 +274,7 @@ export async function getAllComfyTemplatesWithWOL(comfyHost: string, comfyPath: 
                 uid,
                 name,
                 size,
+                video,
                 promptTemplate
             }));
         } catch (e) {
