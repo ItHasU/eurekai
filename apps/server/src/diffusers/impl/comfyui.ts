@@ -156,9 +156,7 @@ export class ComfyUIPool {
             WebSocket
         });
 
-        await client.connect({
-            timeout_ms: 0
-        });
+        await client.connect();
 
         try {
             // -- Request images --
