@@ -1,16 +1,14 @@
 import { asNamed } from "@dagda/shared/entities/named.types";
+import { wait } from "@dagda/shared/tools/async";
 import { AppTypes } from "@eurekai/shared/src/entities";
 import { ModelInfo } from "@eurekai/shared/src/models.api";
-import { AbstractDiffuser, ImageDescription } from "../diffuser";
-
-import { wait } from "@dagda/shared/tools/async";
 import { Client } from "@stable-canvas/comfyui-client";
 import JSZip from "jszip";
 import { exec } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { fetch } from "undici";
 import { WebSocket } from "ws";
+import { AbstractDiffuser, ImageDescription } from "../diffuser";
 
 //#region Diffuser
 

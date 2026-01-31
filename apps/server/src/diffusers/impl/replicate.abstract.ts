@@ -2,7 +2,6 @@ import { asNamed } from "@dagda/shared/entities/named.types";
 import { AppTypes } from "@eurekai/shared/src/entities";
 import { ModelInfo } from "@eurekai/shared/src/models.api";
 import Replicate from "replicate";
-import { fetch } from "undici";
 import { AbstractDiffuser, ImageDescription } from "../diffuser";
 
 export type ModelIdentifier = `${string}/${string}` | `${string}/${string}:${string}`;
