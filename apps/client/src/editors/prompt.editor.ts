@@ -16,6 +16,7 @@ const RATIOS: Ratio[] = [
     { width: 9, height: 21 }
 ];
 const DEFAULT_SIZE = 1024;
+const DEFAULT_SIZE_STEP = 8;
 
 export class PromptEditor extends HTMLElement {
 
@@ -42,7 +43,7 @@ export class PromptEditor extends HTMLElement {
         this._modelsSelect = this.querySelector("#modelsSelect") as HTMLSelectElement;
         this._modelsButton = this.querySelector("#modelsButton") as HTMLButtonElement;
 
-        this._fillRatios(DEFAULT_SIZE); // Use default size while model is not selected
+        this._fillRatios(DEFAULT_SIZE, DEFAULT_SIZE_STEP); // Use default size while model is not selected
 
         this._fillModelsSelect();
         this._modelsButton.addEventListener("click", this._fillModelsSelect.bind(this, true));
@@ -69,9 +70,9 @@ export class PromptEditor extends HTMLElement {
         const model = (await StaticDataProvider.getModels()).find(info => info.uid === uid);
         if (model == null) {
             // Model not found, use default value
-            this._fillRatios(DEFAULT_SIZE);
+            this._fillRatios(DEFAULT_SIZE, DEFAULT_SIZE_STEP);
         } else {
-            this._fillRatios(model.size);
+            this._fillRatios(model.size, model.sizeStep ?? DEFAULT_SIZE_STEP);
         }
     }
 
@@ -79,14 +80,14 @@ export class PromptEditor extends HTMLElement {
 
     //#region Ratios ----------------------------------------------------------
 
-    protected _fillRatios(size: number): void {
+    protected _fillRatios(size: number, sizeStep: number): void {
         this._ratioSelect.innerHTML = '';
         for (const ratio of RATIOS) {
             const item = htmlStringToElement<HTMLLIElement>(`<li><a class="dropdown-item">${ratio.width}:${ratio.height}</a></li>`)!;
             item.querySelector("a")?.addEventListener("click", (evt) => {
                 const factor = Math.sqrt(ratio.width / ratio.height);
-                const w = Math.round(size * factor / 8) * 8;
-                const h = Math.round(size / factor / 8) * 8;
+                const w = Math.round(size * factor / sizeStep) * sizeStep;
+                const h = Math.round(size / factor / sizeStep) * sizeStep;
                 this._widthInput.value = "" + w;
                 this._heightInput.value = "" + h;
             });

@@ -28,6 +28,8 @@ interface ComfyUIDiffuserOption {
     timeout_ms?: number;
     /** Size ratio (eg 512, 1024) */
     size: number;
+    /** Round the generated resolutions to a multiple of this value (default to 8) */
+    sizeStep?: number;
     /** Prompt template */
     promptTemplate: string;
 }
@@ -54,7 +56,8 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
             uid: `comfy_${this._options.uid}`,
             displayName: `[Comfy] ${this._options.name}`,
             video: this._options.video,
-            size: this._options.size
+            size: this._options.size,
+            sizeStep: this._options.sizeStep
         };
     }
 
@@ -217,6 +220,8 @@ export interface Manifest {
     name: string;
     /** Size ratio (eg. 512, 1024) */
     size: number;
+    /** Round the generated resolutions to a multiple of this value (will use 8 by default) */
+    sizeStep?: number;
     /** Description */
     description?: string;
     /** Prompt filename (will use api.json by default) */
@@ -268,6 +273,7 @@ export async function getAllComfyTemplatesWithWOL(comfyHost: string, comfyPath: 
             const manifest: Manifest = JSON.parse(manifestStr);
             const name = manifest.name;
             const size = manifest.size;
+            const sizeStep = manifest.sizeStep;
             const video: boolean = manifest.video ?? false;
             const timeout_ms = manifest.timeout_ms;
 
@@ -282,6 +288,7 @@ export async function getAllComfyTemplatesWithWOL(comfyHost: string, comfyPath: 
                 uid,
                 name,
                 size,
+                sizeStep,
                 video,
                 timeout_ms,
                 promptTemplate
