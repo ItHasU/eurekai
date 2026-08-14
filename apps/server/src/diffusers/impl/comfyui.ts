@@ -36,6 +36,17 @@ const PROMPT_POLLING_MS = 1_000;
 
 //#region Network tools
 
+/**
+ * Convert a configured timeout into a duration budget.
+ * @param timeout_ms undefined to use the default, 0 or less to disable the timeout
+ */
+export function toBudget(timeout_ms?: number): number {
+    if (timeout_ms == null) {
+        return DEFAULT_TIMEOUT_MS;
+    }
+    return timeout_ms > 0 ? timeout_ms : Number.POSITIVE_INFINITY;
+}
+
 /** Build a fetch function aborting the request after the given delay */
 function fetchWithTimeout(timeout_ms: number): typeof fetch {
     return (input: any, init?: any) => fetch(input, { ...init, signal: AbortSignal.timeout(timeout_ms) });
@@ -80,6 +91,54 @@ export function isNetworkError(e: unknown): boolean {
     return false;
 }
 
+/**
+ * Human readable reason of a failure, so that the logs tell a timeout from a lost connection,
+ * from a ComfyUI error, from anything else.
+ */
+export function describeError(e: unknown): string {
+    if (typeof e === "string") {
+        return e;
+    }
+    if (e == null || typeof e !== "object") {
+        return String(e);
+    }
+    const err = e as { name?: string; message?: string; code?: string; status?: number; json?: unknown; cause?: unknown };
+
+    // -- Aborted by one of our AbortSignal.timeout() --
+    if (err.name === "TimeoutError") {
+        return "timeout, the server did not answer in time";
+    }
+    if (err.name === "AbortError") {
+        return "request aborted";
+    }
+
+    // -- Network failure. undici hides the real reason in the cause --
+    const code = err.code ?? (err.cause as { code?: string } | undefined)?.code;
+    switch (code) {
+        case "UND_ERR_CONNECT_TIMEOUT": return "connection timeout, the host is unreachable (asleep ?)";
+        case "UND_ERR_HEADERS_TIMEOUT": return "the host accepted the connection but never answered";
+        case "ECONNREFUSED": return "connection refused, the host is up but ComfyUI is not listening";
+        case "ECONNRESET": return "connection lost while the request was in flight";
+        case "EPIPE": return "connection closed while sending the request";
+        case "EHOSTUNREACH":
+        case "ENETUNREACH": return `network unreachable (${code})`;
+        case "ENOTFOUND":
+        case "EAI_AGAIN": return `cannot resolve the host name (${code}), check COMFY_HOST`;
+        default: break;
+    }
+    if (typeof code === "string") {
+        return `network error ${code}`;
+    }
+
+    // -- HTTP error raised by the ComfyUI client, it carries the parsed body --
+    if (typeof err.status === "number") {
+        const body = err.json == null ? "" : ` : ${JSON.stringify(err.json)}`;
+        return `ComfyUI answered ${err.status}${body}`;
+    }
+
+    return err.message ?? String(e);
+}
+
 //#endregion
 
 //#region Diffuser
@@ -96,7 +155,7 @@ interface ComfyUIDiffuserOption {
     name: string;
     /** Is output video */
     video: boolean;
-    /** Override waiting timeout (default to 5 minutes) */
+    /** Override waiting timeout (default to 5 minutes, 0 to disable) */
     timeout_ms?: number;
     /** Size ratio (eg 512, 1024) */
     size: number;
@@ -119,7 +178,11 @@ interface OutputMedia {
 /** An entry of GET /history/{prompt_id}, keyed by node id */
 interface HistoryEntry {
     outputs?: Record<string, { images?: OutputMedia[] } | undefined>;
-    status?: { status_str?: string };
+    status?: {
+        status_str?: string;
+        /** Tuples [event_type, payload], holding the "execution_error" details when it failed */
+        messages?: [string, Record<string, unknown>][];
+    };
 }
 
 export class ComfyUIDiffuser extends AbstractDiffuser {
@@ -163,7 +226,10 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
         // waking the machine up is added back to it : the deadline must bound the generation,
         // not the wake up. The total duration of txt2img stays bounded by
         // MAX_WAKE_CYCLES * WAKE_BUDGET_MS + timeout_ms.
-        let deadline = Date.now() + (this._options.timeout_ms ?? DEFAULT_TIMEOUT_MS);
+        // A timeout_ms of 0 (or less) disables the deadline : Infinity flows through every
+        // computation below without any special case. This does NOT disable the fail fast on a
+        // sleeping machine, which relies on the per-request HTTP_TIMEOUT_MS.
+        let deadline = Date.now() + toBudget(this._options.timeout_ms);
         let promptId: string | null = null;
 
         for (let cycle = 0; cycle < MAX_WAKE_CYCLES; cycle++) {
@@ -194,20 +260,21 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
                     continue;
                 }
                 if (images.length === 0) {
-                    throw "No image generated";
+                    throw `Prompt ${promptId} succeeded but produced no media, check the output nodes of the workflow`;
                 }
                 return { data: asNamed(images[0]) };
             } catch (e) {
                 if (!isNetworkError(e)) {
                     // A generation error, waking the machine up won't help
+                    console.error(`Generation failed on ${this._options.serverURL} : ${describeError(e)}`);
                     throw e;
                 }
                 if (Date.now() >= deadline) {
+                    console.error(`Giving up on ${this._options.serverURL}, deadline reached : ${describeError(e)}`);
                     throw e;
                 }
                 // The machine fell asleep, keep promptId so that the next cycle resumes it
-                console.error(e);
-                console.error(`Lost connection to ${this._options.serverURL}, will try to wake it up (cycle ${cycle + 1}/${MAX_WAKE_CYCLES})`);
+                console.error(`Lost connection to ${this._options.serverURL} (${describeError(e)}), will try to wake it up (cycle ${cycle + 1}/${MAX_WAKE_CYCLES})`);
             }
         }
 
@@ -286,8 +353,7 @@ export class ComfyUIPool {
             return true;
         } catch (e) {
             // Log the reason, otherwise a misconfigured host looks exactly like a sleeping machine
-            const reason = (e as { cause?: { code?: string } })?.cause?.code ?? (e as Error)?.name ?? e;
-            console.error(`Probe ${url} failed : ${reason}`);
+            console.error(`Probe ${url} failed : ${describeError(e)}`);
             return false;
         }
     }
@@ -394,6 +460,9 @@ export class ComfyUIPool {
             const resp = await client._enqueue_prompt(prompt);
             return resp.prompt_id;
         } catch (e) {
+            // A 400 here carries the workflow validation errors (missing node, bad input, ...),
+            // which are the most useful thing to read when a workflow stops working
+            console.error(`Failed to enqueue prompt on ${this._host} : ${describeError(e)}`);
             if (isNetworkError(e)) {
                 this._markAsDown();
             }
@@ -438,6 +507,23 @@ export class ComfyUIPool {
     }
 
     /**
+     * Extract the reason why ComfyUI failed to execute the workflow.
+     * ComfyUI reports it as an "execution_error" message holding the faulty node and the
+     * python exception. Without this, all we would know is "the prompt failed".
+     */
+    protected _getExecutionError(entry: HistoryEntry): string {
+        for (const [type, payload] of entry.status?.messages ?? []) {
+            if (type !== "execution_error" || payload == null) {
+                continue;
+            }
+            const node = [payload["node_type"], payload["node_id"]].filter(v => v != null).join(" #");
+            const exception = [payload["exception_type"], payload["exception_message"]].filter(v => v != null).join(" : ");
+            return [node && `node ${node}`, exception].filter(Boolean).join(" -> ") || JSON.stringify(payload);
+        }
+        return "no execution_error reported by ComfyUI";
+    }
+
+    /**
      * Extract the media URLs of a finished prompt.
      * Same semantics as the client's default resolver : only the "images" outputs of type
      * "output" or "temp" are kept (this is what the video workflows use too).
@@ -478,7 +564,7 @@ export class ComfyUIPool {
         const deadline = Date.now() + timeout_ms;
         try {
             // -- Wait for the prompt to leave the queue --
-            console.log(`Waiting up to ${timeout_ms} ms for prompt ${promptId}`);
+            console.log(`Waiting for prompt ${promptId} (${Number.isFinite(timeout_ms) ? `up to ${timeout_ms} ms` : "no timeout"})`);
             let entry: HistoryEntry | null = null;
             while (true) {
                 if (!await this._isQueued(promptId)) {
@@ -497,7 +583,7 @@ export class ComfyUIPool {
                 return null;
             }
             if (entry.status?.status_str === "error") {
-                throw `Prompt ${promptId} failed on ${this._host}`;
+                throw `ComfyUI failed to execute prompt ${promptId} : ${this._getExecutionError(entry)}`;
             }
 
             // -- Download the medias --
@@ -518,14 +604,14 @@ export class ComfyUIPool {
                 await client.deleteItem("history", promptId);
             } catch (e) {
                 // We don't care about the error, we won't throw
-                console.error(`Failed to delete image from queue: ${promptId}`);
-                console.error(e);
+                console.error(`Failed to delete prompt ${promptId} from history : ${describeError(e)}`);
             } finally {
                 client.close();
             }
 
             return results;
         } catch (e) {
+            console.error(`Prompt ${promptId} on ${this._host} failed : ${describeError(e)}`);
             if (isNetworkError(e)) {
                 this._markAsDown();
             }
@@ -554,7 +640,11 @@ export interface Manifest {
     filename?: string;
     /** Is output video ? (will use false by default) */
     video?: boolean;
-    /** Override timeout in milliseconds */
+    /**
+     * Override the generation timeout, in milliseconds.
+     * Omit it to use the default (5 minutes), set it to 0 to disable the timeout entirely.
+     * Disabling it does not prevent the wake up cycle from detecting a sleeping machine.
+     */
     timeout_ms?: number;
 }
 
