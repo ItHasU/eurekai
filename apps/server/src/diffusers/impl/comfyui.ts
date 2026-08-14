@@ -36,6 +36,17 @@ const PROMPT_POLLING_MS = 1_000;
 
 //#region Network tools
 
+/** Format a duration in a compact readable form : "12.3s", "3m07s" */
+export function formatDuration(ms: number): string {
+    // Round to tenths first, so that 59.99s reads "1m00s" and never "60.0s"
+    const tenths = Math.round(ms / 100);
+    if (tenths < 600) {
+        return `${(tenths / 10).toFixed(1)}s`;
+    }
+    const seconds = Math.round(tenths / 10);
+    return `${Math.floor(seconds / 60)}m${(seconds % 60).toString().padStart(2, "0")}s`;
+}
+
 /**
  * Convert a configured timeout into a duration budget.
  * @param timeout_ms undefined to use the default, 0 or less to disable the timeout
@@ -231,12 +242,18 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
         // sleeping machine, which relies on the per-request HTTP_TIMEOUT_MS.
         let deadline = Date.now() + toBudget(this._options.timeout_ms);
         let promptId: string | null = null;
+        // Timings, so that the logs tell how long the picture really took and how much of it
+        // was spent waiting for the machine rather than generating
+        const started = Date.now();
+        let wakeMs = 0;
 
         for (let cycle = 0; cycle < MAX_WAKE_CYCLES; cycle++) {
             // -- Make sure the machine is up before doing anything --
             const wakeStart = Date.now();
             await pool.ensureAwake(this._options.wolScript);
-            deadline += Date.now() - wakeStart;
+            const wakeDuration = Date.now() - wakeStart;
+            wakeMs += wakeDuration;
+            deadline += wakeDuration;
 
             try {
                 // -- Enqueue the prompt, unless we already have one to resume --
@@ -262,15 +279,17 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
                 if (images.length === 0) {
                     throw `Prompt ${promptId} succeeded but produced no media, check the output nodes of the workflow`;
                 }
+                const waking = wakeMs > 0 ? `, ${formatDuration(wakeMs)} of which waiting for the machine` : "";
+                console.log(`Generated ${this._options.name} in ${formatDuration(Date.now() - started)}${waking} (prompt ${promptId})`);
                 return { data: asNamed(images[0]) };
             } catch (e) {
                 if (!isNetworkError(e)) {
                     // A generation error, waking the machine up won't help
-                    console.error(`Generation failed on ${this._options.serverURL} : ${describeError(e)}`);
+                    console.error(`Generation failed on ${this._options.serverURL} after ${formatDuration(Date.now() - started)} : ${describeError(e)}`);
                     throw e;
                 }
                 if (Date.now() >= deadline) {
-                    console.error(`Giving up on ${this._options.serverURL}, deadline reached : ${describeError(e)}`);
+                    console.error(`Giving up on ${this._options.serverURL} after ${formatDuration(Date.now() - started)}, deadline reached : ${describeError(e)}`);
                     throw e;
                 }
                 // The machine fell asleep, keep promptId so that the next cycle resumes it
