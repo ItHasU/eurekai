@@ -4,12 +4,12 @@ import { ModelInfo } from "@eurekai/shared/src/models.api";
 import { htmlStringToElement } from "src/components/tools";
 import { StaticDataProvider } from "src/tools/dataProvider";
 
-type Ratio = { width: number, height: number };
+type Ratio = { width: number, height: number, default?: boolean };
 const RATIOS: Ratio[] = [
     { width: 21, height: 9 },
     { width: 16, height: 9 },
     { width: 4, height: 3 },
-    { width: 1, height: 1 },
+    { width: 1, height: 1, default: true},
     { width: 3, height: 4 },
     { width: 9, height: 16 },
     { width: 9, height: 21 }
@@ -124,14 +124,19 @@ export class PromptEditor extends HTMLElement {
         this._ratioSelect.innerHTML = '';
         for (const ratio of RATIOS) {
             const item = htmlStringToElement<HTMLLIElement>(`<li><a class="dropdown-item">${ratio.width}:${ratio.height}</a></li>`)!;
-            item.querySelector("a")?.addEventListener("click", (evt) => {
+            const cb = () => {
                 const factor = Math.sqrt(ratio.width / ratio.height);
                 const w = Math.round(size * factor / sizeStep) * sizeStep;
                 const h = Math.round(size / factor / sizeStep) * sizeStep;
                 this._widthInput.value = "" + w;
                 this._heightInput.value = "" + h;
-            });
+            };
+            item.querySelector("a")?.addEventListener("click", cb);
             this._ratioSelect.append(item);
+
+            if (ratio.default === true) {
+                cb();
+            }
         }
     }
 
