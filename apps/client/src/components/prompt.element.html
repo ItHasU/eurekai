@@ -8,7 +8,7 @@
         <i class="bi bi-arrow-return-left"></i>
       </a>
       {{/if}}
-      <code>{{model.displayName}}</code> - {{data.width}}&nbsp;x&nbsp;{{data.height}}&nbsp;px -
+      <code>{{model.displayName}}</code> - {{data.width}}&nbsp;x&nbsp;{{data.height}}&nbsp;px{{#if data.duration}} - {{data.duration}}&nbsp;{{model.duration.unit}}{{/if}} -
       <a class="text-decoration-none" data-bs-toggle="collapse" href="#promptDiff_{{this.data.id}}"
         title="Prompt change(s)">
         <span class="text-danger">-{{promptRemovedCount}}</span>

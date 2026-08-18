@@ -8,6 +8,11 @@ export interface ImageDescription {
     seed: number;
     width: number;
     height: number;
+    /**
+     * Duration of the generated video, in the unit declared by the model.
+     * Null when the model does not expose a duration.
+     */
+    duration: number | null;
 }
 
 /** Abstract API to connect to an image generator */

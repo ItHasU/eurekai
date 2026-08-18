@@ -29,12 +29,19 @@
         <label for="positiveInput" class="form-label">Prompt</label>
         <textarea id="positiveInput" class="form-control" rows="3"></textarea>
     </div>
-    <div class="col-md">
+    <div class="col-md" id="negativeCol">
         <label for="negativeInput" class="form-label">Negative prompt</label>
         <textarea id="negativeInput" class="form-control" rows="3"></textarea>
     </div>
 </div>
 <div class="row">
+    <div class="col-md d-none" id="durationCol">
+        <label for="durationInput" class="form-label">Duration</label>
+        <div class="input-group">
+            <input type="number" id="durationInput" class="form-control">
+            <span class="input-group-text" id="durationUnit"></span>
+        </div>
+    </div>
     <div class="col-md">
         <label for="seedInput" class="form-label">First seed</label>
         <input id="seedInput" class="form-control" type="number" placeholder="Random"></input>
