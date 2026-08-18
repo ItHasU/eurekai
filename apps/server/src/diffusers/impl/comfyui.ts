@@ -1,7 +1,7 @@
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { wait } from "@dagda/shared/tools/async";
 import { AppTypes } from "@eurekai/shared/src/entities";
-import { ModelInfo } from "@eurekai/shared/src/models.api";
+import { DurationInfo, ModelInfo } from "@eurekai/shared/src/models.api";
 import { Client, ClientConnectionError, ClientRequestError, ConnectError } from "@stable-canvas/comfyui-client";
 import JSZip from "jszip";
 import { exec } from "node:child_process";
@@ -172,6 +172,10 @@ interface ComfyUIDiffuserOption {
     size: number;
     /** Round the generated resolutions to a multiple of this value (default to 8) */
     sizeStep?: number;
+    /** Display the negative prompt field (default to true) */
+    negativePrompt?: boolean;
+    /** Duration parameter, undefined if the workflow does not expose one */
+    duration?: DurationInfo;
     /** Prompt template */
     promptTemplate: string;
 }
@@ -217,7 +221,9 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
             displayName: `[Comfy] ${this._options.name}`,
             video: this._options.video,
             size: this._options.size,
-            sizeStep: this._options.sizeStep
+            sizeStep: this._options.sizeStep,
+            negativePrompt: this._options.negativePrompt,
+            duration: this._options.duration
         };
     }
 
@@ -653,6 +659,16 @@ export interface Manifest {
     size: number;
     /** Round the generated resolutions to a multiple of this value (will use 8 by default) */
     sizeStep?: number;
+    /**
+     * Does the workflow use $negative_prompt$ ? (will use true by default)
+     * Set it to false to hide the negative prompt field, an empty negative prompt will be used.
+     */
+    negativePrompt?: boolean;
+    /**
+     * Duration parameter of the workflow, injected as $duration$.
+     * Omit it if the workflow does not expose a duration.
+     */
+    duration?: DurationInfo;
     /** Description */
     description?: string;
     /** Prompt filename (will use api.json by default) */
@@ -713,6 +729,8 @@ export async function getAllComfyTemplates(comfyHost: string, comfyPath: string,
             const name = manifest.name;
             const size = manifest.size;
             const sizeStep = manifest.sizeStep;
+            const negativePrompt = manifest.negativePrompt;
+            const duration = manifest.duration;
             const video: boolean = manifest.video ?? false;
             const timeout_ms = manifest.timeout_ms;
 
@@ -728,6 +746,8 @@ export async function getAllComfyTemplates(comfyHost: string, comfyPath: string,
                 name,
                 size,
                 sizeStep,
+                negativePrompt,
+                duration,
                 video,
                 timeout_ms,
                 promptTemplate

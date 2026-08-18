@@ -141,12 +141,17 @@ export class Generator {
                 }
 
                 // -- Prepare the image --
+                const modelInfo = diffuser.getModelInfo();
                 const img: ImageDescription = {
                     width: prompt.width,
                     height: prompt.height,
                     prompt: prompt.prompt,
                     negative_prompt: prompt.negative_prompt ?? "",
-                    seed: picture.seed
+                    seed: picture.seed,
+                    // Prompts created before the option existed have no duration, fallback on the
+                    // model default so the workflow keeps working. The key must always be set,
+                    // otherwise the $duration$ token would be left as-is in the template.
+                    duration: prompt.duration ?? modelInfo.duration?.default ?? null
                 };
 
                 // -- Handle generation queueing based on lock --

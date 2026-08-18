@@ -12,7 +12,7 @@
 |---|---|
 | `users` | Utilisateur (uid Google, nom affiché, activé / non activé) |
 | `projects` | Regroupe des prompts autour d'un thème. Épinglable, verrouillable, vignette |
-| `prompts` | Prompt positif / négatif, dimensions, modèle, prompt parent (héritage), ordre |
+| `prompts` | Prompt positif / négatif, dimensions, durée (vidéos), modèle, prompt parent (héritage), ordre |
 | `pictures` | Instance d'un prompt avec une graine (seed) donnée : statut, note, pièce jointe |
 | `attachments` | Données binaires (base64) de l'image ou de la vidéo |
 | `seeds` | Graines préférées mémorisées par projet |
@@ -35,9 +35,12 @@ Contextes de chargement : `users`, `projects`, `project` (un projet complet),
 
 ## 3. Gestion des prompts
 
-- Éditeur de prompt : prompt positif, prompt négatif, largeur, hauteur, graine, modèle.
+- Éditeur de prompt : prompt positif, prompt négatif, largeur, hauteur, durée, graine, modèle.
 - Sélection du modèle parmi ceux découverts sur les back-ends (liste rafraîchissable).
 - Sélection du ratio d'image, proposé en fonction de la taille native du modèle.
+- Champs paramétrés par le modèle sélectionné : le prompt négatif est masqué si le
+  workflow ne l'exploite pas, la durée n'est proposée que si le workflow l'expose
+  (bornes, pas, valeur par défaut et unité déclarés par le workflow).
 - Héritage de prompt (`parentId`) : dérivation d'un prompt existant.
 - Ordre d'affichage des prompts (`orderIndex`), affichés du plus récent au plus ancien.
 - Demande de génération de N images pour un prompt.
@@ -59,7 +62,7 @@ Contextes de chargement : `users`, `projects`, `project` (un projet complet),
 
 | Back-end | Détails |
 |---|---|
-| ComfyUI | Templates de workflows (`.zip` dans `workflows/`), pool de connexions |
+| ComfyUI | Templates de workflows (`.zip` dans `workflows/`), options déclarées dans le `manifest.json`, pool de connexions |
 | Automatic1111 | Découverte automatique des modèles installés (SD, SDXL, Flux) |
 | Replicate | SDXL et Flux, via jeton API |
 | DALL-E (OpenAI) | via jeton API |

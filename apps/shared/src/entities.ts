@@ -80,6 +80,10 @@ export const APP_MODEL = new EntitiesModel({
     PIXELS: {
         rawType: JSTypes.number
     },
+    /** Duration of a video, in the unit declared by the model (seconds, frames, ...) */
+    DURATION: {
+        rawType: JSTypes.number
+    },
     SEED: EntitiesModel.type({
         rawType: JSTypes.number
     }),
@@ -121,7 +125,8 @@ export const APP_MODEL = new EntitiesModel({
         height: { type: "PIXELS" },
         model: { type: "MODEL_NAME" },
         prompt: { type: "TEXT" },
-        negative_prompt: { type: "TEXT", optional: true }
+        negative_prompt: { type: "TEXT" },
+        duration: { type: "DURATION", optional: true }
     },
     pictures: {
         id: { type: "PICTURE_ID", identity: true },
@@ -157,6 +162,7 @@ export type AttachmentId = typeof APP_MODEL.types["ATTACHMENT_ID"];
 export type SeedId = typeof APP_MODEL.types["SEED_ID"];
 
 export type Seed = typeof APP_MODEL.types["SEED"];
+export type Duration = typeof APP_MODEL.types["DURATION"];
 export type Score = typeof APP_MODEL.types["SCORE"];
 export type PICTURE_TYPE = typeof APP_MODEL.types["PICTURE_TYPE"];
 
