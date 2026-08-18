@@ -1,7 +1,6 @@
-import { apiCall } from "@dagda/client/api";
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { PromptEntity, PromptId, Seed } from "@eurekai/shared/src/entities";
-import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api";
+import { ModelInfo } from "@eurekai/shared/src/models.api";
 import { htmlStringToElement } from "src/components/tools";
 import { StaticDataProvider } from "src/tools/dataProvider";
 
@@ -61,7 +60,7 @@ export class PromptEditor extends HTMLElement {
     //#region Models ----------------------------------------------------------
 
     protected _fillModelsSelect(forceRefresh: boolean = false): void {
-        apiCall<ModelsAPI, "getModels">(MODELS_URL, "getModels", forceRefresh).then((models) => {
+        StaticDataProvider.getModels(forceRefresh).then((models) => {
             // Options are filled asynchronously, the selection may have been set before they exist
             const selectedUid = this._modelsSelect.value;
             this._modelsSelect.innerHTML = '';
@@ -170,7 +169,7 @@ export class PromptEditor extends HTMLElement {
         return {
             parentId: this._parentId,
             prompt: asNamed(positivePrompt),
-            negative_prompt: negativePrompt ? asNamed(negativePrompt) : undefined,
+            negative_prompt: negativePrompt ? asNamed(negativePrompt) : asNamed(""),
             width: asNamed(width),
             height: asNamed(height),
             model: asNamed(model),
