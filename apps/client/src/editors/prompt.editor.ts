@@ -54,7 +54,7 @@ export class PromptEditor extends HTMLElement {
 
         this._fillModelsSelect();
         this._modelsButton.addEventListener("click", this._fillModelsSelect.bind(this, true));
-        this._modelsSelect.addEventListener("change", this._onModelsChange.bind(this));
+        this._modelsSelect.addEventListener("change", () => void this._onModelsChange(true));
     }
 
     //#region Models ----------------------------------------------------------
@@ -72,21 +72,28 @@ export class PromptEditor extends HTMLElement {
                 // Only restore an existing model, otherwise keep the first one selected by default
                 this._modelsSelect.value = selectedUid;
             }
-            return this._onModelsChange();
+            // Only the initial fill picks the size of the model, refreshing the list must not
+            // discard the resolution currently being edited
+            return this._onModelsChange(!forceRefresh);
         }).catch(e => {
             console.error(e);
             this._modelsSelect.innerHTML = '<option value="">!Error!</option>';
         });
     }
 
-    protected async _onModelsChange(): Promise<void> {
+    /**
+     * Refresh the ratios and the fields depending on the selected model.
+     * @param applyDefaultSize Reset the resolution to the default ratio of the model.
+     * Only when the user picks another model : editing an existing prompt must keep its resolution.
+     */
+    protected async _onModelsChange(applyDefaultSize: boolean): Promise<void> {
         const uid = this._modelsSelect.value;
         const model = (await StaticDataProvider.getModels()).find(info => info.uid === uid);
         if (model == null) {
             // Model not found, use default value
-            this._fillRatios(DEFAULT_SIZE, DEFAULT_SIZE_STEP);
+            this._fillRatios(DEFAULT_SIZE, DEFAULT_SIZE_STEP, applyDefaultSize);
         } else {
-            this._fillRatios(model.size, model.sizeStep ?? DEFAULT_SIZE_STEP);
+            this._fillRatios(model.size, model.sizeStep ?? DEFAULT_SIZE_STEP, applyDefaultSize);
         }
         this._applyModelOptions(model);
     }
@@ -120,7 +127,7 @@ export class PromptEditor extends HTMLElement {
 
     //#region Ratios ----------------------------------------------------------
 
-    protected _fillRatios(size: number, sizeStep: number): void {
+    protected _fillRatios(size: number, sizeStep: number, applyDefaultSize: boolean = true): void {
         this._ratioSelect.innerHTML = '';
         for (const ratio of RATIOS) {
             const item = htmlStringToElement<HTMLLIElement>(`<li><a class="dropdown-item">${ratio.width}:${ratio.height}</a></li>`)!;
@@ -134,7 +141,7 @@ export class PromptEditor extends HTMLElement {
             item.querySelector("a")?.addEventListener("click", cb);
             this._ratioSelect.append(item);
 
-            if (ratio.default === true) {
+            if (applyDefaultSize && ratio.default === true) {
                 cb();
             }
         }
@@ -156,8 +163,8 @@ export class PromptEditor extends HTMLElement {
         this._seedInput.value = "" + (seed ?? "");
 
         // Setting the value of a select does not fire the change event, refresh the ratios
-        // and the model options manually
-        void this._onModelsChange();
+        // and the model options manually, keeping the resolution of the prompt
+        void this._onModelsChange(false);
     }
 
     public getPrompt(): Omit<PromptEntity, "id" | "projectId" | "orderIndex"> {
