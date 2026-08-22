@@ -1,6 +1,6 @@
 import { AbstractNotificationImpl } from "@dagda/shared/tools/notification.helper";
 
-type SocketEvents = {
+export type SocketEvents = {
     connected: boolean;
 }
 

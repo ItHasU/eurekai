@@ -3,7 +3,7 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import "bootstrap/dist/css/bootstrap.css";
 
 import { SQLStatusComponent } from "@dagda/client/sql/status.component";
-import { ClientNotificationImpl } from "@dagda/client/tools/notification.impl";
+import { ClientNotificationImpl, SocketEvents } from "@dagda/client/tools/notification.impl";
 import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
 import { AppEvents } from "@eurekai/shared/src/events";
 import { PictureElement } from "./components/picture.element";
@@ -80,7 +80,7 @@ class App {
         const generationCount = document.getElementById("generationCount");
         if (generationSpan && generationCount) {
             let previousCount = 0;
-            NotificationHelper.on<AppEvents>("generating", (event) => {
+            NotificationHelper.on<AppEvents, "generating">("generating", (event) => {
                 generationSpan.classList.toggle("d-none", event.data.count === 0);
                 generationCount.innerText = "" + event.data.count;
                 if (previousCount != 0 && event.data.count === 0) {
@@ -90,6 +90,16 @@ class App {
                     previousCount = 0;
                 }
                 previousCount = event.data.count;
+            });
+
+            // -- Ask for the count once connected --
+            // The server only notifies when a picture starts or ends, so without this
+            // request the count would stay stale until the next generation.
+            // This is also triggered on each reconnection.
+            NotificationHelper.on<SocketEvents, "connected">("connected", (event) => {
+                if (event.data) {
+                    NotificationHelper.broadcast<AppEvents, "generatingRefresh">("generatingRefresh", {});
+                }
             });
         }
     }
