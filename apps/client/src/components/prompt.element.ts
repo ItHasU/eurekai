@@ -169,6 +169,10 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
         });
         this._bindClick("clone", () => EventHandlerImpl.fire(this._eventData, "clone", { prompt: this.data }));
         this._bindClick("cancelPending", async () => {
+            // Refresh first : the cache may be stale (dirty but not yet re-fetched), and
+            // cancelling a picture that was actually generated in the meantime would silently
+            // overwrite its DONE status. fetch() only hits the server if the context is dirty.
+            await StaticDataProvider.entitiesHandler.fetch({ type: "project", options: { projectId: this.data.projectId } });
             // Only PENDING pictures : a COMPUTING one is already being generated and cannot be stopped
             const picturesToCancel = StaticDataProvider.entitiesHandler.getItems("pictures").filter(picture =>
                 StaticDataProvider.entitiesHandler.isSameId(picture.promptId, this.data.id) &&
