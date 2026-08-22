@@ -6,6 +6,7 @@ import { AppContexts, AppTables, ComputationStatus, PICTURE_TYPE, PictureEntity,
 import { AppEvents } from "@eurekai/shared/src/events";
 import { DiffusersRegistry } from "src/diffusers";
 import { AbstractDiffuser, ImageDescription } from "src/diffusers/diffuser";
+import { qf, qt } from "./db";
 import { buildServerEntitiesHandler } from "./entities.handler";
 
 export class Generator {
@@ -16,8 +17,12 @@ export class Generator {
      * When registered, the promise will have an empty catch method allowing to make sure promises can be queued.
      */
     protected readonly _lastPromiseByLock: Map<string, Promise<void>> = new Map();
-    /** Count pictures currently waiting to be generated */
-    protected _queuedPictureCount: number = 0;
+    /** 
+     * Ids of the pictures handled by the generator : the ones waiting for a lock and the one
+     * being generated. This is what the "generating" notification counts, so the badge shows
+     * everything that is left to do, not only the picture currently being generated.
+     */
+    protected readonly _queuedPictureIds: Set<number> = new Set();
 
     constructor(protected _db: AbstractSQLRunner) {
         this._handler = buildServerEntitiesHandler(this._db);
@@ -33,7 +38,7 @@ export class Generator {
 
     /** Broadcast the current count of queued pictures to all the clients */
     protected _notifyQueuedPictureCount(): void {
-        NotificationHelper.broadcast<AppEvents, "generating">("generating", { count: this._queuedPictureCount });
+        NotificationHelper.broadcast<AppEvents, "generating">("generating", { count: this._queuedPictureIds.size });
     }
 
     /** Fetch data and queue them for computation */
@@ -43,48 +48,23 @@ export class Generator {
             this._handler.markCacheDirty();
             await this._handler.fetch({ type: "pending", options: undefined });
 
-            // -- List pending pictures --
-            const picturesPending = this._handler.getItems("pictures").filter(pic => pic.status === asNamed(ComputationStatus.PENDING)); // Filter old pictures in cache
-            if (picturesPending.length === 0) {
+            // -- List pending pictures not queued yet --
+            // A picture stays PENDING until it really starts being generated (see _queuePicture),
+            // so the same picture must not be handed to _queuePicture more than once : the ids
+            // already queued are tracked in _queuedPictureIds instead.
+            const picturesToQueue = this._handler.getItems("pictures").filter(pic =>
+                pic.status === asNamed(ComputationStatus.PENDING) && !this._queuedPictureIds.has(pic.id));
+            if (picturesToQueue.length === 0) {
                 // Shortcut to exit on no new picture to generate
-                if (this._queuedPictureCount <= 0) {
+                if (this._queuedPictureIds.size <= 0) {
                     // Just in case, we send 0 for client that may have lost connection
                     this._notifyQueuedPictureCount();
                 }
                 return;
             }
 
-            // -- Mark pending prompt as computing --
-            // This is a failsafe code that will mark all pictures as computing.
-            // This avoids pictures to be computed once more by _dequeue on the next call.
-            await this._handler.withTransaction(async (tr) => {
-                for (const picture of picturesPending) {
-                    try {
-                        tr.update("pictures", picture, {
-                            status: asNamed(ComputationStatus.COMPUTING),
-                        });
-                    } catch (e) {
-                        console.error(`Failed to mark picture as computing ${picture.id}`);
-                        console.error(e);
-                        try {
-                            tr.update("pictures", picture, {
-                                status: asNamed(ComputationStatus.ERROR)
-                            });
-                        } catch (e) {
-                            console.error(`Failed to update status for picture ${picture.id}`);
-                            console.error(e);
-                        }
-                    }
-                }
-            });
-            // Here we make sure all images have been marked to avoid restarting the computation
-            // on the next queue. In fact, the cache will be marked dirty automatically on the next
-            // call the _dequeue and sometime the SQL server can be a little slow and modifications
-            // are not finished in the 1s timelapse.
-            await this._handler.waitForSubmit();
-
             // -- Sort pictures --
-            picturesPending.sort((p1, p2) => {
+            picturesToQueue.sort((p1, p2) => {
                 let res: number = 0;
                 if (res === 0) {
                     // Compare by model to limit the switch of diffuser
@@ -103,15 +83,16 @@ export class Generator {
             });
 
             // Generate all lowres pictures
-            for (const picture of picturesPending) {
-                if (picture.status !== ComputationStatus.COMPUTING) {
-                    // An error may have occurred
-                    continue;
-                }
+            for (const picture of picturesToQueue) {
+                // Registered here, synchronously, so the next tick cannot queue it twice
+                this._queuedPictureIds.add(picture.id);
                 // Don't wait for this promise, all images are rendered in individual transaction
                 // so that they can be viewed as soon as possible by the user.
                 this._queuePicture(picture).catch(e => console.error(e));
             }
+            // Notify once for the whole batch : clients must see the new pictures right away,
+            // not only once the first one finishes.
+            this._notifyQueuedPictureCount();
         } catch (e) {
             console.error("Failed to process pictures");
             console.error(e);
@@ -124,11 +105,6 @@ export class Generator {
     /** This is a failsafe method that will queue the picture based on the lock of the model */
     protected async _queuePicture(picture: PictureEntity): Promise<void> {
         await this._handler.withTransaction(async (tr) => {
-            // -- Notify the clients we are at work --
-            // We notify on each image for newly connected clients
-            this._queuedPictureCount++;
-            this._notifyQueuedPictureCount();
-
             try {
                 // -- Get the prompt --
                 const prompt = this._handler.getById("prompts", picture.promptId);
@@ -171,7 +147,20 @@ export class Generator {
                 const previousPromise: Promise<void> = lock == null ? Promise.resolve() : (this._lastPromiseByLock.get(lock) ?? Promise.resolve());
 
                 // Queue the generation of the picture
-                const nextPromise = previousPromise.then(this._generatePictureImpl.bind(this, tr, diffuser, picture, prompt, img));
+                const nextPromise = previousPromise.then(async () => {
+                    // The user may have cancelled the picture while it was waiting behind the lock
+                    if (await this._isCancelled(picture)) {
+                        console.log(`Picture ${picture.id} was cancelled, skipping generation`);
+                        return;
+                    }
+                    // The picture is really being generated from now on. This is submitted in its
+                    // own transaction : the enclosing one is only sent once the generation is over.
+                    await this._handler.withTransaction((statusTr) => {
+                        statusTr.update("pictures", picture, { status: asNamed(ComputationStatus.COMPUTING) });
+                        statusTr.contexts.push({ type: "project", options: { projectId: prompt.projectId } });
+                    });
+                    await this._generatePictureImpl(tr, diffuser, picture, prompt, img);
+                });
                 if (lock != null) {
                     this._lastPromiseByLock.set(lock, nextPromise.catch(() => { })); // Don't care for errors here
                 }
@@ -188,15 +177,27 @@ export class Generator {
                     console.error(e);
                 }
             } finally {
-                this._queuedPictureCount--;
-                if (this._queuedPictureCount <= 0) {
-                    this._queuedPictureCount = 0; // Failsafe if we decrease too much
-                }
+                this._queuedPictureIds.delete(picture.id);
                 this._notifyQueuedPictureCount();
             }
         });
         // Here, no need to wait for the transaction to be done.
         // The client will automatically be notified when the SQL transaction is finished.
+    }
+
+    /** @returns true if the user cancelled the picture since it was queued */
+    protected async _isCancelled(picture: PictureEntity): Promise<boolean> {
+        try {
+            const row = await this._db.get<Pick<PictureEntity, "status">>(
+                `SELECT ${qf("pictures", "status", false)} FROM ${qt("pictures")} WHERE ${qf("pictures", "id", false)}=$1`,
+                picture.id);
+            return row?.status === ComputationStatus.CANCELLED;
+        } catch (e) {
+            // On error, generate the picture : losing an image is worse than generating one too many
+            console.error(`Failed to check cancellation for picture ${picture.id}`);
+            console.error(e);
+            return false;
+        }
     }
 
     /** 

@@ -1,11 +1,11 @@
 import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "@dagda/shared/tools/events";
 import { ComputationStatus, ProjectEntity, PromptEntity, Seed } from "@eurekai/shared/src/entities";
 import { ModelInfo } from "@eurekai/shared/src/models.api";
-import { deletePrompt, generateNextPictures, movePromptToProject, updateSeeds } from "@eurekai/shared/src/pictures.data";
+import { cancelPicture, deletePrompt, generateNextPictures, movePromptToProject, updateSeeds } from "@eurekai/shared/src/pictures.data";
 import { diff_match_patch } from "diff-match-patch";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { AbstractDTOElement } from "./abstract.dto.element";
-import { showSelect } from "./tools";
+import { showConfirm, showSelect } from "./tools";
 
 const DIFF = new diff_match_patch();
 
@@ -67,6 +67,7 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
             }
             switch (picture.status) {
                 case ComputationStatus.ERROR:
+                case ComputationStatus.CANCELLED:
                     this.errorCount++;
                     break;
                 case ComputationStatus.PENDING:
@@ -167,6 +168,27 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
             this.refresh();
         });
         this._bindClick("clone", () => EventHandlerImpl.fire(this._eventData, "clone", { prompt: this.data }));
+        this._bindClick("cancelPending", async () => {
+            // Only PENDING pictures : a COMPUTING one is already being generated and cannot be stopped
+            const picturesToCancel = StaticDataProvider.entitiesHandler.getItems("pictures").filter(picture =>
+                StaticDataProvider.entitiesHandler.isSameId(picture.promptId, this.data.id) &&
+                picture.status === ComputationStatus.PENDING);
+            if (picturesToCancel.length === 0) {
+                return;
+            }
+            const confirmed = await showConfirm({
+                title: "Cancel images",
+                message: `Cancel ${picturesToCancel.length} image(s) not generated yet`
+            });
+            if (confirmed === true) {
+                await StaticDataProvider.entitiesHandler.withTransaction(tr => {
+                    for (const picture of picturesToCancel) {
+                        cancelPicture(StaticDataProvider.entitiesHandler, tr, picture);
+                    }
+                });
+            }
+            this.refresh();
+        });
         this._bindClick("delete", async () => {
             await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
                 deletePrompt(StaticDataProvider.entitiesHandler, tr, this.data);

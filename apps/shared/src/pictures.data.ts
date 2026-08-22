@@ -98,6 +98,16 @@ export function deletePicture(handler: EntitiesHandler<AppTables, AppContexts>, 
     }
 }
 
+/** 
+ * Cancel a picture that has not been generated yet.
+ * The picture is kept so the user can see what was cancelled.
+ */
+export function cancelPicture(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, picture: PictureEntity): void {
+    tr.update("pictures", picture, {
+        status: asNamed(ComputationStatus.CANCELLED)
+    });
+}
+
 export function updateSeeds(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, prompt: PromptEntity, addNewSeeds: boolean): void {
     const preferredSeeds = new Set<Seed>();
     for (const picture of handler.getItems("pictures")) {

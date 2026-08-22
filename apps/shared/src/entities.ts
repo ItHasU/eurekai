@@ -29,7 +29,12 @@ export enum ComputationStatus {
      */
     REJECTED,
     /** Computing as started */
-    COMPUTING
+    COMPUTING,
+    /**
+     * Cancelled by the user before the generation started
+     * (Only accessible if image was previously PENDING)
+     */
+    CANCELLED
 }
 
 /** Picture type */
