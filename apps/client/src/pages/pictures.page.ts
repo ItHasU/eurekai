@@ -408,7 +408,7 @@ export class PicturesPage extends AbstractPageElement {
                 filter = function (picture) { return picture.attachmentId != null; }
                 break;
             case "preferred":
-                filter = function (picture) { return picture.status >= ComputationStatus.DONE && preferredSeeds.has(picture.seed); };
+                filter = function (picture) { return picture.attachmentId != null && preferredSeeds.has(picture.seed); };
                 break;
             case "done":
                 filter = function (picture) { return picture.status === ComputationStatus.DONE; };
