@@ -21,12 +21,14 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
 
     protected errorCount: number = 0;
     protected pendingCount: number = 0;
+    protected computingCount: number = 0;
     protected doneCount: number = 0;
     protected acceptedCount: number = 0;
     protected rejectedCount: number = 0;
 
     protected errorPercent: number = 0;
     protected pendingPercent: number = 0;
+    protected computingPercent: number = 0;
     protected donePercent: number = 0;
     protected acceptedPercent: number = 0;
     protected rejectedPercent: number = 0;
@@ -58,6 +60,7 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
         // -- Prepare variables for the template ------------------------------
         this.errorCount = 0;
         this.pendingCount = 0;
+        this.computingCount = 0;
         this.doneCount = 0;
         this.rejectedCount = 0;
         this.acceptedCount = 0;
@@ -71,8 +74,10 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
                     this.errorCount++;
                     break;
                 case ComputationStatus.PENDING:
-                case ComputationStatus.COMPUTING:
                     this.pendingCount++;
+                    break;
+                case ComputationStatus.COMPUTING:
+                    this.computingCount++;
                     break;
                 case ComputationStatus.DONE:
                     this.doneCount++;
@@ -86,9 +91,10 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
             }
         }
 
-        const total = this.errorCount + this.pendingCount + this.rejectedCount + this.doneCount + this.acceptedCount;
+        const total = this.errorCount + this.pendingCount + this.computingCount + this.rejectedCount + this.doneCount + this.acceptedCount;
         this.errorPercent = this.errorCount / total * 100;
         this.pendingPercent = this.pendingCount / total * 100;
+        this.computingPercent = this.computingCount / total * 100;
         this.donePercent = this.doneCount / total * 100;
         this.acceptedPercent = this.acceptedCount / total * 100;
         this.rejectedPercent = this.rejectedCount / total * 100;

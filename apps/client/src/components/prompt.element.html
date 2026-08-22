@@ -102,6 +102,11 @@
             <div class="progress-bar bg-light text-dark">{{pendingCount}}</div>
           </div>
           {{/if}}
+          {{#if computingCount}}
+          <div class="progress computing" role="progressbar" style="width: {{computingPercent}}%">
+            <div class="progress-bar bg-primary">{{computingCount}}</div>
+          </div>
+          {{/if}}
           {{#if rejectedCount}}
           <div class="progress rejected" role="progressbar" style="width: {{rejectedPercent}}%">
             <div class="progress-bar bg-danger">{{rejectedCount}}</div>
