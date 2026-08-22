@@ -21,7 +21,19 @@ export class Generator {
 
     constructor(protected _db: AbstractSQLRunner) {
         this._handler = buildServerEntitiesHandler(this._db);
+        // -- Answer to clients asking for the current count --
+        // Without this, a client connecting during a long generation would have to wait
+        // for the current picture to end before getting the count.
+        // Note : the request is also relayed to the other clients, they simply ignore it.
+        NotificationHelper.on<AppEvents, "generatingRefresh">("generatingRefresh", () => {
+            this._notifyQueuedPictureCount();
+        });
         this._dequeue();
+    }
+
+    /** Broadcast the current count of queued pictures to all the clients */
+    protected _notifyQueuedPictureCount(): void {
+        NotificationHelper.broadcast<AppEvents, "generating">("generating", { count: this._queuedPictureCount });
     }
 
     /** Fetch data and queue them for computation */
@@ -37,7 +49,7 @@ export class Generator {
                 // Shortcut to exit on no new picture to generate
                 if (this._queuedPictureCount <= 0) {
                     // Just in case, we send 0 for client that may have lost connection
-                    NotificationHelper.broadcast<AppEvents>("generating", { count: 0 });
+                    this._notifyQueuedPictureCount();
                 }
                 return;
             }
@@ -115,7 +127,7 @@ export class Generator {
             // -- Notify the clients we are at work --
             // We notify on each image for newly connected clients
             this._queuedPictureCount++;
-            NotificationHelper.broadcast<AppEvents>("generating", { count: this._queuedPictureCount });
+            this._notifyQueuedPictureCount();
 
             try {
                 // -- Get the prompt --
@@ -180,7 +192,7 @@ export class Generator {
                 if (this._queuedPictureCount <= 0) {
                     this._queuedPictureCount = 0; // Failsafe if we decrease too much
                 }
-                NotificationHelper.broadcast<AppEvents>("generating", { count: this._queuedPictureCount });
+                this._notifyQueuedPictureCount();
             }
         });
         // Here, no need to wait for the transaction to be done.
