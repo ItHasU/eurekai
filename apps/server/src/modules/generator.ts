@@ -84,11 +84,9 @@ export class Generator {
 
             // Generate all lowres pictures
             for (const picture of picturesToQueue) {
-                // Registered here, synchronously, so the next tick cannot queue it twice
-                this._queuedPictureIds.add(picture.id);
                 // Don't wait for this promise, all images are rendered in individual transaction
                 // so that they can be viewed as soon as possible by the user.
-                this._queuePicture(picture).catch(e => console.error(e));
+                this._queuePicture(picture);
             }
             // Notify once for the whole batch : clients must see the new pictures right away,
             // not only once the first one finishes.
@@ -103,86 +101,116 @@ export class Generator {
     }
 
     /** This is a failsafe method that will queue the picture based on the lock of the model */
-    protected async _queuePicture(picture: PictureEntity): Promise<void> {
-        await this._handler.withTransaction(async (tr) => {
-            try {
-                // -- Get the prompt --
-                const prompt = this._handler.getById("prompts", picture.promptId);
-                if (prompt == null) {
-                    // Report error
-                    throw `Failed to get prompt for picture ${picture.id}`;
-                }
+    protected _queuePicture(picture: PictureEntity): void {
+        // This method cannot fail
+        try {
+            // Registered here, synchronously, so the next tick cannot queue it twice
+            this._queuedPictureIds.add(picture.id);
 
-                // -- Manually add the context so clients get notified --
-                tr.contexts.push({
-                    type: "project",
-                    options: {
-                        projectId: prompt.projectId
-                    }
-                });
+            // -- Get data in the cache ---------------------------------------
+            // -- Get the prompt --
+            const prompt = this._handler.getById("prompts", picture.promptId);
+            if (prompt == null) {
+                // Report error
+                throw `Failed to get prompt for picture ${picture.id}`;
+            }
+            // -- Get the diffuser --
+            const diffuser = DiffusersRegistry.getModel(prompt.model);
+            if (diffuser == null) {
+                // Report error
+                throw `Failed to get the diffuser named ${prompt.model} for picture ${picture.id}`;
+            }
 
-                // -- Get the diffuser --
-                const diffuser = DiffusersRegistry.getModel(prompt.model);
-                if (diffuser == null) {
-                    // Report error
-                    throw `Failed to get the diffuser named ${prompt.model} for picture ${picture.id}`;
-                }
+            // -- Prepare the image --
+            const modelInfo = diffuser.getModelInfo();
+            const img: ImageDescription = {
+                width: prompt.width,
+                height: prompt.height,
+                prompt: prompt.prompt,
+                negative_prompt: prompt.negative_prompt ?? "",
+                seed: picture.seed,
+                // Prompts created before the option existed have no duration, fallback on the
+                // model default so the workflow keeps working. The key must always be set,
+                // otherwise the $duration$ token would be left as-is in the template.
+                duration: prompt.duration ?? modelInfo.duration?.default ?? null
+            };
 
-                // -- Prepare the image --
-                const modelInfo = diffuser.getModelInfo();
-                const img: ImageDescription = {
-                    width: prompt.width,
-                    height: prompt.height,
-                    prompt: prompt.prompt,
-                    negative_prompt: prompt.negative_prompt ?? "",
-                    seed: picture.seed,
-                    // Prompts created before the option existed have no duration, fallback on the
-                    // model default so the workflow keeps working. The key must always be set,
-                    // otherwise the $duration$ token would be left as-is in the template.
-                    duration: prompt.duration ?? modelInfo.duration?.default ?? null
-                };
+            // -- Now, queue the picture --------------------------------------
+            // Once everything is ready, we get the lock and queue the generation
 
-                // -- Handle generation queueing based on lock --
-                const lock = diffuser.getLock(img);
-                const previousPromise: Promise<void> = lock == null ? Promise.resolve() : (this._lastPromiseByLock.get(lock) ?? Promise.resolve());
+            // -- Handle generation queueing based on lock --
+            const lock = diffuser.getLock(img);
+            const previousPromise: Promise<void> = lock == null ? Promise.resolve() : (this._lastPromiseByLock.get(lock) ?? Promise.resolve());
 
-                // Queue the generation of the picture
-                const nextPromise = previousPromise.then(async () => {
-                    // The user may have cancelled the picture while it was waiting behind the lock
-                    if (await this._isCancelled(picture)) {
-                        console.log(`Picture ${picture.id} was cancelled, skipping generation`);
-                        return;
-                    }
-                    // The picture is really being generated from now on. This is submitted in its
-                    // own transaction : the enclosing one is only sent once the generation is over.
-                    await this._handler.withTransaction((statusTr) => {
-                        statusTr.update("pictures", picture, { status: asNamed(ComputationStatus.COMPUTING) });
-                        statusTr.contexts.push({ type: "project", options: { projectId: prompt.projectId } });
-                    });
-                    await this._generatePictureImpl(tr, diffuser, picture, prompt, img);
-                });
-                if (lock != null) {
-                    this._lastPromiseByLock.set(lock, nextPromise.catch(() => { })); // Don't care for errors here
-                }
-                await nextPromise;
-            } catch (e) {
-                // Image generation failed, try to mark picture as failed
-                console.error(`Failed to generate image for picture ${picture.id}`);
-                console.error(e);
+            // -- Queue the generation of the picture --
+            const nextPromise = previousPromise.then(async () => {
                 try {
-                    tr.update("pictures", picture, {
-                        status: asNamed(ComputationStatus.ERROR)
+                    await this._handler.withTransaction(async (tr) => {
+                        try {
+                            // -- Manually add the context so clients get notified --
+                            tr.contexts.push({
+                                type: "project",
+                                options: {
+                                    projectId: prompt.projectId
+                                }
+                            });
+
+                            // Start the main transaction
+                            // The user may have cancelled the picture while it was waiting behind the lock
+                            if (await this._isCancelled(picture)) {
+                                console.log(`Picture ${picture.id} was cancelled, skipping generation`);
+                                return;
+                            }
+
+                            // -- Picture generation --------------------------------------
+                            // Mark the picture has being generated
+                            await this._handler.withTransaction((statusTr) => {
+                                statusTr.update("pictures", picture, { status: asNamed(ComputationStatus.COMPUTING) });
+                                // Do not push context, we don't want to notify the user, it is pretty annoying
+                                // statusTr.contexts.push({ type: "project", options: { projectId: prompt.projectId } });
+                            });
+
+                            // Generate the picture
+                            await this._generatePictureImpl(tr, diffuser, picture, prompt, img);
+                        } catch (e) {
+                            // Image generation failed, try to mark picture as failed
+                            console.error(`Failed to generate image for picture ${picture.id}`);
+                            console.error(e);
+                            try {
+                                tr.update("pictures", picture, {
+                                    status: asNamed(ComputationStatus.ERROR)
+                                });
+                            } catch (e) {
+                                console.error(e);
+                            }
+                        }
                     });
                 } catch (e) {
+                    console.error(`An error occurred while handing picture ${picture.id}`);
                     console.error(e);
+                } finally {
+                    // Whatever happens, the picture can now be considered as unqueued
+                    this._queuedPictureIds.delete(picture.id);
+                    this._notifyQueuedPictureCount();
                 }
-            } finally {
+            });
+
+            if (lock != null) {
+                this._lastPromiseByLock.set(lock, nextPromise.catch(() => { })); // Don't care for errors here
+            }
+        } catch (e) {
+            console.error(`An error occurred while queueing the picture ${picture.id}`);
+            console.error(e);
+
+            this._handler.withTransaction(async (tr) => {
+                tr.update("pictures", picture, {
+                    status: asNamed(ComputationStatus.ERROR)
+                });
+            }).catch(e => console.error(e)).then(() => {
                 this._queuedPictureIds.delete(picture.id);
                 this._notifyQueuedPictureCount();
-            }
-        });
-        // Here, no need to wait for the transaction to be done.
-        // The client will automatically be notified when the SQL transaction is finished.
+            });
+        }
     }
 
     /** @returns true if the user cancelled the picture since it was queued */
