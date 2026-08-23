@@ -548,7 +548,7 @@ export class PicturesPage extends AbstractPageElement {
 
     protected async _onClearRejectedButtonClick(): Promise<void> {
         await this._withCurrentProjectPictures(async (tr, pictures) => {
-            const picturesToDelete = pictures.filter(picture => picture.status === ComputationStatus.REJECTED || picture.status === ComputationStatus.ERROR);
+            const picturesToDelete = pictures.filter(picture => picture.status === ComputationStatus.REJECTED || picture.status === ComputationStatus.ERROR || picture.status === ComputationStatus.CANCELLED);
             if (picturesToDelete.length === 0) {
                 return;
             }
