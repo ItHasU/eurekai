@@ -32,6 +32,12 @@
                         </a>
                     </li>
                     <li>
+                        <a ref="sourceImagesButton" class="dropdown-item" href="javascript: void(0);">
+                            <i class="bi bi-images"></i>
+                            Source images...
+                        </a>
+                    </li>
+                    <li>
                         <a ref="clearRejectedButton" class="dropdown-item" href="javascript: void(0);">
                             <i class="bi bi-trash text-danger"></i>
                             Delete rejected pictures...
@@ -121,6 +127,22 @@
                 </div>
                 <div class="card-body">
                     <editor-prompt id="promptEditor"></editor-prompt>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Source images panel, hidden by default -->
+    <div id="sourceImagesCard" class="row d-none">
+        <div class="col">
+            <div class="card border-light mt-2" tabindex="-1">
+                <div class="card-header">
+                    Source images
+                    <button ref="closeSourceImagesButton" type="button" class="btn-close float-end"
+                        aria-label="Close"></button>
+                </div>
+                <div class="card-body">
+                    <editor-source-images id="sourceImagesEditor"></editor-source-images>
                 </div>
             </div>
         </div>

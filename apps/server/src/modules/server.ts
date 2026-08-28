@@ -7,7 +7,7 @@ import { ServerNotificationImpl } from "@dagda/server/tools/notification.impl";
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { Data } from "@dagda/shared/entities/types";
 import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
-import { APP_MODEL, AppContexts, AppTables, AttachmentEntity, ComputationStatus, PictureEntity, PictureType, ProjectEntity, PromptEntity, SeedEntity, UserEntity } from "@eurekai/shared/src/entities";
+import { APP_MODEL, AppContexts, AppTables, AttachmentEntity, ComputationStatus, PictureEntity, PictureType, ProjectEntity, PromptEntity, SeedEntity, SourceImageEntity, UserEntity } from "@eurekai/shared/src/entities";
 import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api";
 import { SYSTEM_URL, SystemAPI, SystemInfo } from "@eurekai/shared/src/system.api";
 import express, { Application } from "express";
@@ -79,7 +79,9 @@ export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, por
     }
 
     // -- JSON parsing middleware --
-    app.use(express.json());
+    // Explicit limit : the default (100kb) is too small once a source image (base64) is
+    // submitted through the generic entities "submit" endpoint.
+    app.use(express.json({ limit: "15mb" }));
 
     // -- Register client files routes --
     const path: string = resolve("./apps/client/dist");
@@ -145,7 +147,8 @@ export async function sqlFetch(helper: AbstractSQLRunner, filter: AppContexts): 
                 prompts: await helper.all<PromptEntity>(`SELECT * FROM ${qt("prompts")} WHERE ${qf("prompts", "projectId")} = $1`, filter.options.projectId),
                 pictures: await helper.all<PictureEntity>(`SELECT ${qt("pictures")}.* FROM ${qt("pictures")} JOIN ${qt("prompts")} ON ${qf("pictures", "promptId")} = ${qf("prompts", "id")} WHERE ${qf("prompts", "projectId")} = $1`, filter.options.projectId),
                 // attachments: not fetch using cache but through a custom route
-                seeds: await helper.all<SeedEntity>(`SELECT * FROM ${qt("seeds")} WHERE ${qf("seeds", "projectId")} = $1`, filter.options.projectId)
+                seeds: await helper.all<SeedEntity>(`SELECT * FROM ${qt("seeds")} WHERE ${qf("seeds", "projectId")} = $1`, filter.options.projectId),
+                sources: await helper.all<SourceImageEntity>(`SELECT * FROM ${qt("sources")} WHERE ${qf("sources", "projectId")} = $1`, filter.options.projectId)
             }
         case "pending":
             return {

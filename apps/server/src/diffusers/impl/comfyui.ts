@@ -176,6 +176,8 @@ interface ComfyUIDiffuserOption {
     negativePrompt?: boolean;
     /** Duration parameter, undefined if the workflow does not expose one */
     duration?: DurationInfo;
+    /** Does the workflow require a source image ($image$)? */
+    image?: boolean;
     /** Prompt template */
     promptTemplate: string;
 }
@@ -223,7 +225,8 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
             size: this._options.size,
             sizeStep: this._options.sizeStep,
             negativePrompt: this._options.negativePrompt,
-            duration: this._options.duration
+            duration: this._options.duration,
+            image: this._options.image
         };
     }
 
@@ -669,6 +672,11 @@ export interface Manifest {
      * Omit it if the workflow does not expose a duration.
      */
     duration?: DurationInfo;
+    /**
+     * Does the workflow require a source image, injected as $image$?
+     * Set it to true to make the selection of a source image mandatory in the prompt editor.
+     */
+    image?: boolean;
     /** Description */
     description?: string;
     /** Prompt filename (will use api.json by default) */
@@ -731,6 +739,7 @@ export async function getAllComfyTemplates(comfyHost: string, comfyPath: string,
             const sizeStep = manifest.sizeStep;
             const negativePrompt = manifest.negativePrompt;
             const duration = manifest.duration;
+            const image = manifest.image;
             const video: boolean = manifest.video ?? false;
             const timeout_ms = manifest.timeout_ms;
 
@@ -748,6 +757,7 @@ export async function getAllComfyTemplates(comfyHost: string, comfyPath: string,
                 sizeStep,
                 negativePrompt,
                 duration,
+                image,
                 video,
                 timeout_ms,
                 promptTemplate

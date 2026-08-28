@@ -13,6 +13,8 @@ export interface ImageDescription {
      * Null when the model does not expose a duration.
      */
     duration: number | null;
+    /** Base64 source image (no "data:...;base64," prefix), null when the prompt has none selected */
+    image?: string | null;
 }
 
 /** Abstract API to connect to an image generator */

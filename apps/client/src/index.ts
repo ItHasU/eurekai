@@ -9,6 +9,7 @@ import { AppEvents } from "@eurekai/shared/src/events";
 import { PictureElement } from "./components/picture.element";
 import { PromptElement } from "./components/prompt.element";
 import { PromptEditor } from "./editors/prompt.editor";
+import { SourceImagesEditor } from "./editors/sourceImages.editor";
 import { AbstractPageElement } from "./pages/abstract.page.element";
 import { MaintenancePage } from "./pages/maintenance.page";
 import { PicturesPage } from "./pages/pictures.page";
@@ -28,6 +29,7 @@ PromptElement;
 PictureElement;
 
 PromptEditor;
+SourceImagesEditor;
 
 class App {
 

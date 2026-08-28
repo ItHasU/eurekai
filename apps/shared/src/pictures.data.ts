@@ -2,7 +2,7 @@ import { EntitiesHandler } from "@dagda/shared/entities/handler";
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { SQLTransaction } from "@dagda/shared/sql/transaction";
 import JSZip from "jszip";
-import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity, PictureId, PictureType, ProjectEntity, ProjectId, PromptEntity, PromptId, Seed, SeedEntity, SeedId } from "./entities";
+import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity, PictureId, PictureType, ProjectEntity, ProjectId, PromptEntity, PromptId, Seed, SeedEntity, SeedId, SourceImageEntity } from "./entities";
 
 /** 
  * Generate a certain amount of images 
@@ -98,7 +98,22 @@ export function deletePicture(handler: EntitiesHandler<AppTables, AppContexts>, 
     }
 }
 
-/** 
+/** Delete a source image : detach it from any prompt using it, then delete it and its attachment */
+export function deleteSourceImage(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, sourceImage: SourceImageEntity): void {
+    let isSourceUsed = false;
+    for (const prompt of handler.getItems("prompts")) {
+        if (handler.isSameId(prompt.sourceId, sourceImage.id)) {
+            isSourceUsed = true;
+            break;
+        }
+    }
+    tr.delete("sources", sourceImage.id);
+    if (!isSourceUsed) {
+        tr.delete("attachments", sourceImage.attachmentId);
+    }
+}
+
+/**
  * Cancel a picture that has not been generated yet.
  * The picture is kept so the user can see what was cancelled.
  */
@@ -158,6 +173,12 @@ export function deleteProject(handler: EntitiesHandler<AppTables, AppContexts>, 
             seedIds.add(seed.id);
         }
     }
+    const sourceImages: SourceImageEntity[] = [];
+    for (const sourceImage of handler.getItems("sources")) {
+        if (handler.isSameId(sourceImage.projectId, projectId)) {
+            sourceImages.push(sourceImage);
+        }
+    }
 
     const pictureIds: Set<PictureId> = new Set();
     const attachmentIds: Set<AttachmentId> = new Set();
@@ -185,6 +206,11 @@ export function deleteProject(handler: EntitiesHandler<AppTables, AppContexts>, 
     for (const seedId of seedIds) {
         tr.delete("seeds", seedId);
         // Cleans references to the project
+    }
+    // Prompts referencing these source images were just deleted above, so the FK is already clear
+    for (const sourceImage of sourceImages) {
+        tr.delete("sources", sourceImage.id);
+        tr.delete("attachments", sourceImage.attachmentId);
     }
     tr.delete("projects", projectId);
 }
@@ -293,12 +319,13 @@ export function movePromptToProject(handler: EntitiesHandler<AppTables, AppConte
             }
         }
         for (const prompt of promptsToMove) {
-            tr.update("prompts", prompt, { projectId: newProjectId });
+            // Source images are scoped to a project, a moved prompt cannot keep pointing to one
+            tr.update("prompts", prompt, { projectId: newProjectId, sourceId: null });
         }
         tr.update("prompts", firstPrompt, { parentId: null });
         return [...promptsToMove];
     } else {
-        tr.update("prompts", firstPrompt, { projectId: newProjectId });
+        tr.update("prompts", firstPrompt, { projectId: newProjectId, sourceId: null });
         for (const prompt of prompts) {
             if (handler.isSameId(prompt.parentId, firstPrompt.id)) {
                 tr.update("prompts", prompt, { parentId: null });

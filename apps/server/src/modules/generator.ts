@@ -123,6 +123,9 @@ export class Generator {
 
             // -- Prepare the image --
             const modelInfo = diffuser.getModelInfo();
+            if (modelInfo.image === true && prompt.sourceId == null) {
+                throw `Model ${prompt.model} requires a source image for picture ${picture.id}`;
+            }
             const img: ImageDescription = {
                 width: prompt.width,
                 height: prompt.height,
@@ -233,6 +236,20 @@ export class Generator {
      * This function call is queued by the _queuePicture method depending on the model lock.
      */
     protected async _generatePictureImpl(tr: SQLTransaction<AppTables, AppContexts>, diffuser: AbstractDiffuser, picture: PictureEntity, prompt: PromptEntity, img: ImageDescription): Promise<void> {
+        // -- Resolve the source image, if any --
+        // Not done in _queuePicture : the generator's entities cache is only populated by the
+        // "pending" fetch context, which does not load "sources" (see sqlFetch), and the blob
+        // must not transit through that generic cache anyway (same rule as attachments).
+        if (prompt.sourceId != null) {
+            const row = await this._db.get<{ data: string }>(
+                `SELECT ${qf("attachments", "data")} AS data
+                 FROM ${qt("sources")}
+                 JOIN ${qt("attachments")} ON ${qf("sources", "attachmentId")} = ${qf("attachments", "id")}
+                 WHERE ${qf("sources", "id")} = $1`,
+                prompt.sourceId);
+            img.image = row?.data ?? null;
+        }
+
         // -- Generate the image --
         console.debug(`Generating picture ${picture.id} with model ${prompt.model} and seed ${picture.seed}`);
         const imageData = await diffuser.txt2img(img);

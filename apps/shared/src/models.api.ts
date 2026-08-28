@@ -19,6 +19,8 @@ export interface ModelInfo {
     negativePrompt?: boolean;
     /** Duration parameter, undefined if the workflow does not expose one */
     duration?: DurationInfo;
+    /** Does the workflow require a source image ($image$)? Selecting one becomes mandatory. */
+    image?: boolean;
 }
 
 export const MODELS_URL = "models";
