@@ -1,13 +1,13 @@
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { SQLTransaction } from "@dagda/shared/sql/transaction";
-import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity, ProjectEntity, ProjectId, PromptEntity, Score, Seed } from "@eurekai/shared/src/entities";
+import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity, PictureType, ProjectEntity, ProjectId, PromptEntity, Score, Seed } from "@eurekai/shared/src/entities";
 import { deletePicture, generateNextPictures, isPreferredSeed, togglePreferredSeed, unstarPicture, zipPictures } from "@eurekai/shared/src/pictures.data";
 import { APP } from "src";
 import { PictureElement } from "src/components/picture.element";
 import { PromptElement } from "src/components/prompt.element";
 import { ScoreElement } from "src/components/score.element";
 import { SeedElement } from "src/components/seed.element";
-import { showConfirm } from "src/components/tools";
+import { showConfirm, showUseAsSourceDialog } from "src/components/tools";
 import { PromptEditor } from "src/editors/prompt.editor";
 import { SourceImagesEditor } from "src/editors/sourceImages.editor";
 import { StaticDataProvider } from "src/tools/dataProvider";
@@ -469,6 +469,32 @@ export class PicturesPage extends AbstractPageElement {
                 await StaticDataProvider.entitiesHandler.withTransaction(tr => {
                     tr.update("projects", project, {
                         featuredAttachmentId: picture.attachmentId
+                    });
+                });
+            },
+            useAsSource: async () => {
+                const attachmentId = picture.attachmentId;
+                if (attachmentId == null || picture.type !== PictureType.IMAGE) {
+                    return;
+                }
+                // Only the current project is loaded on this page, fetch the full list first
+                await StaticDataProvider.entitiesHandler.fetch({ type: "projects", options: undefined });
+                const projects = StaticDataProvider.entitiesHandler.getItems("projects");
+                const defaultName = prompt.prompt.trim().slice(0, 60) || `Picture ${picture.id}`;
+                const result = await showUseAsSourceDialog({
+                    projects,
+                    defaultProjectId: project.id,
+                    defaultName
+                });
+                if (result == null) {
+                    return;
+                }
+                await StaticDataProvider.entitiesHandler.withTransaction(tr => {
+                    tr.insert("sources", {
+                        id: asNamed(0),
+                        projectId: result.projectId,
+                        attachmentId,
+                        name: asNamed(result.name)
                     });
                 });
             },

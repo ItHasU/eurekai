@@ -94,6 +94,13 @@
             <i class="bi bi-image"></i>&nbsp;Feature img.</button>
           </a>
         </li>
+        {{#if canUseAsSource}}
+        <li>
+          <a ref="useAsSource" class="dropdown-item" href="#" title="Use this image as a source">
+            <i class="bi bi-images"></i>&nbsp;Use as source...</button>
+          </a>
+        </li>
+        {{/if}}
       </ul>
     </div>
   </div>
