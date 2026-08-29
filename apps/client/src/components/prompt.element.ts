@@ -9,6 +9,15 @@ import { showConfirm, showSelect, sortProjects } from "./tools";
 
 const DIFF = new diff_match_patch();
 
+function escapeHtml(text: string): string {
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 export type PromptEvents = {
     /** Triggered when the user asks for a clone */
     clone: { prompt: PromptEntity, seed?: Seed };
@@ -109,29 +118,30 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
         // -- Compute and prepare diff display --
         this.promptRemovedCount = 0;
         this.promptAddedCount = 0;
-        this.promptDiff = this.data.prompt;
-        this.promptDiffShort = this.data.prompt;
+        this.promptDiff = escapeHtml(this.data.prompt);
+        this.promptDiffShort = escapeHtml(this.data.prompt);
         this.negativePromptRemovedCount = 0;
         this.negativePromptAddedCount = 0;
-        this.negativePromptDiff = this.data.negative_prompt ?? "";
+        this.negativePromptDiff = escapeHtml(this.data.negative_prompt ?? "");
         if (previousPrompt != null) {
             this.promptDiff = "";
             this.promptDiffShort = "";
             const positiveDiff = DIFF.diff_main(previousPrompt.prompt, this.data.prompt);
             DIFF.diff_cleanupSemantic(positiveDiff);
             for (const d of positiveDiff) {
+                const escaped = escapeHtml(d[1]);
                 if (d[0] < 0) {
                     this.promptRemovedCount++;
-                    const t = `<span class="text-danger"><del>${d[1]}</del></span>`
+                    const t = `<span class="text-danger"><del>${escaped}</del></span>`
                     this.promptDiff += t;
                     this.promptDiffShort += t;
                 } else if (d[0] > 0) {
                     this.promptAddedCount++;
-                    const t = `<span class="text-success">${d[1]}</span>`;
+                    const t = `<span class="text-success">${escaped}</span>`;
                     this.promptDiff += t;
                     this.promptDiffShort += t;
                 } else {
-                    this.promptDiff += `<span class="text-muted">${d[1]}</span>`;
+                    this.promptDiff += `<span class="text-muted">${escaped}</span>`;
                     this.promptDiffShort += `...`;
                 }
             }
@@ -140,14 +150,15 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
             const negativeDiff = DIFF.diff_main(previousPrompt.negative_prompt ?? "", this.data.negative_prompt ?? "");
             DIFF.diff_cleanupSemantic(negativeDiff);
             for (const d of negativeDiff) {
+                const escaped = escapeHtml(d[1]);
                 if (d[0] < 0) {
                     this.negativePromptRemovedCount++;
-                    this.negativePromptDiff += `<span class="text-danger"><del>${d[1]}</del></span>`;
+                    this.negativePromptDiff += `<span class="text-danger"><del>${escaped}</del></span>`;
                 } else if (d[0] > 0) {
                     this.negativePromptAddedCount++;
-                    this.negativePromptDiff += `<span class="text-success">${d[1]}</span>`;
+                    this.negativePromptDiff += `<span class="text-success">${escaped}</span>`;
                 } else {
-                    this.negativePromptDiff += `<span class="text-muted">${d[1]}</span>`;
+                    this.negativePromptDiff += `<span class="text-muted">${escaped}</span>`;
                 }
             }
         }
