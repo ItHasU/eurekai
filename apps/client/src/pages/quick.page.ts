@@ -11,6 +11,7 @@ import { PicturesPage } from "./pictures.page";
 export class QuickPage extends AbstractPageElement {
 
     protected readonly _pictureDiv: HTMLImageElement;
+    protected readonly _videoDiv: HTMLVideoElement;
     protected readonly _overlayDiv: HTMLDivElement;
     protected readonly _keydownCallback = this._onKeydownCallback.bind(this);
 
@@ -22,6 +23,7 @@ export class QuickPage extends AbstractPageElement {
 
         // -- Get components --
         this._pictureDiv = this.querySelector("#pictureDiv") as HTMLImageElement;
+        this._videoDiv = this.querySelector("#videoDiv") as HTMLVideoElement;
         this._overlayDiv = this.querySelector("#overlayDiv") as HTMLDivElement;
 
         bindTouchEvents(this._pictureDiv.parentElement!, this._overlayDiv, {
@@ -69,6 +71,10 @@ export class QuickPage extends AbstractPageElement {
     protected _refreshImpl(projectId: ProjectId): void {
         // -- Clear -----------------------------------------------------------
         this._pictureDiv.src = "";
+        this._pictureDiv.classList.add("d-none");
+        this._videoDiv.pause();
+        this._videoDiv.src = "";
+        this._videoDiv.classList.add("d-none");
         this._overlayDiv.style.backgroundColor = "";
 
         // -- Prepare data ----------------------------------------------------
@@ -79,6 +85,7 @@ export class QuickPage extends AbstractPageElement {
             return;
         }
         this._pictureDiv.classList.toggle("lockable", project.lockable);
+        this._videoDiv.classList.toggle("lockable", project.lockable);
 
         // -- Get the next picture to display --
         this._nextPicture = null;
@@ -88,8 +95,8 @@ export class QuickPage extends AbstractPageElement {
                 // Only keep pictures that require evaluation
                 continue;
             }
-            if (picture.type !== asNamed(PictureType.IMAGE)) {
-                // Only keep pictures
+            if (picture.type !== asNamed(PictureType.IMAGE) && picture.type !== asNamed(PictureType.VIDEO)) {
+                // Only keep pictures and videos
                 continue;
             }
 
@@ -110,7 +117,14 @@ export class QuickPage extends AbstractPageElement {
         }
 
         if (this._nextPicture != null && nextPicturePrompt != null) {
-            this._pictureDiv.src = `/attachment/${this._nextPicture.attachmentId}`;
+            const url = `/attachment/${this._nextPicture.attachmentId}`;
+            if (this._nextPicture.type === asNamed(PictureType.VIDEO)) {
+                this._videoDiv.src = url;
+                this._videoDiv.classList.remove("d-none");
+            } else {
+                this._pictureDiv.src = url;
+                this._pictureDiv.classList.remove("d-none");
+            }
         } else {
             APP.setPage(PicturesPage);
         }
