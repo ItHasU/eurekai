@@ -5,7 +5,7 @@ import { cancelPicture, deletePrompt, generateNextPictures, movePromptToProject,
 import { diff_match_patch } from "diff-match-patch";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { AbstractDTOElement } from "./abstract.dto.element";
-import { showConfirm, showSelect } from "./tools";
+import { showConfirm, showSelect, sortProjects } from "./tools";
 
 const DIFF = new diff_match_patch();
 
@@ -207,7 +207,7 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
         });
         const genMoveButtonCallback = (withChildren: boolean) => {
             return async () => {
-                const projects = StaticDataProvider.entitiesHandler.getItems("projects").sort((a, b) => -(a.id - b.id)); // Last first
+                const projects = sortProjects(StaticDataProvider.entitiesHandler.getItems("projects"));
                 const selectedProject = await showSelect<ProjectEntity>(projects, {
                     valueKey: "id",
                     displayString: "name",

@@ -7,7 +7,7 @@ import { PictureElement } from "src/components/picture.element";
 import { PromptElement } from "src/components/prompt.element";
 import { ScoreElement } from "src/components/score.element";
 import { SeedElement } from "src/components/seed.element";
-import { showConfirm, showUseAsSourceDialog } from "src/components/tools";
+import { showConfirm, showUseAsSourceDialog, sortProjects } from "src/components/tools";
 import { PromptEditor } from "src/editors/prompt.editor";
 import { SourceImagesEditor } from "src/editors/sourceImages.editor";
 import { StaticDataProvider } from "src/tools/dataProvider";
@@ -479,7 +479,7 @@ export class PicturesPage extends AbstractPageElement {
                 }
                 // Only the current project is loaded on this page, fetch the full list first
                 await StaticDataProvider.entitiesHandler.fetch({ type: "projects", options: undefined });
-                const projects = StaticDataProvider.entitiesHandler.getItems("projects");
+                const projects = sortProjects(StaticDataProvider.entitiesHandler.getItems("projects"));
                 const defaultName = prompt.prompt.trim().slice(0, 60) || `Picture ${picture.id}`;
                 const result = await showUseAsSourceDialog({
                     projects,

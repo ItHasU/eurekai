@@ -2,6 +2,11 @@ import { asNamed } from "@dagda/shared/entities/named.types";
 import { ProjectEntity, ProjectId } from "@eurekai/shared/src/entities";
 import { Modal } from "bootstrap";
 
+/** Pinned projects first, then most recent first */
+export function sortProjects<T extends Pick<ProjectEntity, "id" | "pinned">>(projects: T[]): T[] {
+    return projects.sort((a, b) => (a.pinned === true ? 0 : 1) - (b.pinned === true ? 0 : 1) || -(a.id - b.id));
+}
+
 /** Ask for a target project (defaulting to the current one) and a name. Used by "Use as source". */
 export function showUseAsSourceDialog(options: {
     projects: ProjectEntity[],
