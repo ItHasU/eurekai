@@ -1,5 +1,5 @@
 import { asNamed } from "@dagda/shared/entities/named.types";
-import { PromptEntity, PromptId, Seed } from "@eurekai/shared/src/entities";
+import { PromptEntity, PromptId, Seed, SourceImageEntity, SourceImageId } from "@eurekai/shared/src/entities";
 import { ModelInfo } from "@eurekai/shared/src/models.api";
 import { htmlStringToElement } from "src/components/tools";
 import { StaticDataProvider } from "src/tools/dataProvider";
@@ -26,6 +26,10 @@ export class PromptEditor extends HTMLElement {
     protected readonly _durationCol: HTMLDivElement;
     protected readonly _durationInput: HTMLInputElement;
     protected readonly _durationUnit: HTMLSpanElement;
+    protected readonly _imageCol: HTMLDivElement;
+    protected readonly _imageSelect: HTMLSelectElement;
+    protected readonly _imagePreview: HTMLImageElement;
+    protected _sourceImages: SourceImageEntity[] = [];
     protected readonly _widthInput: HTMLInputElement;
     protected readonly _heightInput: HTMLInputElement;
     protected readonly _seedInput: HTMLInputElement;
@@ -43,6 +47,9 @@ export class PromptEditor extends HTMLElement {
         this._durationCol = this.querySelector("#durationCol") as HTMLDivElement;
         this._durationInput = this.querySelector("#durationInput") as HTMLInputElement;
         this._durationUnit = this.querySelector("#durationUnit") as HTMLSpanElement;
+        this._imageCol = this.querySelector("#imageCol") as HTMLDivElement;
+        this._imageSelect = this.querySelector("#imageSelect") as HTMLSelectElement;
+        this._imagePreview = this.querySelector("#imagePreview") as HTMLImageElement;
         this._widthInput = this.querySelector("#widthInput") as HTMLInputElement;
         this._heightInput = this.querySelector("#heightInput") as HTMLInputElement;
         this._seedInput = this.querySelector("#seedInput") as HTMLInputElement;
@@ -55,6 +62,10 @@ export class PromptEditor extends HTMLElement {
         this._fillModelsSelect();
         this._modelsButton.addEventListener("click", this._fillModelsSelect.bind(this, true));
         this._modelsSelect.addEventListener("change", () => void this._onModelsChange(true));
+        this._imageSelect.addEventListener("change", () => {
+            this._imageSelect.classList.remove("is-invalid");
+            this._updateImagePreview();
+        });
     }
 
     //#region Models ----------------------------------------------------------
@@ -104,6 +115,14 @@ export class PromptEditor extends HTMLElement {
         // Hidden means the workflow has no $negative_prompt$, an empty one will be used
         this._negativeCol.classList.toggle("d-none", model?.negativePrompt === false);
 
+        // -- Source image --
+        // Hidden means the workflow has no $image$. When shown, selecting one is mandatory
+        // (enforced in getPrompt()).
+        this._imageCol.classList.toggle("d-none", model?.image !== true);
+        if (model?.image !== true) {
+            this._imageSelect.classList.remove("is-invalid");
+        }
+
         // -- Duration --
         const duration = model?.duration;
         this._durationCol.classList.toggle("d-none", duration == null);
@@ -120,6 +139,36 @@ export class PromptEditor extends HTMLElement {
             if (this._durationInput.value === "" || isNaN(value) || value < duration.min || value > duration.max) {
                 this._durationInput.value = "" + duration.default;
             }
+        }
+    }
+
+    //#endregion
+
+    //#region Source images -----------------------------------------------------
+
+    /** Set the list of images the user can pick from (the source images of the current project) */
+    public setSourceImages(images: SourceImageEntity[]): void {
+        this._sourceImages = images;
+        const selectedId = this._imageSelect.value;
+        this._imageSelect.innerHTML = '<option value="">-- Select an image --</option>';
+        for (const image of images) {
+            const option = `<option value="${image.id}">${image.name}</option>`;
+            this._imageSelect.innerHTML += option;
+        }
+        if (selectedId && images.some(image => "" + image.id === selectedId)) {
+            this._imageSelect.value = selectedId;
+        }
+        this._updateImagePreview();
+    }
+
+    protected _updateImagePreview(): void {
+        const image = this._sourceImages.find(image => "" + image.id === this._imageSelect.value);
+        if (image == null) {
+            this._imagePreview.classList.add("d-none");
+            this._imagePreview.removeAttribute("src");
+        } else {
+            this._imagePreview.src = `/attachment/${image.attachmentId}`;
+            this._imagePreview.classList.remove("d-none");
         }
     }
 
@@ -160,14 +209,21 @@ export class PromptEditor extends HTMLElement {
         this._heightInput.value = "" + (prompt?.height ?? DEFAULT_SIZE);
         this._modelsSelect.value = prompt?.model ?? "";
         this._durationInput.value = prompt?.duration == null ? "" : "" + prompt.duration;
+        this._imageSelect.value = prompt?.sourceId == null ? "" : "" + prompt.sourceId;
+        this._imageSelect.classList.remove("is-invalid");
         this._seedInput.value = "" + (seed ?? "");
 
         // Setting the value of a select does not fire the change event, refresh the ratios
         // and the model options manually, keeping the resolution of the prompt
         void this._onModelsChange(false);
+        this._updateImagePreview();
     }
 
-    public getPrompt(): Omit<PromptEntity, "id" | "projectId" | "orderIndex"> {
+    /**
+     * @returns The prompt built from the form, or null if it is invalid (a required source image
+     * is missing). On null, the offending field is already marked invalid for the user to see.
+     */
+    public getPrompt(): Omit<PromptEntity, "id" | "projectId" | "orderIndex"> | null {
         // -- Read values --
         const positivePrompt = this._positiveInput.value;
         // The model may not support a negative prompt, in that case the field is hidden and ignored
@@ -177,6 +233,16 @@ export class PromptEditor extends HTMLElement {
         const model = this._modelsSelect.value;
         const duration = this._durationCol.classList.contains("d-none") ? NaN : +this._durationInput.value;
 
+        // -- Source image : mandatory when the model requires one --
+        let sourceId: SourceImageId | undefined = undefined;
+        if (!this._imageCol.classList.contains("d-none")) {
+            if (this._imageSelect.value === "") {
+                this._imageSelect.classList.add("is-invalid");
+                return null;
+            }
+            sourceId = asNamed(+this._imageSelect.value);
+        }
+
         // -- Build object --
         return {
             parentId: this._parentId,
@@ -185,7 +251,8 @@ export class PromptEditor extends HTMLElement {
             width: asNamed(width),
             height: asNamed(height),
             model: asNamed(model),
-            duration: this._durationInput.value !== "" && !isNaN(duration) ? asNamed(duration) : undefined
+            duration: this._durationInput.value !== "" && !isNaN(duration) ? asNamed(duration) : undefined,
+            sourceId
         };
     }
 

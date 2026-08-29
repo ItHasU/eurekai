@@ -1,14 +1,15 @@
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { SQLTransaction } from "@dagda/shared/sql/transaction";
-import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity, ProjectEntity, ProjectId, PromptEntity, Score, Seed } from "@eurekai/shared/src/entities";
+import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity, PictureType, ProjectEntity, ProjectId, PromptEntity, Score, Seed } from "@eurekai/shared/src/entities";
 import { deletePicture, generateNextPictures, isPreferredSeed, togglePreferredSeed, unstarPicture, zipPictures } from "@eurekai/shared/src/pictures.data";
 import { APP } from "src";
 import { PictureElement } from "src/components/picture.element";
 import { PromptElement } from "src/components/prompt.element";
 import { ScoreElement } from "src/components/score.element";
 import { SeedElement } from "src/components/seed.element";
-import { showConfirm } from "src/components/tools";
+import { showConfirm, showUseAsSourceDialog } from "src/components/tools";
 import { PromptEditor } from "src/editors/prompt.editor";
+import { SourceImagesEditor } from "src/editors/sourceImages.editor";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { AbstractPageElement } from "./abstract.page.element";
 import { QuickPage } from "./quick.page";
@@ -43,6 +44,8 @@ export class PicturesPage extends AbstractPageElement {
     protected readonly _picturesFilterSelect: HTMLSelectElement;
     protected readonly _promptCard: HTMLDivElement;
     protected readonly _promptEditor: PromptEditor;
+    protected readonly _sourceImagesCard: HTMLDivElement;
+    protected readonly _sourceImagesEditor: SourceImagesEditor;
     protected readonly _densityButton: HTMLButtonElement;
     protected readonly _densityMenu: HTMLDivElement;
 
@@ -59,6 +62,8 @@ export class PicturesPage extends AbstractPageElement {
 
         this._promptCard = this.querySelector("#promptCard") as HTMLDivElement;
         this._promptEditor = this.querySelector("#promptEditor") as PromptEditor;
+        this._sourceImagesCard = this.querySelector("#sourceImagesCard") as HTMLDivElement;
+        this._sourceImagesEditor = this.querySelector("#sourceImagesEditor") as SourceImagesEditor;
 
         this._densityButton = this.querySelector("#densityButton") as HTMLButtonElement;
         this._densityMenu = this.querySelector("#densityMenu") as HTMLDivElement;
@@ -67,6 +72,8 @@ export class PicturesPage extends AbstractPageElement {
         this._bindClickForRef("addPromptButton", this._openPromptPanel.bind(this));
         this._bindClickForRef("closePromptButton", this._closePromptPanel.bind(this));
         this._bindClickForRef("newPromptButton", this._onNewPromptClick.bind(this));
+        this._bindClickForRef("sourceImagesButton", this._openSourceImagesPanel.bind(this));
+        this._bindClickForRef("closeSourceImagesButton", this._closeSourceImagesPanel.bind(this));
         this._bindClickForRef("zipButton", this._onZipClick.bind(this));
         this._bindClickForRef("quickButton", this._onQuickClick.bind(this));
         this._bindClickForRef("starsButton", this._onStarsClick.bind(this));
@@ -465,6 +472,32 @@ export class PicturesPage extends AbstractPageElement {
                     });
                 });
             },
+            useAsSource: async () => {
+                const attachmentId = picture.attachmentId;
+                if (attachmentId == null || picture.type !== PictureType.IMAGE) {
+                    return;
+                }
+                // Only the current project is loaded on this page, fetch the full list first
+                await StaticDataProvider.entitiesHandler.fetch({ type: "projects", options: undefined });
+                const projects = StaticDataProvider.entitiesHandler.getItems("projects");
+                const defaultName = prompt.prompt.trim().slice(0, 60) || `Picture ${picture.id}`;
+                const result = await showUseAsSourceDialog({
+                    projects,
+                    defaultProjectId: project.id,
+                    defaultName
+                });
+                if (result == null) {
+                    return;
+                }
+                await StaticDataProvider.entitiesHandler.withTransaction(tr => {
+                    tr.insert("sources", {
+                        id: asNamed(0),
+                        projectId: result.projectId,
+                        attachmentId,
+                        name: asNamed(result.name)
+                    });
+                });
+            },
             setScore: async (score) => {
                 await StaticDataProvider.entitiesHandler.withTransaction(tr => {
                     tr.update("pictures", picture, {
@@ -566,7 +599,11 @@ export class PicturesPage extends AbstractPageElement {
     }
 
     protected _openPromptPanel(prompt?: PromptEntity, seed?: Seed): void {
+        const projectId = StaticDataProvider.getSelectedProject();
         // -- Set fields --
+        const sourceImages = projectId == null ? [] : StaticDataProvider.entitiesHandler.getItems("sources")
+            .filter(sourceImage => StaticDataProvider.entitiesHandler.isSameId(sourceImage.projectId, projectId));
+        this._promptEditor.setSourceImages(sourceImages);
         this._promptEditor.setPrompt(prompt, seed);
         // -- Display the panel --
         this._promptCard.classList.remove("d-none");
@@ -576,9 +613,26 @@ export class PicturesPage extends AbstractPageElement {
         this._promptCard.classList.add("d-none");
     }
 
+    protected _openSourceImagesPanel(): void {
+        const projectId = StaticDataProvider.getSelectedProject();
+        if (projectId == null) {
+            return;
+        }
+        this._sourceImagesEditor.setProjectId(projectId);
+        this._sourceImagesCard.classList.remove("d-none");
+    }
+
+    protected _closeSourceImagesPanel(): void {
+        this._sourceImagesCard.classList.add("d-none");
+    }
+
     protected async _onNewPromptClick(): Promise<void> {
+        const prompt = this._promptEditor.getPrompt();
+        if (prompt == null) {
+            // Invalid, the editor already shows the validation error. Keep the panel open.
+            return;
+        }
         try {
-            const prompt = this._promptEditor.getPrompt();
             const firstSeed = this._promptEditor.getSeed();
             const projectId = StaticDataProvider.getSelectedProject();
             if (projectId == null) {
@@ -604,10 +658,9 @@ export class PicturesPage extends AbstractPageElement {
                 });
                 this._refreshImpl(projectId);
             }
+            this._promptCard.classList.add("d-none");
         } catch (e) {
             console.error(e);
-        } finally {
-            this._promptCard.classList.add("d-none");
         }
     }
 

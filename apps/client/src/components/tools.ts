@@ -1,4 +1,75 @@
+import { asNamed } from "@dagda/shared/entities/named.types";
+import { ProjectEntity, ProjectId } from "@eurekai/shared/src/entities";
 import { Modal } from "bootstrap";
+
+/** Ask for a target project (defaulting to the current one) and a name. Used by "Use as source". */
+export function showUseAsSourceDialog(options: {
+    projects: ProjectEntity[],
+    defaultProjectId: ProjectId,
+    defaultName: string
+}): Promise<{ projectId: ProjectId, name: string } | undefined> {
+    const dialog = htmlStringToElement<HTMLDivElement>(`<div class="modal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Use as source</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Project</label>
+                            <select ref="project" class="form-control">
+            ${options.projects.map(project => {
+        const selected = project.id === options.defaultProjectId ? "selected" : "";
+        return `<option value="${project.id}" ${selected}>${project.name}</option>`;
+    }).join("\n")}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Name</label>
+                            <input ref="name" type="text" class="form-control" value="${options.defaultName}">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button ref="cancel" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button ref="ok" type="button" class="btn btn-primary">Ok</button>
+                    </div>
+                </div>
+            </div>
+        </div>`);
+    if (dialog == null) {
+        return Promise.resolve(undefined);
+    }
+    const projectSelect = dialog.querySelector<HTMLSelectElement>("select[ref='project']");
+    const nameInput = dialog.querySelector<HTMLInputElement>("input[ref='name']");
+    if (projectSelect == null || nameInput == null) {
+        return Promise.resolve(undefined);
+    }
+
+    const myModal = new Modal(dialog, {
+        keyboard: false,
+        backdrop: "static"
+    });
+
+    return new Promise<{ projectId: ProjectId, name: string } | undefined>((resolve, reject) => {
+        dialog.querySelector("button[ref='ok']")?.addEventListener("click", () => {
+            const name = nameInput.value.trim();
+            if (!name) {
+                nameInput.classList.add("is-invalid");
+                return;
+            }
+            resolve({ projectId: asNamed(+projectSelect.value), name });
+            myModal.hide();
+        });
+        dialog.addEventListener('hidden.bs.modal', event => {
+            resolve(undefined);
+            dialog.remove();
+        });
+        // -- Show the dialog --
+        document.body.appendChild(dialog);
+        myModal.show();
+    });
+}
 
 export function showSelect<T>(choices: T[], options: {
     valueKey: keyof T,

@@ -68,6 +68,9 @@ export const APP_MODEL = new EntitiesModel({
     SEED_ID: {
         rawType: JSTypes.number
     },
+    SOURCE_IMAGE_ID: {
+        rawType: JSTypes.number
+    },
     // -- Base types ----------------------------------------------------------
     BOOLEAN: {
         rawType: JSTypes.boolean
@@ -131,7 +134,8 @@ export const APP_MODEL = new EntitiesModel({
         model: { type: "MODEL_NAME" },
         prompt: { type: "TEXT" },
         negative_prompt: { type: "TEXT" },
-        duration: { type: "DURATION", optional: true }
+        duration: { type: "DURATION", optional: true },
+        sourceId: { type: "SOURCE_IMAGE_ID", optional: true, foreignTable: "sources" }
     },
     pictures: {
         id: { type: "PICTURE_ID", identity: true },
@@ -151,6 +155,12 @@ export const APP_MODEL = new EntitiesModel({
         id: { type: "SEED_ID", identity: true },
         projectId: { type: "PROJECT_ID", foreignTable: "projects" },
         seed: { type: "SEED" }
+    },
+    sources: {
+        id: { type: "SOURCE_IMAGE_ID", identity: true },
+        projectId: { type: "PROJECT_ID", foreignTable: "projects" },
+        attachmentId: { type: "ATTACHMENT_ID", foreignTable: "attachments" },
+        name: { type: "TEXT" }
     }
 });
 
@@ -165,6 +175,7 @@ export type PromptId = typeof APP_MODEL.types["PROMPT_ID"];
 export type PictureId = typeof APP_MODEL.types["PICTURE_ID"];
 export type AttachmentId = typeof APP_MODEL.types["ATTACHMENT_ID"];
 export type SeedId = typeof APP_MODEL.types["SEED_ID"];
+export type SourceImageId = typeof APP_MODEL.types["SOURCE_IMAGE_ID"];
 
 export type Seed = typeof APP_MODEL.types["SEED"];
 export type Duration = typeof APP_MODEL.types["DURATION"];
@@ -204,6 +215,9 @@ export type SeedEntity = typeof APP_MODEL.tables["seeds"];
 
 /** A blob containing the data */
 export type AttachmentEntity = typeof APP_MODEL.tables["attachments"];
+
+/** An image uploaded by the user, attached to a project, usable as an input of a prompt */
+export type SourceImageEntity = typeof APP_MODEL.tables["sources"];
 
 //#endregion
 

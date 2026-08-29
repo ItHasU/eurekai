@@ -36,6 +36,7 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> implements
         reject: () => void,
         toggleSeed: () => void,
         setAsFeatured: () => void,
+        useAsSource: () => void,
         setScore: (score: Score) => void
     }) {
         super(data, require("./picture.element.html").default);
@@ -55,6 +56,11 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> implements
         return this.data.status >= ComputationStatus.REJECTED;
     }
 
+    /** A video cannot be used as a $image$ source (base64 img2img input), only a still image can */
+    public get canUseAsSource(): boolean {
+        return this.data.attachmentId != null && this.data.type === PictureType.IMAGE;
+    }
+
     //#region Events ----------------------------------------------------------
 
     protected _eventData: EventHandlerData<PictureEvents> = {};
@@ -71,6 +77,7 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> implements
         this._bindClick("reject", this._options.reject);
         this._bindClick("seed", this._options.toggleSeed);
         this._bindClick("featured", this._options.setAsFeatured);
+        this._bindClick("useAsSource", this._options.useAsSource);
         this._bindClick("clone", () => {
             EventHandlerImpl.fire(this._eventData, "clone", { prompt: this._options.prompt, seed: this.data.seed });
         });
