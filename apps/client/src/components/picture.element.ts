@@ -100,10 +100,13 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> implements
             }
 
             case PictureType.IMAGE: {
+                // The grid displays many pictures at once, so it asks for the downscaled
+                // version : the server generates it on the first request and redirects to the
+                // full size image when it has none to offer.
                 // Lazy : the browser only fetches the image once it nears the viewport, instead
                 // of downloading every picture on the page at once. Async decoding keeps a large
                 // batch of images loading in from blocking the main thread.
-                const img: HTMLImageElement = htmlStringToElement<HTMLImageElement>(`<img class="w-100 h-100" src="/attachment/${this.data.attachmentId}" loading="lazy" decoding="async">`)!;
+                const img: HTMLImageElement = htmlStringToElement<HTMLImageElement>(`<img class="w-100 h-100" src="/attachment/${this.data.attachmentId}/thumbnail" loading="lazy" decoding="async">`)!;
                 containerDiv.append(img);
                 break;
             }
@@ -111,7 +114,9 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> implements
             case PictureType.VIDEO: {
                 // preload="none" : only fetch the video once the user actually plays it, instead
                 // of every visible <video> tag eagerly buffering data as soon as it is rendered.
-                const video: HTMLVideoElement = htmlStringToElement<HTMLVideoElement>(`<video class="w-100 h-100" src="/attachment/${this.data.attachmentId}" muted controls playsinline disableremoteplayback disablepictureinpicture preload="none"></video>`)!;
+                // The poster is a still frame extracted server side, so the grid shows what the
+                // video looks like without downloading any of it.
+                const video: HTMLVideoElement = htmlStringToElement<HTMLVideoElement>(`<video class="w-100 h-100" src="/attachment/${this.data.attachmentId}" poster="/attachment/${this.data.attachmentId}/thumbnail" muted controls playsinline disableremoteplayback disablepictureinpicture preload="none"></video>`)!;
                 function restoreControls() {
                     setTimeout(() => {
                         video.controls = true;
