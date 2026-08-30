@@ -107,6 +107,9 @@ Contextes de chargement : `users`, `projects`, `project` (un projet complet),
 - Verrou global de l'application avec verrouillage automatique après inactivité.
 - Route dédiée pour servir les pièces jointes (`/attachment/:id`), avec cache HTTP 1 jour
   et type MIME adapté (`image/png` ou `video/mp4`).
+- Les pièces jointes sont partagées (une image générée peut servir de source à un autre
+  projet, ou de vignette). Le client ne les supprime jamais lui-même : le serveur efface
+  celles que plus rien ne référence après chaque transaction contenant une suppression.
 
 ## 7. Page Maintenance
 
