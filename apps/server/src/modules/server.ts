@@ -16,6 +16,7 @@ import passport from "passport";
 import { DiffusersRegistry } from "src/diffusers";
 import { qf, qt } from "./db";
 import { buildServerEntitiesHandler } from "./entities.handler";
+import { THUMBNAIL_MIME_TYPE, getOrCreateThumbnail } from "./thumbnail";
 
 const APP_START_TIME_MS = new Date().getTime();
 
@@ -93,12 +94,44 @@ export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, por
     // -- Register models routes --
     _registerAPIs(app);
 
+    // -- Register thumbnail route --
+    // Serves a downscaled version of a media, generated on the first request and then cached
+    // in database : pictures are resized, videos get a poster frame extracted from them.
+    // Redirects to the full size attachment when a picture could not be resized, so a missing
+    // thumbnail never leaves a broken image.
+    app.get("/attachment/:id/thumbnail", async (req, res) => {
+        const id = +req.params.id;
+        try {
+            const thumbnail = await getOrCreateThumbnail(db, id);
+            if (thumbnail === "fallback") {
+                res.redirect(302, `/attachment/${id}`);
+                return;
+            }
+            if (thumbnail == null) {
+                res.status(404).send(`No thumbnail for attachment ${id}`);
+                return;
+            }
+            res.writeHead(200, {
+                'Content-Type': THUMBNAIL_MIME_TYPE,
+                'Content-Length': thumbnail.length,
+                // An attachment never changes once stored, so neither does its thumbnail
+                'Cache-Control': 'max-age=31536000, immutable'
+            });
+            res.end(thumbnail);
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: new String(err) });
+        }
+    });
+
     // -- Register attachments route --
     app.get("/attachment/:id", async (req, res) => {
         // Send attachment as a png image from the base 64 string
         const id = +req.params.id;
         try {
-            const attachment = await db.get<AttachmentEntity>(`SELECT * FROM ${qt("attachments")} WHERE ${qf("attachments", "id")}=$1`, id);
+            // Columns are listed explicitly : a SELECT * would also read the thumbnail,
+            // which is of no use here and only makes the query heavier.
+            const attachment = await db.get<AttachmentEntity>(`SELECT ${qf("attachments", "type")}, ${qf("attachments", "data")} FROM ${qt("attachments")} WHERE ${qf("attachments", "id")}=$1`, id);
             if (!attachment) {
                 res.status(404).send(`Attachment ${id} not found`);
             } else if (attachment.type === PictureType.UNKNOWN) {
