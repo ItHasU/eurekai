@@ -92,25 +92,19 @@ export function unstarPicture(handler: EntitiesHandler<AppTables, AppContexts>, 
 }
 
 export function deletePicture(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, picture: PictureEntity): void {
+    // The attachment is left to the server : it may be shared with a source image (@see useAsSource)
     tr.delete("pictures", picture.id);
-    if (picture.attachmentId) {
-        tr.delete("attachments", picture.attachmentId);
-    }
 }
 
-/** Delete a source image : detach it from any prompt using it, then delete it and its attachment */
+/** Delete a source image : detach it from any prompt using it, then delete it */
 export function deleteSourceImage(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, sourceImage: SourceImageEntity): void {
-    let isSourceUsed = false;
     for (const prompt of handler.getItems("prompts")) {
         if (handler.isSameId(prompt.sourceId, sourceImage.id)) {
-            isSourceUsed = true;
-            break;
+            tr.update("prompts", prompt, { sourceId: null });
         }
     }
+    // The attachment is left to the server : it may be shared with the picture it was created from
     tr.delete("sources", sourceImage.id);
-    if (!isSourceUsed) {
-        tr.delete("attachments", sourceImage.attachmentId);
-    }
 }
 
 /**
@@ -161,9 +155,11 @@ export function updateSeeds(handler: EntitiesHandler<AppTables, AppContexts>, tr
 
 /** Delete all data from a project */
 export function deleteProject(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, projectId: ProjectId): void {
+    const prompts: PromptEntity[] = [];
     const promptIds: Set<PromptId> = new Set();
     for (const prompt of handler.getItems("prompts")) {
         if (handler.isSameId(prompt.projectId, projectId)) {
+            prompts.push(prompt);
             promptIds.add(prompt.id);
         }
     }
@@ -181,38 +177,76 @@ export function deleteProject(handler: EntitiesHandler<AppTables, AppContexts>, 
     }
 
     const pictureIds: Set<PictureId> = new Set();
-    const attachmentIds: Set<AttachmentId> = new Set();
     for (const picture of handler.getItems("pictures")) {
         if (promptIds.has(picture.promptId)) {
             // Here we don't care about same id as we used the ids of the prompts themselves
             pictureIds.add(picture.id);
-            if (picture.attachmentId != null) {
-                attachmentIds.add(picture.attachmentId);
-            }
         }
     }
 
+    // -- Delete from the referencing rows down to the referenced ones --
+    // The attachments are not deleted here : they can be shared with another project
+    // (@see useAsSource), the server drops the ones nobody references anymore.
     for (const pictureId of pictureIds) {
         tr.delete("pictures", pictureId);
-        // Cleans references of the prompts and attachments
+        // Cleans references to the prompts and attachments
     }
-    for (const attachmentId of attachmentIds) {
-        tr.delete("attachments", attachmentId);
-    }
-    for (const promptId of promptIds) {
-        tr.delete("prompts", promptId);
-        // Cleans references to the project
+    // A prompt can be the parent of another one, so children have to go first
+    for (const prompt of _sortPromptsChildrenFirst(prompts)) {
+        tr.delete("prompts", prompt.id);
+        // Cleans references to the project and to the source images
     }
     for (const seedId of seedIds) {
         tr.delete("seeds", seedId);
         // Cleans references to the project
     }
-    // Prompts referencing these source images were just deleted above, so the FK is already clear
     for (const sourceImage of sourceImages) {
         tr.delete("sources", sourceImage.id);
-        tr.delete("attachments", sourceImage.attachmentId);
+        // Cleans references to the project and to the attachments
     }
+    // Deleted last as the project is referenced by all of the above
     tr.delete("projects", projectId);
+}
+
+/** Order prompts so that a prompt always comes before its parent */
+function _sortPromptsChildrenFirst(prompts: PromptEntity[]): PromptEntity[] {
+    const promptIds: Set<PromptId> = new Set(prompts.map(prompt => prompt.id));
+    const childrenByParentId: Map<PromptId, PromptEntity[]> = new Map();
+    const roots: PromptEntity[] = [];
+    for (const prompt of prompts) {
+        // A parent outside of the list is not deleted, so the prompt is a root for us
+        if (prompt.parentId != null && promptIds.has(prompt.parentId)) {
+            const children = childrenByParentId.get(prompt.parentId);
+            if (children == null) {
+                childrenByParentId.set(prompt.parentId, [prompt]);
+            } else {
+                children.push(prompt);
+            }
+        } else {
+            roots.push(prompt);
+        }
+    }
+
+    const sorted: PromptEntity[] = [];
+    const visited: Set<PromptId> = new Set();
+    const visit = (prompt: PromptEntity): void => {
+        if (visited.has(prompt.id)) {
+            return;
+        }
+        visited.add(prompt.id);
+        for (const child of childrenByParentId.get(prompt.id) ?? []) {
+            visit(child);
+        }
+        sorted.push(prompt);
+    };
+    for (const root of roots) {
+        visit(root);
+    }
+    // Prompts in a cycle have no root, they would be missing from the result
+    for (const prompt of prompts) {
+        visit(prompt);
+    }
+    return sorted;
 }
 
 function _getProjectEntities(handler: EntitiesHandler<AppTables, AppContexts>, projectId: ProjectId): { prompts: PromptEntity[], pictures: PictureEntity[], seeds: SeedEntity[] } {

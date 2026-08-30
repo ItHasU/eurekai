@@ -1,11 +1,13 @@
 import { registerAPI } from "@dagda/server/api";
 import { AuthHandler } from "@dagda/server/express/auth";
-import { registerAdapterAPI } from "@dagda/server/sql/api.adapter";
 import { AbstractSQLRunner } from "@dagda/server/sql/runner";
+import { generateSubmit } from "@dagda/server/sql/sql.adapter";
 import { getEnvStringOptional } from "@dagda/server/tools/config";
 import { ServerNotificationImpl } from "@dagda/server/tools/notification.impl";
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { Data } from "@dagda/shared/entities/types";
+import { SQLAdapterAPI, SQL_URL } from "@dagda/shared/sql/api";
+import { OperationType } from "@dagda/shared/sql/transaction";
 import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
 import { APP_MODEL, AppContexts, AppTables, AttachmentEntity, ComputationStatus, PictureEntity, PictureType, ProjectEntity, PromptEntity, SeedEntity, SourceImageEntity, UserEntity } from "@eurekai/shared/src/entities";
 import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api";
@@ -89,7 +91,21 @@ export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, por
     app.use(express.static(path));
 
     // -- Register SQL routes --
-    registerAdapterAPI<AppTables, AppContexts>(app, APP_MODEL, db, sqlFetch);
+    const submit = generateSubmit<AppTables, AppContexts>(db, APP_MODEL);
+    registerAPI<SQLAdapterAPI<AppTables, AppContexts>>(app, SQL_URL, {
+        submit: async (transactionData) => {
+            const result = await submit(transactionData);
+            // An attachment is not owned by a single row : a generated picture can be reused as
+            // the source image of another project, and a project displays one of its pictures as
+            // its thumbnail. Clients therefore never delete an attachment themselves, they just
+            // drop what references it and we collect the ones nobody points to anymore.
+            if (transactionData.operations.some(operation => operation.type === OperationType.DELETE)) {
+                await _deleteOrphanAttachments(db);
+            }
+            return result;
+        },
+        fetch: (filter) => sqlFetch(db, filter)
+    });
 
     // -- Register models routes --
     _registerAPIs(app);
@@ -158,6 +174,23 @@ export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, por
 
     // -- Register websocket notification --
     NotificationHelper.set(new ServerNotificationImpl(server));
+}
+
+/** 
+ * Delete the attachments that are not referenced anymore.
+ * Attachments hold the image data, leaving them behind would grow the database forever.
+ */
+async function _deleteOrphanAttachments(db: AbstractSQLRunner): Promise<void> {
+    try {
+        await db.run(`DELETE FROM ${qt("attachments")} WHERE`
+            + ` NOT EXISTS (SELECT 1 FROM ${qt("pictures")} WHERE ${qf("pictures", "attachmentId")} = ${qf("attachments", "id")})`
+            + ` AND NOT EXISTS (SELECT 1 FROM ${qt("sources")} WHERE ${qf("sources", "attachmentId")} = ${qf("attachments", "id")})`
+            + ` AND NOT EXISTS (SELECT 1 FROM ${qt("projects")} WHERE ${qf("projects", "featuredAttachmentId")} = ${qf("attachments", "id")})`);
+    } catch (e) {
+        // The transaction itself succeeded, a failed cleanup must not be reported as a failed delete
+        console.error("Failed to delete orphan attachments");
+        console.error(e);
+    }
 }
 
 /** 
