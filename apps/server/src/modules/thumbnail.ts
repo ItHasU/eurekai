@@ -22,12 +22,6 @@ const THUMBNAIL_MAX_SIZE = 768;
 /** WebP quality, a good size / artifact tradeoff at thumbnail scale */
 const THUMBNAIL_QUALITY = 80;
 
-/**
- * Where in the video the poster frame is taken, in seconds.
- * The very first frame is often black, a frame slightly in is more representative.
- */
-const VIDEO_POSTER_SECONDS = 1;
-
 /** Upper bound for a single decoded video frame handed over by ffmpeg */
 const MAX_FRAME_BYTES = 64 * 1024 * 1024;
 
@@ -69,7 +63,7 @@ export type ThumbnailResult = Buffer | "fallback" | null;
  * Get the thumbnail of an attachment, generating it on the first request.
  * The result is stored back in the database so the work only happens once.
  *
- * Still images are resized directly. Videos get a poster frame extracted with ffmpeg,
+ * Still images are resized directly. Videos get their first frame extracted with ffmpeg,
  * which is then resized the same way.
  */
 export async function getOrCreateThumbnail(db: AbstractSQLRunner, attachmentId: number): Promise<ThumbnailResult> {
@@ -150,7 +144,12 @@ async function _generateThumbnail(db: AbstractSQLRunner, attachmentId: number, t
 }
 
 /**
- * Extract a single still frame from a video, as PNG.
+ * Extract the first frame of a video, as PNG.
+ *
+ * It is deliberately the very first one and not a more representative frame further in :
+ * the result is used as the poster of the <video> tag, so anything else would make the
+ * picture jump the moment playback starts.
+ *
  * @returns The frame, or null if ffmpeg could not produce one.
  */
 async function _extractVideoFrame(video: Buffer): Promise<Buffer | null> {
@@ -171,29 +170,19 @@ async function _extractVideoFrameImpl(binary: string, video: Buffer): Promise<Bu
     try {
         await writeFile(inputPath, video);
 
-        // Seeking past the end of a very short video yields no frame at all, so fall back
-        // on the very first one in that case.
-        for (const seek of [VIDEO_POSTER_SECONDS, 0]) {
-            try {
-                const { stdout } = await execFileAsync(binary, [
-                    "-v", "error",
-                    "-ss", `${seek}`,   // Before -i, so ffmpeg seeks instead of decoding up to there
-                    "-i", inputPath,
-                    "-frames:v", "1",
-                    "-an",              // No audio stream in the output
-                    "-f", "image2pipe",
-                    "-c:v", "png",
-                    "pipe:1"
-                ], { encoding: "buffer", maxBuffer: MAX_FRAME_BYTES });
-                if (stdout.length > 0) {
-                    return stdout;
-                }
-            } catch (e) {
-                // Try the next seek position before giving up
-                console.error(`ffmpeg failed to extract a frame at ${seek}s`);
-                console.error(e);
-            }
-        }
+        const { stdout } = await execFileAsync(binary, [
+            "-v", "error",
+            "-i", inputPath,
+            "-frames:v", "1",   // No seek : we want the frame playback starts on
+            "-an",              // No audio stream in the output
+            "-f", "image2pipe",
+            "-c:v", "png",
+            "pipe:1"
+        ], { encoding: "buffer", maxBuffer: MAX_FRAME_BYTES });
+        return stdout.length > 0 ? stdout : null;
+    } catch (e) {
+        console.error("ffmpeg failed to extract the first frame of the video");
+        console.error(e);
         return null;
     } finally {
         await rm(directory, { recursive: true, force: true });
