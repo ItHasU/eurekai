@@ -18,7 +18,7 @@
   "dependencies": {
     "@dagda/client": "*",
     "@dagda/shared": "*",
-    "bootstrap": "=5.3.2",
+    "bootstrap": "=5.3.8",
     "bootstrap-icons": "^1.10.4",
     "diff-match-patch": "^1.0.5",
     "fuse.js": "^7.1.0",

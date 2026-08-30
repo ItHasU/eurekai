@@ -3,9 +3,6 @@ import { ENV_VARIABLES_STR } from "src/modules/config";
 import { AbstractDiffuser } from "./diffuser";
 import { getAllModelsWithWOL } from "./impl/automatic1111.tools";
 import { getAllComfyTemplates } from "./impl/comfyui";
-import { DallE } from "./impl/dall-e";
-import { ReplicateFlux } from "./impl/replicateFLUX";
-import { ModelIdentifier, ReplicateSDXL } from "./impl/replicateSDXL";
 
 export class DiffusersRegistry {
 
@@ -40,35 +37,6 @@ export class DiffusersRegistry {
                 for (const model of a1111_models) {
                     DiffusersRegistry.push(model);
                 }
-            }
-        } catch (e) {
-            console.error(e);
-        }
-
-        // -- Fetch Replicate models ------------------------------------------
-        try {
-            const REPLICATE_API_TOKEN = getEnvString<ENV_VARIABLES_STR>("REPLICATE_TOKEN");
-            {
-                const REPLICATE_MODELS_SDXL = (getEnvStringOptional<ENV_VARIABLES_STR>("REPLICATE_MODELS_SDXL") ?? "").split(",");
-                for (const model of REPLICATE_MODELS_SDXL) {
-                    DiffusersRegistry.push(new ReplicateSDXL(REPLICATE_API_TOKEN, model as ModelIdentifier));
-                }
-            }
-            {
-                const REPLICATE_MODELS_FLUX = (getEnvStringOptional<ENV_VARIABLES_STR>("REPLICATE_MODELS_FLUX") ?? "").split(",");
-                for (const model of REPLICATE_MODELS_FLUX) {
-                    DiffusersRegistry.push(new ReplicateFlux(REPLICATE_API_TOKEN, model as ModelIdentifier));
-                }
-            }
-        } catch (e) {
-            console.error(e);
-        }
-
-        // -- Fetch DALL-E models ---------------------------------------------
-        try {
-            const API_KEY = getEnvString<ENV_VARIABLES_STR>("OPENAI_API_TOKEN");
-            if (API_KEY != null) {
-                DiffusersRegistry.push(new DallE(API_KEY));
             }
         } catch (e) {
             console.error(e);

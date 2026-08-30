@@ -70,8 +70,6 @@ Contextes de chargement : `users`, `projects`, `project` (un projet complet),
 |---|---|
 | ComfyUI | Templates de workflows (`.zip` dans `workflows/`), options déclarées dans le `manifest.json`, pool de connexions |
 | Automatic1111 | Découverte automatique des modèles installés (SD, SDXL, Flux) |
-| Replicate | SDXL et Flux, via jeton API |
-| DALL-E (OpenAI) | via jeton API |
 
 - Découverte automatique des modèles disponibles au démarrage + rafraîchissement à la demande.
 - Wake-on-LAN : script optionnel pour réveiller la machine de génération (`*_WOL_SCRIPT`).
