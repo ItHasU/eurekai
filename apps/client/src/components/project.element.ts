@@ -35,7 +35,10 @@ export class ProjectElement extends AbstractDTOElement<ProjectEntity> {
         });
 
         if (this.data.featuredAttachmentId != null) {
-            (<HTMLImageElement>this.querySelector("[ref='featured']")!).src = `/attachment/${this.data.featuredAttachmentId}`;
+            // The list shows one small preview per project, so it asks for the downscaled
+            // version. This also covers a featured video, which the full size URL could not
+            // display in an <img> at all : the thumbnail is a still frame of it.
+            (<HTMLImageElement>this.querySelector("[ref='featured']")!).src = `/attachment/${this.data.featuredAttachmentId}/thumbnail`;
         }
         this._bindClick("rename", (evt) => {
             evt.stopPropagation();
