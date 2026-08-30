@@ -100,13 +100,18 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> implements
             }
 
             case PictureType.IMAGE: {
-                const img: HTMLImageElement = htmlStringToElement<HTMLImageElement>(`<img class="w-100 h-100" src="/attachment/${this.data.attachmentId}">`)!;
+                // Lazy : the browser only fetches the image once it nears the viewport, instead
+                // of downloading every picture on the page at once. Async decoding keeps a large
+                // batch of images loading in from blocking the main thread.
+                const img: HTMLImageElement = htmlStringToElement<HTMLImageElement>(`<img class="w-100 h-100" src="/attachment/${this.data.attachmentId}" loading="lazy" decoding="async">`)!;
                 containerDiv.append(img);
                 break;
             }
 
             case PictureType.VIDEO: {
-                const video: HTMLVideoElement = htmlStringToElement<HTMLVideoElement>(`<video class="w-100 h-100" src="/attachment/${this.data.attachmentId}" muted controls playsinline disableremoteplayback disablepictureinpicture></video>`)!;
+                // preload="none" : only fetch the video once the user actually plays it, instead
+                // of every visible <video> tag eagerly buffering data as soon as it is rendered.
+                const video: HTMLVideoElement = htmlStringToElement<HTMLVideoElement>(`<video class="w-100 h-100" src="/attachment/${this.data.attachmentId}" muted controls playsinline disableremoteplayback disablepictureinpicture preload="none"></video>`)!;
                 function restoreControls() {
                     setTimeout(() => {
                         video.controls = true;
