@@ -95,15 +95,20 @@ export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, por
     _registerAPIs(app);
 
     // -- Register thumbnail route --
-    // Serves a downscaled version of a picture, generated on the first request and then
-    // cached in database. Redirects to the full size attachment when there is nothing to
-    // downscale (videos, or a resize failure), so the client never has to know which is which.
+    // Serves a downscaled version of a media, generated on the first request and then cached
+    // in database : pictures are resized, videos get a poster frame extracted from them.
+    // Redirects to the full size attachment when a picture could not be resized, so a missing
+    // thumbnail never leaves a broken image.
     app.get("/attachment/:id/thumbnail", async (req, res) => {
         const id = +req.params.id;
         try {
             const thumbnail = await getOrCreateThumbnail(db, id);
-            if (thumbnail == null) {
+            if (thumbnail === "fallback") {
                 res.redirect(302, `/attachment/${id}`);
+                return;
+            }
+            if (thumbnail == null) {
+                res.status(404).send(`No thumbnail for attachment ${id}`);
                 return;
             }
             res.writeHead(200, {

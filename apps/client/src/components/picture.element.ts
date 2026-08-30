@@ -114,7 +114,9 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> implements
             case PictureType.VIDEO: {
                 // preload="none" : only fetch the video once the user actually plays it, instead
                 // of every visible <video> tag eagerly buffering data as soon as it is rendered.
-                const video: HTMLVideoElement = htmlStringToElement<HTMLVideoElement>(`<video class="w-100 h-100" src="/attachment/${this.data.attachmentId}" muted controls playsinline disableremoteplayback disablepictureinpicture preload="none"></video>`)!;
+                // The poster is a still frame extracted server side, so the grid shows what the
+                // video looks like without downloading any of it.
+                const video: HTMLVideoElement = htmlStringToElement<HTMLVideoElement>(`<video class="w-100 h-100" src="/attachment/${this.data.attachmentId}" poster="/attachment/${this.data.attachmentId}/thumbnail" muted controls playsinline disableremoteplayback disablepictureinpicture preload="none"></video>`)!;
                 function restoreControls() {
                     setTimeout(() => {
                         video.controls = true;
