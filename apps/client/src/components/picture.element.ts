@@ -23,6 +23,9 @@ const colors: Record<SwipeMode, string> = {
 
 const ACTION_SWIPE_MARGIN = 0.2;
 
+/** Max delay between the two clicks/taps of a dblclick/double tap, in ms */
+const DOUBLE_CLICK_DELAY = 200;
+
 type PictureEvents = Pick<PromptEvents, "clone">;
 
 export class PictureElement extends AbstractDTOElement<PictureEntity> implements EventHandler<PictureEvents> {
@@ -108,6 +111,7 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> implements
                 // batch of images loading in from blocking the main thread.
                 const img: HTMLImageElement = htmlStringToElement<HTMLImageElement>(`<img class="w-100 h-100" src="/attachment/${this.data.attachmentId}/thumbnail" loading="lazy" decoding="async">`)!;
                 containerDiv.append(img);
+                this._bindFullSizeAndPromptInteractions(containerDiv);
                 break;
             }
 
@@ -146,11 +150,117 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> implements
         const feedbackDiv: HTMLDivElement = this.querySelector(".card-img-top > div") as HTMLDivElement;
 
         bindTouchEvents(containerDiv, feedbackDiv, this._options);
+        if (this.data.type !== PictureType.IMAGE) {
+            // Images get the full click/dblclick/tap/double tap state machine below instead
+            containerDiv.addEventListener("dblclick", (ev) => {
+                ev.stopPropagation();
+                this.querySelector(".prompt")?.classList.toggle("d-none");
+            });
+        }
+    }
+
+    /** @see _bindFullSizeAndPromptInteractions */
+    protected _clickTimeoutId: number | undefined;
+    /** @see _bindFullSizeAndPromptInteractions */
+    protected _tapTimeoutId: number | undefined;
+    /** @see _bindFullSizeAndPromptInteractions */
+    protected _lastTapTime: number = 0;
+
+    /**
+     * Wire up the interactions that show/hide the full size preview and the prompt overlay.
+     *
+     * Desktop : click opens the full image, dblclick opens the prompt.
+     * Touch : tap opens the prompt, double tap opens the full image (the reverse of desktop,
+     * because a stray tap while scrolling is much more likely than a stray click).
+     * Either way, an interaction while the prompt is showing closes it instead of opening
+     * anything ; closing the full image preview itself is handled where it is created, since
+     * it sits in its own overlay the tap/click below never sees.
+     *
+     * Touch cannot simply piggyback on the click/dblclick a browser synthesizes from taps,
+     * since tap and click must resolve to different actions here : the touch handling below
+     * calls preventDefault so that synthetic click/dblclick never fires and fights it.
+     */
+    protected _bindFullSizeAndPromptInteractions(containerDiv: HTMLElement): void {
+        containerDiv.addEventListener("click", () => {
+            // Each click of a dblclick pair lands here too : clear the previous one's timeout,
+            // otherwise it fires on its own after DOUBLE_CLICK_DELAY, running the click action anyway.
+            if (this._clickTimeoutId != null) {
+                window.clearTimeout(this._clickTimeoutId);
+            }
+            this._clickTimeoutId = window.setTimeout(() => {
+                this._clickTimeoutId = undefined;
+                this._handleInteraction("click");
+            }, DOUBLE_CLICK_DELAY);
+        });
         containerDiv.addEventListener("dblclick", (ev) => {
             ev.stopPropagation();
-            // Toggle prompt display
-            this.querySelector(".prompt")?.classList.toggle("d-none");
+            if (this._clickTimeoutId != null) {
+                window.clearTimeout(this._clickTimeoutId);
+                this._clickTimeoutId = undefined;
+            }
+            this._handleInteraction("dblclick");
         });
+
+        // Only a tap in the center counts : the edges are the accept/reject swipe zones
+        let tapCandidate = false;
+        containerDiv.addEventListener("touchstart", (ev) => {
+            if (ev.touches.length !== 1) {
+                tapCandidate = false;
+                return;
+            }
+            const ratio = ev.touches[0].clientX / containerDiv.clientWidth;
+            tapCandidate = ratio >= ACTION_SWIPE_MARGIN && ratio <= (1 - ACTION_SWIPE_MARGIN);
+        });
+        containerDiv.addEventListener("touchend", (ev) => {
+            if (!tapCandidate) {
+                return;
+            }
+            // Stop the browser from also firing a synthetic click/dblclick for this tap
+            ev.preventDefault();
+            if (this._tapTimeoutId != null) {
+                window.clearTimeout(this._tapTimeoutId);
+                this._tapTimeoutId = undefined;
+            }
+            const now = Date.now();
+            if (now - this._lastTapTime < DOUBLE_CLICK_DELAY) {
+                this._lastTapTime = 0;
+                this._handleInteraction("doubletap");
+            } else {
+                this._lastTapTime = now;
+                this._tapTimeoutId = window.setTimeout(() => {
+                    this._tapTimeoutId = undefined;
+                    this._handleInteraction("tap");
+                }, DOUBLE_CLICK_DELAY);
+            }
+        });
+    }
+
+    /** @see _bindFullSizeAndPromptInteractions */
+    protected _handleInteraction(kind: "click" | "dblclick" | "tap" | "doubletap"): void {
+        const promptDiv = this.querySelector(".prompt");
+        const promptShown = promptDiv != null && !promptDiv.classList.contains("d-none");
+        if (promptShown) {
+            // Anything closes an already shown prompt, whatever the gesture
+            promptDiv.classList.add("d-none");
+            return;
+        }
+        if (kind === "click" || kind === "doubletap") {
+            this._openFullSizePreview();
+        } else {
+            promptDiv?.classList.remove("d-none");
+        }
+    }
+
+    /** Show the original, full resolution image over everything. Click/tap it again to close. */
+    protected _openFullSizePreview(): void {
+        if (this.data.attachmentId == null) {
+            return;
+        }
+        const overlay: HTMLDivElement = htmlStringToElement<HTMLDivElement>(`<div style="position:fixed; inset:0; z-index:1050; background:rgba(0,0,0,0.9); display:flex; align-items:center; justify-content:center; cursor:zoom-out;">
+            <img src="/attachment/${this.data.attachmentId}" style="max-width:100%; max-height:100%; object-fit:contain;">
+        </div>`)!;
+        overlay.addEventListener("click", () => overlay.remove());
+        document.body.append(overlay);
     }
 
 }
