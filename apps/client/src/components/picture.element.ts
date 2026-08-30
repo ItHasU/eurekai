@@ -100,10 +100,13 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> implements
             }
 
             case PictureType.IMAGE: {
+                // The grid displays many pictures at once, so it asks for the downscaled
+                // version : the server generates it on the first request and redirects to the
+                // full size image when it has none to offer.
                 // Lazy : the browser only fetches the image once it nears the viewport, instead
                 // of downloading every picture on the page at once. Async decoding keeps a large
                 // batch of images loading in from blocking the main thread.
-                const img: HTMLImageElement = htmlStringToElement<HTMLImageElement>(`<img class="w-100 h-100" src="/attachment/${this.data.attachmentId}" loading="lazy" decoding="async">`)!;
+                const img: HTMLImageElement = htmlStringToElement<HTMLImageElement>(`<img class="w-100 h-100" src="/attachment/${this.data.attachmentId}/thumbnail" loading="lazy" decoding="async">`)!;
                 containerDiv.append(img);
                 break;
             }
