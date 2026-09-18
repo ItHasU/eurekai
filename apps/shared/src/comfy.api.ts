@@ -49,4 +49,12 @@ export interface ComfyStatus {
 
 export type ComfyAPI = {
     getStatus: (sinceLogId?: number) => Promise<ComfyStatus>;
+    /**
+     * Same host statuses as getStatus, without the log.
+     * Read once by the pictures page when it opens : the progress is pushed by the server
+     * afterwards (see the generationProgress notification), but nothing is pushed while nothing
+     * moves, so the page has to ask for the current state to start from. It never displays a log
+     * line, sending it the log would only waste bandwidth.
+     */
+    getHosts: () => Promise<ComfyHostStatus[]>;
 }

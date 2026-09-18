@@ -9,8 +9,10 @@ import { Data } from "@dagda/shared/entities/types";
 import { SQLAdapterAPI, SQL_URL } from "@dagda/shared/sql/api";
 import { OperationType } from "@dagda/shared/sql/transaction";
 import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
-import { COMFY_URL, ComfyAPI, ComfyLogEntry, ComfyStatus } from "@eurekai/shared/src/comfy.api";
+import { throttle } from "@dagda/shared/tools/throttle";
+import { COMFY_URL, ComfyAPI, ComfyHostStatus, ComfyLogEntry, ComfyStatus } from "@eurekai/shared/src/comfy.api";
 import { APP_MODEL, AppContexts, AppTables, AttachmentEntity, ComputationStatus, PictureEntity, PictureType, ProjectEntity, PromptEntity, SeedEntity, SourceImageEntity, UserEntity } from "@eurekai/shared/src/entities";
+import { AppEvents } from "@eurekai/shared/src/events";
 import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api";
 import { SYSTEM_URL, SystemAPI, SystemInfo } from "@eurekai/shared/src/system.api";
 import express, { Application } from "express";
@@ -24,6 +26,9 @@ import { buildServerEntitiesHandler } from "./entities.handler";
 import { THUMBNAIL_MIME_TYPE, getOrCreateThumbnail } from "./thumbnail";
 
 const APP_START_TIME_MS = new Date().getTime();
+
+/** Minimum delay between two generation progress notifications, see _registerProgressNotifications */
+const PROGRESS_NOTIFICATION_MS = 1000;
 
 /** Initialize an Express app and register the routes */
 export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, port: number): Promise<void> {
@@ -177,6 +182,23 @@ export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, por
 
     // -- Register websocket notification --
     NotificationHelper.set(new ServerNotificationImpl(server));
+    _registerProgressNotifications();
+}
+
+/**
+ * Push the progress of the pictures being generated to the clients, at most once per second.
+ *
+ * ComfyUI reports a sampling step several times per second, and the notification websocket is a
+ * broadcast : one message per step would wake up every connected client dozens of times for a bar
+ * that moves by a pixel. Notifications are therefore collapsed into one per second, the trailing
+ * call guaranteeing the last state (the end of a generation, typically) is always sent.
+ */
+function _registerProgressNotifications(): void {
+    ComfyUIMonitor.onStateChanged = throttle(() => {
+        NotificationHelper.broadcast<AppEvents, "generationProgress">("generationProgress", {
+            hosts: ComfyUIDiffuser.getPools().map(pool => pool.monitor.getStatus())
+        });
+    }, PROGRESS_NOTIFICATION_MS);
 }
 
 /** 
@@ -282,6 +304,9 @@ function _registerAPIs(app: Application): void {
                 logs,
                 lastLogId: ComfyUIMonitor.getLastLogId()
             });
+        },
+        getHosts: function (): Promise<ComfyHostStatus[]> {
+            return Promise.resolve(ComfyUIDiffuser.getPools().map(pool => pool.monitor.getStatus()));
         }
     })
 }

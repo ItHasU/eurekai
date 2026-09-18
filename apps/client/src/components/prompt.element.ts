@@ -1,11 +1,12 @@
 import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "@dagda/shared/tools/events";
+import { ComfyHostStatus } from "@eurekai/shared/src/comfy.api";
 import { ComputationStatus, ProjectEntity, PromptEntity, Seed } from "@eurekai/shared/src/entities";
 import { ModelInfo } from "@eurekai/shared/src/models.api";
 import { cancelPicture, deletePrompt, generateNextPictures, movePromptToProject, updateSeeds } from "@eurekai/shared/src/pictures.data";
 import { diff_match_patch } from "diff-match-patch";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { AbstractDTOElement } from "./abstract.dto.element";
-import { showConfirm, showSelect, sortProjects } from "./tools";
+import { formatDuration, showConfirm, showSelect, sortProjects } from "./tools";
 
 const DIFF = new diff_match_patch();
 
@@ -50,6 +51,11 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
     protected negativePromptAddedCount: number = 0;
     protected negativePromptDiff: string = "";
 
+    /** Ids of the pictures being computed, filled by refresh() to match the live progress */
+    protected _computingPictureIds: Set<number> = new Set();
+    /** Last state of the ComfyUI hosts received, kept so it survives a refresh() */
+    protected _hosts: ComfyHostStatus[] = [];
+
     constructor(data: PromptEntity) {
         super(data, require("./prompt.element.html").default);
         this.model = StaticDataProvider.getModelFromCache(data.model);
@@ -65,6 +71,62 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
 
     //#endregion
 
+    //#region Live progress ---------------------------------------------------
+
+    /**
+     * Set the live state of the ComfyUI hosts, so that the computing part of the progress bar
+     * shows how far the generation went instead of a plain block.
+     * Only the pictures of this prompt are taken into account, the others are ignored.
+     */
+    public setLiveProgress(hosts: ComfyHostStatus[]): void {
+        this._hosts = hosts;
+        this._refreshComputingBar();
+    }
+
+    /**
+     * Paint the ratio of the pictures already generated on the computing part of the bar.
+     *
+     * The ratio is the progress of the pictures of this prompt being generated, averaged over the
+     * computing ones : a prompt with two pictures in progress, one halfway and one not started
+     * yet, fills a quarter of its computing part. The part keeps its full width, so the count of
+     * pictures stays where it was and the bar only gains a color boundary.
+     */
+    protected _refreshComputingBar(): void {
+        const bar = this._getElementByRef<HTMLElement>("computingBar");
+        if (bar == null) {
+            // Nothing is being computed, the template did not render the part
+            return;
+        }
+
+        // Pictures of this prompt currently generating, whatever the host they run on
+        const generating = this._hosts.filter(host => host.pictureId != null && this._computingPictureIds.has(host.pictureId));
+        // A node that cannot report a numeric progress (a custom node calling a remote API,
+        // typically) leaves the ratio unknown. Keep the plain block in that case rather than
+        // painting a bar stuck at 0% for the whole generation.
+        const withProgress = generating.filter(host => host.progress != null && host.progress.max > 0);
+
+        if (withProgress.length === 0 || this.computingCount === 0) {
+            bar.classList.add("bg-primary");
+            bar.style.backgroundColor = "";
+            bar.style.backgroundImage = "";
+        } else {
+            const ratio = withProgress.reduce((sum, host) => sum + host.progress!.value / host.progress!.max, 0) / this.computingCount;
+            const percent = Math.round(100 * Math.max(0, Math.min(1, ratio)));
+            // The gradient is the only background left : both the bg-primary class (whose color
+            // is !important, an inline style cannot win against it) and the default color of a
+            // progress bar have to go, or they would fill what is not generated yet with the
+            // solid color and hide the ratio.
+            bar.classList.remove("bg-primary");
+            bar.style.backgroundColor = "transparent";
+            bar.style.backgroundImage = `linear-gradient(to right, var(--bs-primary) ${percent}%, rgba(var(--bs-primary-rgb), 0.35) ${percent}%)`;
+        }
+
+        // The bar is too small for anything else, the details go in the tooltip
+        bar.title = generating.map(describeGeneration).join("\n");
+    }
+
+    //#endregion
+
     public override refresh(): void {
         // -- Prepare variables for the template ------------------------------
         this.errorCount = 0;
@@ -73,6 +135,7 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
         this.doneCount = 0;
         this.rejectedCount = 0;
         this.acceptedCount = 0;
+        this._computingPictureIds.clear();
         for (const picture of StaticDataProvider.entitiesHandler.getItems("pictures")) {
             if (!StaticDataProvider.entitiesHandler.isSameId(picture.promptId, this.data.id)) {
                 continue;
@@ -87,6 +150,7 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
                     break;
                 case ComputationStatus.COMPUTING:
                     this.computingCount++;
+                    this._computingPictureIds.add(picture.id);
                     break;
                 case ComputationStatus.DONE:
                     this.doneCount++;
@@ -247,8 +311,29 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
                 updateSeeds(StaticDataProvider.entitiesHandler, tr, this.data, true);
             });
         });
+
+        // -- Restore the live progress ---------------------------------------
+        // The template has just been rendered from scratch, the ratio painted on the previous
+        // bar went away with it
+        this._refreshComputingBar();
     }
 
+}
+
+/** One line of the tooltip of the computing part, describing one picture being generated */
+function describeGeneration(host: ComfyHostStatus): string {
+    const parts: string[] = [`#${host.pictureId}`];
+    if (host.progress != null && host.progress.max > 0) {
+        parts.push(`${host.progress.value} / ${host.progress.max}`);
+    }
+    if (host.startedAt != null) {
+        parts.push(formatDuration(Date.now() - host.startedAt));
+    }
+    // Free-form progress of a node calling a remote API (Minimax, ...), the only thing it reports
+    if (host.progressText != null) {
+        parts.push(host.progressText);
+    }
+    return parts.join(" · ");
 }
 
 customElements.define("custom-prompt", PromptElement);

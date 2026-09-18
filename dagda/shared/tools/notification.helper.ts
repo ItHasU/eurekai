@@ -51,6 +51,15 @@ export class NotificationHelper {
     }
 
     /** 
+     * Unregister a listener registered with on().
+     * A component that is created again each time it is displayed (a page, typically) must
+     * unregister, or every instance ever created would be notified forever.
+     */
+    public static off<Notifications extends Record<string, unknown>, NotificationKind extends keyof Notifications = keyof Notifications>(kind: NotificationKind, listener: EventListener<Notifications[NotificationKind]>): void {
+        EventHandlerImpl.off<Notifications, NotificationKind>(NotificationHelper._eventHandlerData as EventHandlerData<Notifications>, kind, listener);
+    }
+
+    /** 
      * Broadcast a message if a notification helper is instantiated and set.
      * Errors (if any) are catch and reported by this function.
      */

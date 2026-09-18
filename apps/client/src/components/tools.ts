@@ -193,3 +193,11 @@ export function htmlStringToElement<E extends HTMLElement>(htmlString: string): 
 
     return template.content.firstChild as E;
 }
+/** Format a duration in a compact readable form : "12s", "3m07s" */
+export function formatDuration(ms: number): string {
+    const seconds = Math.round(ms / 1000);
+    if (seconds < 60) {
+        return `${seconds}s`;
+    }
+    return `${Math.floor(seconds / 60)}m${(seconds % 60).toString().padStart(2, "0")}s`;
+}

@@ -41,6 +41,23 @@ export class EventHandlerImpl {
     }
 
     /**
+     * Base implementation of the removal of an event listener.
+     * The listener must be the very same function that was registered : a bound method or an
+     * arrow function creates a new one on each call, so it has to be kept by the caller.
+     */
+    public static off<Events extends BaseEvents, EventName extends keyof Events>(data: EventHandlerData<Events>, eventName: EventName, listener: EventListener<Events[EventName]>): void {
+        const eventInfo: EventInfo<Events, EventName> | undefined = data[eventName];
+        if (eventInfo == null) {
+            // No one has been registered yet
+            return;
+        }
+        const index = eventInfo.listeners.indexOf(listener);
+        if (index >= 0) {
+            eventInfo.listeners.splice(index, 1);
+        }
+    }
+
+    /**
      * Base implement to fire an event.
      * If you choose to create a fire method in your EventHandler, this method MUST always be protected 
      * so your class is the only only one to fire an event.

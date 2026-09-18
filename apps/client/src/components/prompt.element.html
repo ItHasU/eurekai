@@ -104,7 +104,8 @@
           {{/if}}
           {{#if computingCount}}
           <div class="progress computing" role="progressbar" style="width: {{computingPercent}}%">
-            <div class="progress-bar bg-primary">{{computingCount}}</div>
+            <!-- Filled from the live ComfyUI progress, see PromptElement.setLiveProgress() -->
+            <div ref="computingBar" class="progress-bar bg-primary">{{computingCount}}</div>
           </div>
           {{/if}}
           {{#if rejectedCount}}

@@ -1,6 +1,11 @@
+import { apiCall } from "@dagda/client/api";
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { SQLTransaction } from "@dagda/shared/sql/transaction";
+import { EventListener } from "@dagda/shared/tools/events";
+import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
+import { COMFY_URL, ComfyAPI, ComfyHostStatus } from "@eurekai/shared/src/comfy.api";
 import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity, PictureType, ProjectEntity, ProjectId, PromptEntity, Score, Seed } from "@eurekai/shared/src/entities";
+import { AppEvents } from "@eurekai/shared/src/events";
 import { deletePicture, generateNextPictures, isPreferredSeed, togglePreferredSeed, unstarPicture, zipPictures } from "@eurekai/shared/src/pictures.data";
 import { APP } from "src";
 import { PictureElement } from "src/components/picture.element";
@@ -53,6 +58,16 @@ export class PicturesPage extends AbstractPageElement {
     protected _group: GroupMode = GroupMode.PROMPT;
     protected _density: number = 1;
 
+    /** Prompts currently displayed, the ones whose progress bar is filled from the live progress */
+    protected readonly _promptElements: PromptElement[] = [];
+    /** Last known state of the ComfyUI hosts, see _onGenerationProgress */
+    protected _hosts: ComfyHostStatus[] = [];
+    /** Kept as a field : the very same function has to be passed to off() to unregister */
+    protected readonly _onGenerationProgress: EventListener<AppEvents["generationProgress"]> = (event) => {
+        this._hosts = event.data.hosts;
+        this._refreshPromptsProgress();
+    };
+
     constructor() {
         super(require("./pictures.page.html").default);
 
@@ -97,6 +112,46 @@ export class PicturesPage extends AbstractPageElement {
     }
 
     /** @inheritdoc */
+    public override connectedCallback(): void {
+        super.connectedCallback();
+        // -- Follow the generation progress --
+        NotificationHelper.on<AppEvents, "generationProgress">("generationProgress", this._onGenerationProgress);
+        // The server pushes the progress while it moves, but it says nothing when nothing moves :
+        // ask for the current state once, or a page opened in the middle of a long node would
+        // show no progress until the next step
+        apiCall<ComfyAPI, "getHosts">(COMFY_URL, "getHosts").then(hosts => {
+            this._hosts = hosts;
+            this._refreshPromptsProgress();
+        }).catch(e => {
+            // Not critical, the next notification will fill the bars
+            console.error(e);
+        });
+    }
+
+    /** Called when the page is replaced by another one, App.setPage() empties the page div */
+    public disconnectedCallback(): void {
+        NotificationHelper.off<AppEvents, "generationProgress">("generationProgress", this._onGenerationProgress);
+    }
+
+    //#region Generation progress ---------------------------------------------
+
+    /**
+     * Fill the computing part of the progress bar of each prompt displayed with the progress of
+     * the pictures being generated.
+     *
+     * The progress is only known by the ComfyUI monitoring websocket, on the server, which pushes
+     * it here through the notification websocket (throttled server side, ComfyUI reports a
+     * sampling step several times per second).
+     */
+    protected _refreshPromptsProgress(): void {
+        for (const promptElement of this._promptElements) {
+            promptElement.setLiveProgress(this._hosts);
+        }
+    }
+
+    //#endregion
+
+    /** @inheritdoc */
     protected override async _refresh(): Promise<void> {
         // -- Make sure cache is updated --
         const projectId = StaticDataProvider.getSelectedProject();
@@ -127,6 +182,8 @@ export class PicturesPage extends AbstractPageElement {
     protected _refreshImpl(projectId: ProjectId): void {
         // -- Clear -----------------------------------------------------------
         this._picturesDiv.innerHTML = "";
+        // The elements are about to be dropped, the next notification must not fill their bars
+        this._promptElements.length = 0;
 
         // -- Density icon ----------------------------------------------------
         const classList = this._densityButton.querySelector("i")?.classList;
@@ -222,6 +279,7 @@ export class PicturesPage extends AbstractPageElement {
                 promptItem.classList.add("col-12");
                 promptItem.refresh();
                 this._picturesDiv.appendChild(promptItem);
+                this._promptElements.push(promptItem);
 
                 // -- Render images --
                 const picturesForPrompt = (promptsMap[prompt.id]?.pictures ?? []).filter(filter);
@@ -395,6 +453,11 @@ export class PicturesPage extends AbstractPageElement {
                 }
             }
         }
+
+        // -- Fill the progress bars ------------------------------------------
+        // The prompts have just been rendered from scratch, do not wait for the next
+        // notification to show where the generation is
+        this._refreshPromptsProgress();
 
         // -- Auto display prompt panel ---------------------------------------
         if (prompts.length === 0) {

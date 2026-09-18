@@ -168,6 +168,35 @@ export class ComfyUIMonitor {
         };
     }
 
+    /**
+     * Called whenever the state reported by getStatus() changes, on any host.
+     *
+     * Static because the monitors are created deep inside the pools, on the first generation,
+     * long after the server wired what it does with their events. The server pushes the progress
+     * to the clients from here instead of letting them poll for it.
+     */
+    public static onStateChanged: (() => void) | null = null;
+
+    /**
+     * Fingerprint of what getStatus() reports, so that a websocket message that changes nothing
+     * the clients display (a preview frame, an event we ignore) does not notify anyone.
+     */
+    protected _stateSignature(): string {
+        return [
+            this._connected, this._queueRemaining, this._promptId, this._nodeId,
+            this._progress?.value, this._progress?.max, this._progressText
+        ].join("|");
+    }
+
+    /** Report a state change. Never throws : monitoring must not depend on what listens to it. */
+    protected _notifyStateChanged(): void {
+        try {
+            ComfyUIMonitor.onStateChanged?.();
+        } catch (e) {
+            console.error(`Failed to report the state of ${this._host}`, e);
+        }
+    }
+
     /** Forget everything about the prompt that was running */
     protected _resetCurrentPrompt(): void {
         this._promptId = null;
@@ -206,11 +235,13 @@ export class ComfyUIMonitor {
             if (!this._connected) {
                 this._connected = true;
                 this.log("info", `Connected to the ComfyUI websocket on ${this._host}`);
+                this._notifyStateChanged();
             }
         });
 
         socket.on("message", (data: unknown, isBinary: boolean) => {
             try {
+                const signatureBefore = this._stateSignature();
                 if (isBinary) {
                     // Most binary frames are live previews, which we don't display, but nodes
                     // that can't report a numeric step (typically a wrapper around a remote API,
@@ -218,6 +249,11 @@ export class ComfyUIMonitor {
                     this._onBinaryMessage(data as Buffer);
                 } else {
                     this._onMessage(JSON.parse(String(data)) as WSMessage);
+                }
+                // Compared here rather than in each branch changing the state : a branch added
+                // later cannot forget to report what it changed
+                if (this._stateSignature() !== signatureBefore) {
+                    this._notifyStateChanged();
                 }
             } catch (e) {
                 // A message we cannot read must never break the monitoring
@@ -247,6 +283,7 @@ export class ComfyUIMonitor {
             this._queueRemaining = null;
             this._resetCurrentPrompt();
             this.log("error", `Lost the ComfyUI websocket on ${this._host}${reason ? ` : ${reason}` : ""}`);
+            this._notifyStateChanged();
         }
 
         // Back off so that a machine that is off for hours does not retry every 5s forever

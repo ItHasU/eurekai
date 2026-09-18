@@ -1,5 +1,6 @@
 import { apiCall } from "@dagda/client/api";
 import { COMFY_URL, ComfyAPI, ComfyHostStatus, ComfyLogEntry } from "@eurekai/shared/src/comfy.api";
+import { formatDuration } from "src/components/tools";
 import { AbstractPageElement } from "./abstract.page.element";
 
 /** Delay between two refreshes of the page */
@@ -203,15 +204,6 @@ class HostCard {
         // Free-form progress (a remote API node reporting its own status text, e.g. Minimax)
         this._progressTextLine.innerText = status.progressText ?? "";
     }
-}
-
-/** Format a duration in a compact readable form : "12.3s", "3m07s" */
-function formatDuration(ms: number): string {
-    const seconds = Math.round(ms / 1000);
-    if (seconds < 60) {
-        return `${seconds}s`;
-    }
-    return `${Math.floor(seconds / 60)}m${(seconds % 60).toString().padStart(2, "0")}s`;
 }
 
 customElements.define("comfy-page", ComfyPage);
