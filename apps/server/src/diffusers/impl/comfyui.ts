@@ -7,7 +7,8 @@ import JSZip from "jszip";
 import { exec } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { AbstractDiffuser, ImageDescription } from "../diffuser";
+import { AbstractDiffuser, GenerationJobInfo, ImageDescription } from "../diffuser";
+import { ComfyUIMonitor, formatDuration } from "./comfyui.monitor";
 
 //#region Timings
 
@@ -35,17 +36,6 @@ const PROMPT_POLLING_MS = 1_000;
 //#endregion
 
 //#region Network tools
-
-/** Format a duration in a compact readable form : "12.3s", "3m07s" */
-export function formatDuration(ms: number): string {
-    // Round to tenths first, so that 59.99s reads "1m00s" and never "60.0s"
-    const tenths = Math.round(ms / 100);
-    if (tenths < 600) {
-        return `${(tenths / 10).toFixed(1)}s`;
-    }
-    const seconds = Math.round(tenths / 10);
-    return `${Math.floor(seconds / 60)}m${(seconds % 60).toString().padStart(2, "0")}s`;
-}
 
 /**
  * Convert a configured timeout into a duration budget.
@@ -240,8 +230,8 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
      *
      * Any other error (invalid workflow, GPU out of memory, ...) fails immediately.
      */
-    public override async txt2img(image: ImageDescription): Promise<{ data: AppTypes["BASE64_DATA"] }> {
-        const pool = ComfyUIDiffuser._getPool(this._options.serverURL);
+    public override async txt2img(image: ImageDescription, job?: GenerationJobInfo): Promise<{ data: AppTypes["BASE64_DATA"] }> {
+        const pool = ComfyUIDiffuser.getPool(this._options.serverURL);
         // Budget of the generation itself. It is not re-armed on each cycle, but the time spent
         // waking the machine up is added back to it : the deadline must bound the generation,
         // not the wake up. The total duration of txt2img stays bounded by
@@ -256,57 +246,66 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
         const started = Date.now();
         let wakeMs = 0;
 
-        for (let cycle = 0; cycle < MAX_WAKE_CYCLES; cycle++) {
-            // -- Make sure the machine is up before doing anything --
-            const wakeStart = Date.now();
-            await pool.ensureAwake(this._options.wolScript);
-            const wakeDuration = Date.now() - wakeStart;
-            wakeMs += wakeDuration;
-            deadline += wakeDuration;
+        try {
+            for (let cycle = 0; cycle < MAX_WAKE_CYCLES; cycle++) {
+                // -- Make sure the machine is up before doing anything --
+                const wakeStart = Date.now();
+                await pool.ensureAwake(this._options.wolScript);
+                const wakeDuration = Date.now() - wakeStart;
+                wakeMs += wakeDuration;
+                deadline += wakeDuration;
 
-            try {
-                // -- Enqueue the prompt, unless we already have one to resume --
-                if (promptId == null) {
-                    promptId = await pool.enqueue(this._options.promptTemplate, image);
-                    console.log(`Prompt enqueued on ${this._options.serverURL} : ${promptId}`);
-                } else {
-                    console.log(`Resuming prompt ${promptId} on ${this._options.serverURL}`);
-                }
+                try {
+                    // -- Enqueue the prompt, unless we already have one to resume --
+                    if (promptId == null) {
+                        promptId = await pool.enqueue(this._options.promptTemplate, image);
+                        // Let the monitor name the picture behind the prompt id it will see on
+                        // the websocket
+                        pool.monitor.setJob(promptId, job);
+                        pool.monitor.log("info", `Prompt enqueued on ${this._options.serverURL} : ${promptId}`);
+                    } else {
+                        pool.monitor.log("info", `Resuming prompt ${promptId} on ${this._options.serverURL}`);
+                    }
 
-                // -- Wait for the result --
-                const remaining = deadline - Date.now();
-                if (remaining <= 0) {
-                    throw `Timeout while generating image on ${this._options.serverURL}`;
+                    // -- Wait for the result --
+                    const remaining = deadline - Date.now();
+                    if (remaining <= 0) {
+                        throw `Timeout while generating image on ${this._options.serverURL}`;
+                    }
+                    const images = await pool.waitAndFetch(promptId, remaining);
+                    if (images == null) {
+                        // ComfyUI does not know this prompt anymore, the queue was lost on a reboot
+                        pool.monitor.log("error", `Prompt ${promptId} is unknown to the server, enqueuing it again`);
+                        pool.monitor.clearJob(promptId);
+                        promptId = null;
+                        continue;
+                    }
+                    if (images.length === 0) {
+                        throw `Prompt ${promptId} succeeded but produced no media, check the output nodes of the workflow`;
+                    }
+                    const waking = wakeMs > 0 ? `, ${formatDuration(wakeMs)} of which waiting for the machine` : "";
+                    pool.monitor.log("info", `Generated ${this._options.name} in ${formatDuration(Date.now() - started)}${waking} (prompt ${promptId})`);
+                    return { data: asNamed(images[0]) };
+                } catch (e) {
+                    if (!isNetworkError(e)) {
+                        // A generation error, waking the machine up won't help
+                        pool.monitor.log("error", `Generation failed on ${this._options.serverURL} after ${formatDuration(Date.now() - started)} : ${describeError(e)}`);
+                        throw e;
+                    }
+                    if (Date.now() >= deadline) {
+                        pool.monitor.log("error", `Giving up on ${this._options.serverURL} after ${formatDuration(Date.now() - started)}, deadline reached : ${describeError(e)}`);
+                        throw e;
+                    }
+                    // The machine fell asleep, keep promptId so that the next cycle resumes it
+                    pool.monitor.log("error", `Lost connection to ${this._options.serverURL} (${describeError(e)}), will try to wake it up (cycle ${cycle + 1}/${MAX_WAKE_CYCLES})`);
                 }
-                const images = await pool.waitAndFetch(promptId, remaining);
-                if (images == null) {
-                    // ComfyUI does not know this prompt anymore, the queue was lost on a reboot
-                    console.error(`Prompt ${promptId} is unknown to the server, enqueuing it again`);
-                    promptId = null;
-                    continue;
-                }
-                if (images.length === 0) {
-                    throw `Prompt ${promptId} succeeded but produced no media, check the output nodes of the workflow`;
-                }
-                const waking = wakeMs > 0 ? `, ${formatDuration(wakeMs)} of which waiting for the machine` : "";
-                console.log(`Generated ${this._options.name} in ${formatDuration(Date.now() - started)}${waking} (prompt ${promptId})`);
-                return { data: asNamed(images[0]) };
-            } catch (e) {
-                if (!isNetworkError(e)) {
-                    // A generation error, waking the machine up won't help
-                    console.error(`Generation failed on ${this._options.serverURL} after ${formatDuration(Date.now() - started)} : ${describeError(e)}`);
-                    throw e;
-                }
-                if (Date.now() >= deadline) {
-                    console.error(`Giving up on ${this._options.serverURL} after ${formatDuration(Date.now() - started)}, deadline reached : ${describeError(e)}`);
-                    throw e;
-                }
-                // The machine fell asleep, keep promptId so that the next cycle resumes it
-                console.error(`Lost connection to ${this._options.serverURL} (${describeError(e)}), will try to wake it up (cycle ${cycle + 1}/${MAX_WAKE_CYCLES})`);
             }
-        }
 
-        throw `Failed to generate image after ${MAX_WAKE_CYCLES} wake up cycles`;
+            throw `Failed to generate image after ${MAX_WAKE_CYCLES} wake up cycles`;
+        } finally {
+            // Whatever happened, the prompt is not ours to follow anymore
+            pool.monitor.clearJob(promptId);
+        }
     }
 
     //#endregion
@@ -315,7 +314,12 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
 
     protected static readonly _connectionPool: Map<string, ComfyUIPool> = new Map();
 
-    protected static _getPool(serverURL: string): ComfyUIPool {
+    /**
+     * Get the pool of a host, creating it (and starting its monitor) on the first call.
+     * Called at startup by the registry so that the administration page knows about the host
+     * before the first generation.
+     */
+    public static getPool(serverURL: string): ComfyUIPool {
         let pool = ComfyUIDiffuser._connectionPool.get(serverURL);
         if (pool != null) {
             return pool;
@@ -323,6 +327,11 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
         pool = new ComfyUIPool(serverURL);
         ComfyUIDiffuser._connectionPool.set(serverURL, pool);
         return pool;
+    }
+
+    /** @returns All the pools created so far, one per ComfyUI host */
+    public static getPools(): ComfyUIPool[] {
+        return [...ComfyUIDiffuser._connectionPool.values()];
     }
 
     //#endregion
@@ -342,7 +351,16 @@ export class ComfyUIPool {
     /** Timestamp until which the host is known to be alive */
     protected _aliveUntil: number = 0;
 
+    /**
+     * Observes the host through its websocket and holds the ComfyUI log.
+     * It also owns the client id used to enqueue, which is what makes ComfyUI send its
+     * execution events to us.
+     */
+    public readonly monitor: ComfyUIMonitor;
+
     constructor(protected _host: string) {
+        this.monitor = new ComfyUIMonitor(this._host, this._apiHost);
+        this.monitor.start();
     }
 
     //#region Wake on LAN
@@ -390,7 +408,7 @@ export class ComfyUIPool {
     protected async _sendWOL(wolScript: string): Promise<void> {
         try {
             await new Promise<void>((resolve, reject) => {
-                console.log(`Sending WOL request to ${this._host} : ${wolScript}`);
+                this.monitor.log("info", `Sending WOL request to ${this._host} : ${wolScript}`);
                 exec(wolScript, (error: unknown) => {
                     if (error) {
                         reject(error);
@@ -401,7 +419,7 @@ export class ComfyUIPool {
             });
         } catch (e) {
             // Don't rethrow, we still want to wait for the machine in case the packet went through
-            console.error("Failed to send WOL request", e);
+            this.monitor.log("error", `Failed to send WOL request : ${describeError(e)}`);
         }
     }
 
@@ -423,10 +441,15 @@ export class ComfyUIPool {
 
         if (!wolScript) {
             // No WOL script, we can't do anything about it
-            throw `Server ${this._host} is not answering and no WOL script is configured`;
+            const message = `Server ${this._host} is not answering and no WOL script is configured`;
+            this.monitor.log("error", message);
+            throw message;
         }
 
         // -- Wake the machine up and wait for it --
+        // Only the start and the end of the cycle are logged : the probe failures happen every
+        // WAKE_POLL_MS and would fill the whole log with a single wake up
+        this.monitor.log("info", `Server ${this._host} is not answering, waking it up`);
         const deadline = Date.now() + WAKE_BUDGET_MS;
         let lastWOL = 0;
         while (Date.now() < deadline) {
@@ -436,13 +459,15 @@ export class ComfyUIPool {
             }
             await wait(WAKE_POLL_MS);
             if (await this._isAlive()) {
-                console.log(`Server ${this._host} is up`);
+                this.monitor.log("info", `Server ${this._host} is up`);
                 this._aliveUntil = Date.now() + ALIVE_CACHE_MS;
                 return;
             }
         }
 
-        throw `Failed to wake up server ${this._host} after ${Math.round(WAKE_BUDGET_MS / 1000)}s`;
+        const message = `Failed to wake up server ${this._host} after ${Math.round(WAKE_BUDGET_MS / 1000)}s`;
+        this.monitor.log("error", message);
+        throw message;
     }
 
     /** Mark the host as unreachable so the next call probes it again */
@@ -454,12 +479,19 @@ export class ComfyUIPool {
 
     //#region Generation
 
-    /** Build a new client. Every request will fail fast thanks to the custom fetch. */
+    /**
+     * Build a new client. Every request will fail fast thanks to the custom fetch.
+     *
+     * The client id is the monitor's one, and not the random one the library would generate :
+     * ComfyUI routes the execution events of a prompt to the session that enqueued it, so this
+     * is what makes the progress reach our websocket instead of being dropped.
+     */
     protected _newClient(): Client {
         return new Client({
             api_host: this._apiHost,
             api_base: "",
             sessionName: "",
+            clientId: this.monitor.clientId,
             fetch: fetchWithTimeout(HTTP_TIMEOUT_MS)
         });
     }
@@ -490,7 +522,7 @@ export class ComfyUIPool {
         } catch (e) {
             // A 400 here carries the workflow validation errors (missing node, bad input, ...),
             // which are the most useful thing to read when a workflow stops working
-            console.error(`Failed to enqueue prompt on ${this._host} : ${describeError(e)}`);
+            this.monitor.log("error", `Failed to enqueue prompt on ${this._host} : ${describeError(e)}`);
             if (isNetworkError(e)) {
                 this._markAsDown();
             }
@@ -592,7 +624,7 @@ export class ComfyUIPool {
         const deadline = Date.now() + timeout_ms;
         try {
             // -- Wait for the prompt to leave the queue --
-            console.log(`Waiting for prompt ${promptId} (${Number.isFinite(timeout_ms) ? `up to ${timeout_ms} ms` : "no timeout"})`);
+            this.monitor.log("info", `Waiting for prompt ${promptId} (${Number.isFinite(timeout_ms) ? `up to ${timeout_ms} ms` : "no timeout"})`);
             let entry: HistoryEntry | null = null;
             while (true) {
                 if (!await this._isQueued(promptId)) {
@@ -632,14 +664,14 @@ export class ComfyUIPool {
                 await client.deleteItem("history", promptId);
             } catch (e) {
                 // We don't care about the error, we won't throw
-                console.error(`Failed to delete prompt ${promptId} from history : ${describeError(e)}`);
+                this.monitor.log("error", `Failed to delete prompt ${promptId} from history : ${describeError(e)}`);
             } finally {
                 client.close();
             }
 
             return results;
         } catch (e) {
-            console.error(`Prompt ${promptId} on ${this._host} failed : ${describeError(e)}`);
+            this.monitor.log("error", `Prompt ${promptId} on ${this._host} failed : ${describeError(e)}`);
             if (isNetworkError(e)) {
                 this._markAsDown();
             }

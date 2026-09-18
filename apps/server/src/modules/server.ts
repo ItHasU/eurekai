@@ -9,6 +9,7 @@ import { Data } from "@dagda/shared/entities/types";
 import { SQLAdapterAPI, SQL_URL } from "@dagda/shared/sql/api";
 import { OperationType } from "@dagda/shared/sql/transaction";
 import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
+import { COMFY_URL, ComfyAPI, ComfyLogEntry, ComfyStatus } from "@eurekai/shared/src/comfy.api";
 import { APP_MODEL, AppContexts, AppTables, AttachmentEntity, ComputationStatus, PictureEntity, PictureType, ProjectEntity, PromptEntity, SeedEntity, SourceImageEntity, UserEntity } from "@eurekai/shared/src/entities";
 import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api";
 import { SYSTEM_URL, SystemAPI, SystemInfo } from "@eurekai/shared/src/system.api";
@@ -16,6 +17,8 @@ import express, { Application } from "express";
 import { resolve } from "node:path";
 import passport from "passport";
 import { DiffusersRegistry } from "src/diffusers";
+import { ComfyUIDiffuser } from "src/diffusers/impl/comfyui";
+import { ComfyUIMonitor } from "src/diffusers/impl/comfyui.monitor";
 import { qf, qt } from "./db";
 import { buildServerEntitiesHandler } from "./entities.handler";
 import { THUMBNAIL_MIME_TYPE, getOrCreateThumbnail } from "./thumbnail";
@@ -261,6 +264,24 @@ function _registerAPIs(app: Application): void {
                 throw new Error("Uncaught exception test");
             }, 0);
             return Promise.resolve();
+        }
+    })
+
+    registerAPI<ComfyAPI>(app, COMFY_URL, {
+        getStatus: function (sinceLogId?: number): Promise<ComfyStatus> {
+            const pools = ComfyUIDiffuser.getPools();
+            const logs: ComfyLogEntry[] = [];
+            for (const pool of pools) {
+                logs.push(...pool.monitor.getLogs(sinceLogId));
+            }
+            // Every host writes in the same id sequence, sorting on it keeps the merged log
+            // chronological
+            logs.sort((l1, l2) => l1.id - l2.id);
+            return Promise.resolve({
+                hosts: pools.map(pool => pool.monitor.getStatus()),
+                logs,
+                lastLogId: ComfyUIMonitor.getLastLogId()
+            });
         }
     })
 }

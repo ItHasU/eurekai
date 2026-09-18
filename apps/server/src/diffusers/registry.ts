@@ -2,7 +2,7 @@ import { getEnvString, getEnvStringOptional } from "@dagda/server/tools/config";
 import { ENV_VARIABLES_STR } from "src/modules/config";
 import { AbstractDiffuser } from "./diffuser";
 import { getAllModelsWithWOL } from "./impl/automatic1111.tools";
-import { getAllComfyTemplates } from "./impl/comfyui";
+import { ComfyUIDiffuser, getAllComfyTemplates } from "./impl/comfyui";
 
 export class DiffusersRegistry {
 
@@ -23,6 +23,9 @@ export class DiffusersRegistry {
                 for (const model of comfy_models) {
                     DiffusersRegistry.push(model);
                 }
+                // Create the pool right away so that its monitor connects and the administration
+                // page knows about the host, even before the first generation
+                ComfyUIDiffuser.getPool(comfy_host);
             }
         } catch (e) {
             console.error(e);

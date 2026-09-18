@@ -252,7 +252,7 @@ export class Generator {
 
         // -- Generate the image --
         console.debug(`Generating picture ${picture.id} with model ${prompt.model} and seed ${picture.seed}`);
-        const imageData = await diffuser.txt2img(img);
+        const imageData = await diffuser.txt2img(img, { pictureId: picture.id, model: prompt.model });
 
         // For debugging purpose, write image to disk
         // await writeFile(`${new Date().getTime()}.png`, Buffer.from(imageData, 'base64'));

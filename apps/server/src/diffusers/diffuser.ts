@@ -17,6 +17,15 @@ export interface ImageDescription {
     image?: string | null;
 }
 
+/**
+ * What the generation is for. Purely informational : it lets a diffuser report which picture
+ * it is working on, it never changes what is generated.
+ */
+export interface GenerationJobInfo {
+    pictureId: number;
+    model: string;
+}
+
 /** Abstract API to connect to an image generator */
 export abstract class AbstractDiffuser {
     /**
@@ -29,6 +38,9 @@ export abstract class AbstractDiffuser {
     /** Get model info */
     public abstract getModelInfo(): ModelInfo;
 
-    /** Generate an image. */
-    public abstract txt2img(options: ImageDescription): Promise<{ data: AppTypes["BASE64_DATA"], revisedWidth?: AppTypes["PIXELS"], revisedHeight?: AppTypes["PIXELS"] }>;
+    /**
+     * Generate an image.
+     * @param job Optional, only used for reporting. An implementation is free to ignore it.
+     */
+    public abstract txt2img(options: ImageDescription, job?: GenerationJobInfo): Promise<{ data: AppTypes["BASE64_DATA"], revisedWidth?: AppTypes["PIXELS"], revisedHeight?: AppTypes["PIXELS"] }>;
 }
