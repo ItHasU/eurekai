@@ -16,7 +16,8 @@
 | `pictures` | Instance d'un prompt avec une graine (seed) donnée : statut, note, pièce jointe |
 | `attachments` | Données binaires (base64) de l'image ou de la vidéo |
 | `seeds` | Graines préférées mémorisées par projet |
-| `sources` | Images sources uploadées par projet, réutilisables comme entrée d'un prompt |
+| `sources` | Images ou vidéos sources uploadées par projet, réutilisables comme entrée d'un prompt |
+| `promptSources` | Lien ordonné entre un prompt et ses sources (l'ordre détermine l'entrée du workflow) |
 
 Types métier : `ComputationStatus` (NONE / PENDING / COMPUTING / DONE / ERROR /
 ACCEPTED / REJECTED), `PictureType` (IMAGE / VIDEO), `Score` (0 à 4 étoiles).
@@ -42,11 +43,16 @@ Contextes de chargement : `users`, `projects`, `project` (un projet complet),
 - Champs paramétrés par le modèle sélectionné : le prompt négatif est masqué si le
   workflow ne l'exploite pas, la durée n'est proposée que si le workflow l'expose
   (bornes, pas, valeur par défaut et unité déclarés par le workflow).
-- Images sources par projet : upload de plusieurs images attachées au projet
-  (panneau dédié), réutilisables par n'importe quel prompt du projet. Un prompt
-  sélectionne au plus une image source. Le sélecteur n'est proposé que si le
-  workflow l'exploite (`image` dans le manifest) et la sélection devient alors
-  obligatoire pour soumettre le prompt.
+- Sources par projet : upload de plusieurs images ou vidéos attachées au projet
+  (panneau dédié), réutilisables par n'importe quel prompt du projet. Les images sont
+  redimensionnées à l'upload, les vidéos sont stockées telles quelles (taille limitée).
+  Une image ou une vidéo générée peut aussi être réutilisée comme source.
+- Sources d'un prompt : liste ordonnée de plusieurs sources, l'ordre déterminant
+  l'entrée du workflow alimentée par chacune (`$image1$`, `$image2$`, … ; `$image$`
+  est un alias de la première). Les sources peuvent être réordonnées et retirées.
+  Le sélecteur n'est proposé que si le workflow l'exploite (`imageCount` dans le
+  manifest, `image: true` valant `imageCount: 1`), la sélection d'au moins une source
+  devient alors obligatoire et leur nombre est plafonné par celui déclaré.
 - Héritage de prompt (`parentId`) : dérivation d'un prompt existant.
 - Ordre d'affichage des prompts (`orderIndex`), affichés du plus récent au plus ancien.
 - Demande de génération de N images pour un prompt.
@@ -83,7 +89,7 @@ Contextes de chargement : `users`, `projects`, `project` (un projet complet),
 - Filtres sur le statut des images (en attente, acceptées, rejetées, à évaluer…).
 - Panneau d'édition de prompt affiché contextuellement.
 - Actions par image : accepter, rejeter, supprimer, définir comme vignette de projet,
-  mémoriser la graine, dériver un nouveau prompt.
+  mémoriser la graine, dériver un nouveau prompt, réutiliser comme source.
 
 ### Page « Quick » (tri rapide)
 - Affichage plein écran d'une image à la fois, à évaluer.

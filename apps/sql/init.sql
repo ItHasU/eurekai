@@ -1,13 +1,13 @@
 -- Initialize an empty database with the current EurekAI schema.
 --
 -- This script creates the schema as it stands today, i.e. the result of applying
--- 001_remove-hd.sql through 006_sources.sql on top of the (undocumented) original schema.
+-- 001_remove-hd.sql through 008_prompt_sources.sql on top of the (undocumented) original schema.
 -- Use it ONLY on a brand new, empty database. Do NOT run the numbered migrations in apps/sql/
 -- afterwards, they are already reflected here.
 --
 -- Enum-like integer columns (see apps/shared/src/entities.ts) :
 --   pictures.status / ComputationStatus : 0 NONE, 1 PENDING, 2 DONE, 3 ERROR, 4 ACCEPTED, 5 REJECTED, 6 COMPUTING, 7 CANCELLED
---   pictures.type, attachments.type / PictureType : 0 UNKNOWN, 1 IMAGE, 2 VIDEO
+--   pictures.type, attachments.type, sources.type / PictureType : 0 UNKNOWN, 1 IMAGE, 2 VIDEO
 --   pictures.score : 0 to 4 stars
 --
 -- Checked against the running dev database (apps/shared/src/entities.ts is the source of truth
@@ -43,6 +43,7 @@ CREATE TABLE sources (
     id SERIAL PRIMARY KEY,
     "projectId" integer NOT NULL REFERENCES projects(id),
     "attachmentId" integer NOT NULL REFERENCES attachments(id),
+    type integer NOT NULL DEFAULT 0,
     name text NOT NULL
 );
 
@@ -56,8 +57,15 @@ CREATE TABLE prompts (
     model text NOT NULL,
     prompt text NOT NULL,
     negative_prompt text NOT NULL,
-    duration double precision,
-    "sourceId" integer REFERENCES sources(id)
+    duration double precision
+);
+
+-- Sources of a prompt, in the order they are handed over to the workflow
+CREATE TABLE "promptSources" (
+    id SERIAL PRIMARY KEY,
+    "promptId" integer NOT NULL REFERENCES prompts(id),
+    "sourceId" integer NOT NULL REFERENCES sources(id),
+    "orderIndex" integer NOT NULL
 );
 
 CREATE TABLE pictures (

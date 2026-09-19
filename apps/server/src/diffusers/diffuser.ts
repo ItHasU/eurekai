@@ -13,8 +13,12 @@ export interface ImageDescription {
      * Null when the model does not expose a duration.
      */
     duration: number | null;
-    /** Base64 source image (no "data:...;base64," prefix), null when the prompt has none selected */
-    image?: string | null;
+    /**
+     * Base64 sources of the prompt (no "data:...;base64," prefix), images or videos, in the
+     * order the user picked them : the first one feeds $image1$, the second one $image2$, ...
+     * Empty when the prompt has no source selected.
+     */
+    images?: string[];
 }
 
 /**

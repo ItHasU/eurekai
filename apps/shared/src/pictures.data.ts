@@ -2,7 +2,7 @@ import { EntitiesHandler } from "@dagda/shared/entities/handler";
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { SQLTransaction } from "@dagda/shared/sql/transaction";
 import JSZip from "jszip";
-import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity, PictureId, PictureType, ProjectEntity, ProjectId, PromptEntity, PromptId, Seed, SeedEntity, SeedId, SourceImageEntity } from "./entities";
+import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity, PictureId, PictureType, ProjectEntity, ProjectId, PromptEntity, PromptId, Seed, SeedEntity, SeedId, SourceImageEntity, SourceImageId } from "./entities";
 
 /** 
  * Generate a certain amount of images 
@@ -96,12 +96,61 @@ export function deletePicture(handler: EntitiesHandler<AppTables, AppContexts>, 
     tr.delete("pictures", picture.id);
 }
 
+/** 
+ * @returns The sources of a prompt, in the order they are handed over to the workflow.
+ * A source that is not loaded in the cache is skipped.
+ */
+export function getPromptSources(handler: EntitiesHandler<AppTables, AppContexts>, promptId: PromptId): SourceImageEntity[] {
+    const links = handler.getItems("promptSources")
+        .filter(link => handler.isSameId(link.promptId, promptId))
+        .sort((link1, link2) => link1.orderIndex - link2.orderIndex);
+    const sources: SourceImageEntity[] = [];
+    for (const link of links) {
+        const source = handler.getById("sources", link.sourceId);
+        if (source != null) {
+            sources.push(source);
+        }
+    }
+    return sources;
+}
+
+/** Replace the sources of a prompt, the order of the passed ids being the order of the sources */
+export function setPromptSources(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, promptId: PromptId, sourceIds: SourceImageId[]): void {
+    clearPromptSources(handler, tr, promptId);
+    let orderIndex: number = 0;
+    for (const sourceId of sourceIds) {
+        tr.insert("promptSources", {
+            id: asNamed(0),
+            promptId,
+            sourceId,
+            orderIndex: asNamed(orderIndex++)
+        });
+    }
+}
+
+/** Detach all the sources of a prompt */
+export function clearPromptSources(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, promptId: PromptId): void {
+    for (const link of handler.getItems("promptSources")) {
+        if (handler.isSameId(link.promptId, promptId)) {
+            tr.delete("promptSources", link.id);
+        }
+    }
+}
+
 /** Delete a source image : detach it from any prompt using it, then delete it */
 export function deleteSourceImage(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, sourceImage: SourceImageEntity): void {
-    for (const prompt of handler.getItems("prompts")) {
-        if (handler.isSameId(prompt.sourceId, sourceImage.id)) {
-            tr.update("prompts", prompt, { sourceId: null });
+    // The prompts using the source keep their other sources, in the same order
+    const promptIds: Set<PromptId> = new Set();
+    for (const link of handler.getItems("promptSources")) {
+        if (handler.isSameId(link.sourceId, sourceImage.id)) {
+            promptIds.add(link.promptId);
         }
+    }
+    for (const promptId of promptIds) {
+        const remainingIds = getPromptSources(handler, promptId)
+            .filter(source => !handler.isSameId(source.id, sourceImage.id))
+            .map(source => source.id);
+        setPromptSources(handler, tr, promptId, remainingIds);
     }
     // The attachment is left to the server : it may be shared with the picture it was created from
     tr.delete("sources", sourceImage.id);
@@ -193,8 +242,10 @@ export function deleteProject(handler: EntitiesHandler<AppTables, AppContexts>, 
     }
     // A prompt can be the parent of another one, so children have to go first
     for (const prompt of _sortPromptsChildrenFirst(prompts)) {
+        // Cleans the references to the prompt and to the source images
+        clearPromptSources(handler, tr, prompt.id);
         tr.delete("prompts", prompt.id);
-        // Cleans references to the project and to the source images
+        // Cleans references to the project
     }
     for (const seedId of seedIds) {
         tr.delete("seeds", seedId);
@@ -328,6 +379,8 @@ export function deletePrompt(handler: EntitiesHandler<AppTables, AppContexts>, t
             tr.update("prompts", child, { parentId: null });
         }
     }
+    // -- Unlink this prompt from its sources --
+    clearPromptSources(handler, tr, prompt.id);
     // -- Delete the prompt itself --
     tr.delete("prompts", prompt.id);
 }
@@ -353,13 +406,16 @@ export function movePromptToProject(handler: EntitiesHandler<AppTables, AppConte
             }
         }
         for (const prompt of promptsToMove) {
-            // Source images are scoped to a project, a moved prompt cannot keep pointing to one
-            tr.update("prompts", prompt, { projectId: newProjectId, sourceId: null });
+            // Source images are scoped to a project, a moved prompt cannot keep pointing to them
+            clearPromptSources(handler, tr, prompt.id);
+            tr.update("prompts", prompt, { projectId: newProjectId });
         }
         tr.update("prompts", firstPrompt, { parentId: null });
         return [...promptsToMove];
     } else {
-        tr.update("prompts", firstPrompt, { projectId: newProjectId, sourceId: null });
+        // Source images are scoped to a project, a moved prompt cannot keep pointing to them
+        clearPromptSources(handler, tr, firstPrompt.id);
+        tr.update("prompts", firstPrompt, { projectId: newProjectId });
         for (const prompt of prompts) {
             if (handler.isSameId(prompt.parentId, firstPrompt.id)) {
                 tr.update("prompts", prompt, { parentId: null });

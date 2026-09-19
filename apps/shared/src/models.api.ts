@@ -19,8 +19,11 @@ export interface ModelInfo {
     negativePrompt?: boolean;
     /** Duration parameter, undefined if the workflow does not expose one */
     duration?: DurationInfo;
-    /** Does the workflow require a source image ($image$)? Selecting one becomes mandatory. */
-    image?: boolean;
+    /**
+     * Number of ordered sources (images or videos) the workflow accepts ($image1$ ... $imageN$).
+     * Undefined or 0 when it takes none. Picking at least one becomes mandatory.
+     */
+    imageCount?: number;
 }
 
 export const MODELS_URL = "models";

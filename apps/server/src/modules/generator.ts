@@ -122,10 +122,9 @@ export class Generator {
             }
 
             // -- Prepare the image --
+            // The sources are not checked here : they are not in the cache, they are resolved
+            // (and validated) in _generatePictureImpl
             const modelInfo = diffuser.getModelInfo();
-            if (modelInfo.image === true && prompt.sourceId == null) {
-                throw `Model ${prompt.model} requires a source image for picture ${picture.id}`;
-            }
             const img: ImageDescription = {
                 width: prompt.width,
                 height: prompt.height,
@@ -236,18 +235,24 @@ export class Generator {
      * This function call is queued by the _queuePicture method depending on the model lock.
      */
     protected async _generatePictureImpl(tr: SQLTransaction<AppTables, AppContexts>, diffuser: AbstractDiffuser, picture: PictureEntity, prompt: PromptEntity, img: ImageDescription): Promise<void> {
-        // -- Resolve the source image, if any --
+        // -- Resolve the sources of the prompt, in the order the user picked them --
         // Not done in _queuePicture : the generator's entities cache is only populated by the
-        // "pending" fetch context, which does not load "sources" (see sqlFetch), and the blob
+        // "pending" fetch context, which does not load "sources" (see sqlFetch), and the blobs
         // must not transit through that generic cache anyway (same rule as attachments).
-        if (prompt.sourceId != null) {
-            const row = await this._db.get<{ data: string }>(
-                `SELECT ${qf("attachments", "data")} AS data
-                 FROM ${qt("sources")}
-                 JOIN ${qt("attachments")} ON ${qf("sources", "attachmentId")} = ${qf("attachments", "id")}
-                 WHERE ${qf("sources", "id")} = $1`,
-                prompt.sourceId);
-            img.image = row?.data ?? null;
+        const rows = await this._db.all<{ data: string }>(
+            `SELECT ${qf("attachments", "data")} AS data
+             FROM ${qt("promptSources")}
+             JOIN ${qt("sources")} ON ${qf("promptSources", "sourceId")} = ${qf("sources", "id")}
+             JOIN ${qt("attachments")} ON ${qf("sources", "attachmentId")} = ${qf("attachments", "id")}
+             WHERE ${qf("promptSources", "promptId")} = $1
+             ORDER BY ${qf("promptSources", "orderIndex")}`,
+            prompt.id);
+        img.images = rows.map(row => row.data);
+
+        // The workflow cannot run without the sources it declares, fail before waking the machine up
+        const imageCount = diffuser.getModelInfo().imageCount ?? 0;
+        if (imageCount > 0 && img.images.length === 0) {
+            throw `Model ${prompt.model} requires a source for picture ${picture.id}`;
         }
 
         // -- Generate the image --

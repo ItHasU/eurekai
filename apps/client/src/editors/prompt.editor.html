@@ -36,11 +36,19 @@
 </div>
 <div class="row">
     <div class="col-md d-none" id="imageCol">
-        <label for="imageSelect" class="form-label">Source image</label>
-        <select id="imageSelect" class="form-control">
-            <option value="">-- Select an image --</option>
-        </select>
-        <img id="imagePreview" class="d-none mt-2" style="max-height: 8rem;">
+        <label for="imageSelect" class="form-label" id="imageLabel">Sources</label>
+        <div class="input-group">
+            <select id="imageSelect" class="form-control">
+                <option value="">-- Select a source --</option>
+            </select>
+            <button class="btn btn-outline-secondary" type="button" id="imageAddButton" title="Add this source">
+                <i class="bi bi-plus-lg"></i>
+            </button>
+        </div>
+        <div id="imageError" class="form-text text-danger d-none">
+            Select at least one source.
+        </div>
+        <div id="imageList" class="list-group mt-2"></div>
     </div>
     <div class="col-md d-none" id="durationCol">
         <label for="durationInput" class="form-label">Duration</label>

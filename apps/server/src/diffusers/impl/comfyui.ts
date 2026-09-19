@@ -166,8 +166,8 @@ interface ComfyUIDiffuserOption {
     negativePrompt?: boolean;
     /** Duration parameter, undefined if the workflow does not expose one */
     duration?: DurationInfo;
-    /** Does the workflow require a source image ($image$)? */
-    image?: boolean;
+    /** Number of ordered sources the workflow accepts ($image1$ ... $imageN$), 0 for none */
+    imageCount: number;
     /** Prompt template */
     promptTemplate: string;
 }
@@ -216,7 +216,7 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
             sizeStep: this._options.sizeStep,
             negativePrompt: this._options.negativePrompt,
             duration: this._options.duration,
-            image: this._options.image
+            imageCount: this._options.imageCount
         };
     }
 
@@ -502,10 +502,25 @@ export class ComfyUIPool {
 
         // Replace parameters in the format $param$
         for (const param in params) {
+            if (param === "images") {
+                // Handled below, the sources are injected one placeholder per position
+                continue;
+            }
             const value = JSON.stringify(params[param as keyof ImageDescription] ?? null);
             const pattern = `$${param}$`;
             promptStr = promptStr.replaceAll(pattern, value);
         }
+
+        // Sources are injected by position : $image1$ is the first one the user picked, $image2$
+        // the second one, ... and $image$ is an alias of $image1$ for the workflows written when
+        // a prompt had a single source. Every placeholder of the template is replaced, even the
+        // ones the user left empty (null), otherwise the JSON would not parse.
+        const images = params.images ?? [];
+        promptStr = promptStr.replace(/\$image(\d*)\$/g, (_placeholder: string, position: string) => {
+            const index = position === "" ? 0 : (+position - 1);
+            return JSON.stringify(images[index] ?? null);
+        });
+
         return JSON.parse(promptStr);
     }
 
@@ -705,10 +720,19 @@ export interface Manifest {
      */
     duration?: DurationInfo;
     /**
-     * Does the workflow require a source image, injected as $image$?
-     * Set it to true to make the selection of a source image mandatory in the prompt editor.
+     * Does the workflow require a source, injected as $image$?
+     * Set it to true to make the selection of a source mandatory in the prompt editor.
+     * @deprecated Kept for the workflows written before several sources were supported,
+     * `imageCount: 1` is the same thing.
      */
     image?: boolean;
+    /**
+     * Number of ordered sources (images or videos) the workflow accepts, injected as
+     * $image1$ ... $imageN$ ($image$ being an alias of $image1$). Defaults to 1 when `image`
+     * is true, to 0 otherwise. The user must pick at least one source, the slots left empty
+     * are injected as null.
+     */
+    imageCount?: number;
     /** Description */
     description?: string;
     /** Prompt filename (will use api.json by default) */
@@ -771,7 +795,8 @@ export async function getAllComfyTemplates(comfyHost: string, comfyPath: string,
             const sizeStep = manifest.sizeStep;
             const negativePrompt = manifest.negativePrompt;
             const duration = manifest.duration;
-            const image = manifest.image;
+            // `image: true` is the single source form of `imageCount: 1`
+            const imageCount = manifest.imageCount ?? (manifest.image === true ? 1 : 0);
             const video: boolean = manifest.video ?? false;
             const timeout_ms = manifest.timeout_ms;
 
@@ -789,7 +814,7 @@ export async function getAllComfyTemplates(comfyHost: string, comfyPath: string,
                 sizeStep,
                 negativePrompt,
                 duration,
-                image,
+                imageCount,
                 video,
                 timeout_ms,
                 promptTemplate

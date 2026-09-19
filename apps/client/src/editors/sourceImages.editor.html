@@ -1,6 +1,10 @@
 <div>
-    <label class="form-label" for="sourceImagesFileInput">Upload image(s)</label>
-    <input type="file" id="sourceImagesFileInput" class="form-control mb-3" accept="image/*" multiple>
+    <label class="form-label" for="sourceImagesFileInput">Upload image(s) or video(s)</label>
+    <input type="file" id="sourceImagesFileInput" class="form-control" accept="image/*,video/*" multiple>
+    <div id="sourceImagesError" class="form-text text-danger d-none"></div>
+    <div class="form-text text-secondary mb-3">
+        Images are downscaled before being uploaded, videos are uploaded as they are.
+    </div>
     <div id="sourceImagesGrid" class="row">
     </div>
 </div>

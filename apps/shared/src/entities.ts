@@ -71,6 +71,9 @@ export const APP_MODEL = new EntitiesModel({
     SOURCE_IMAGE_ID: {
         rawType: JSTypes.number
     },
+    PROMPT_SOURCE_ID: {
+        rawType: JSTypes.number
+    },
     // -- Base types ----------------------------------------------------------
     BOOLEAN: {
         rawType: JSTypes.boolean
@@ -134,8 +137,7 @@ export const APP_MODEL = new EntitiesModel({
         model: { type: "MODEL_NAME" },
         prompt: { type: "TEXT" },
         negative_prompt: { type: "TEXT" },
-        duration: { type: "DURATION", optional: true },
-        sourceId: { type: "SOURCE_IMAGE_ID", optional: true, foreignTable: "sources" }
+        duration: { type: "DURATION", optional: true }
     },
     pictures: {
         id: { type: "PICTURE_ID", identity: true },
@@ -160,7 +162,17 @@ export const APP_MODEL = new EntitiesModel({
         id: { type: "SOURCE_IMAGE_ID", identity: true },
         projectId: { type: "PROJECT_ID", foreignTable: "projects" },
         attachmentId: { type: "ATTACHMENT_ID", foreignTable: "attachments" },
+        // Duplicated from the attachment : the client never loads the attachments table,
+        // it needs the type to know whether to display an image or a video
+        type: { type: "PICTURE_TYPE" },
         name: { type: "TEXT" }
+    },
+    promptSources: {
+        id: { type: "PROMPT_SOURCE_ID", identity: true },
+        promptId: { type: "PROMPT_ID", foreignTable: "prompts" },
+        sourceId: { type: "SOURCE_IMAGE_ID", foreignTable: "sources" },
+        /** Position of the source in the list handed over to the workflow, starting at 0 */
+        orderIndex: { type: "INDEX" }
     }
 });
 
@@ -176,6 +188,7 @@ export type PictureId = typeof APP_MODEL.types["PICTURE_ID"];
 export type AttachmentId = typeof APP_MODEL.types["ATTACHMENT_ID"];
 export type SeedId = typeof APP_MODEL.types["SEED_ID"];
 export type SourceImageId = typeof APP_MODEL.types["SOURCE_IMAGE_ID"];
+export type PromptSourceId = typeof APP_MODEL.types["PROMPT_SOURCE_ID"];
 
 export type Seed = typeof APP_MODEL.types["SEED"];
 export type Duration = typeof APP_MODEL.types["DURATION"];
@@ -216,8 +229,15 @@ export type SeedEntity = typeof APP_MODEL.tables["seeds"];
 /** A blob containing the data */
 export type AttachmentEntity = typeof APP_MODEL.tables["attachments"];
 
-/** An image uploaded by the user, attached to a project, usable as an input of a prompt */
+/** An image or a video uploaded by the user, attached to a project, usable as an input of a prompt */
 export type SourceImageEntity = typeof APP_MODEL.tables["sources"];
+
+/** 
+ * Link between a prompt and one of its sources.
+ * A prompt can use several sources, the order they are declared in matters as each one feeds
+ * a distinct input of the workflow.
+ */
+export type PromptSourceEntity = typeof APP_MODEL.tables["promptSources"];
 
 //#endregion
 

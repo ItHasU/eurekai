@@ -11,7 +11,7 @@ import { OperationType } from "@dagda/shared/sql/transaction";
 import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
 import { throttle } from "@dagda/shared/tools/throttle";
 import { COMFY_URL, ComfyAPI, ComfyHostStatus, ComfyLogEntry, ComfyStatus } from "@eurekai/shared/src/comfy.api";
-import { APP_MODEL, AppContexts, AppTables, AttachmentEntity, ComputationStatus, PictureEntity, PictureType, ProjectEntity, PromptEntity, SeedEntity, SourceImageEntity, UserEntity } from "@eurekai/shared/src/entities";
+import { APP_MODEL, AppContexts, AppTables, AttachmentEntity, ComputationStatus, PictureEntity, PictureType, ProjectEntity, PromptEntity, PromptSourceEntity, SeedEntity, SourceImageEntity, UserEntity } from "@eurekai/shared/src/entities";
 import { AppEvents } from "@eurekai/shared/src/events";
 import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api";
 import { SYSTEM_URL, SystemAPI, SystemInfo } from "@eurekai/shared/src/system.api";
@@ -239,7 +239,8 @@ export async function sqlFetch(helper: AbstractSQLRunner, filter: AppContexts): 
                 pictures: await helper.all<PictureEntity>(`SELECT ${qt("pictures")}.* FROM ${qt("pictures")} JOIN ${qt("prompts")} ON ${qf("pictures", "promptId")} = ${qf("prompts", "id")} WHERE ${qf("prompts", "projectId")} = $1`, filter.options.projectId),
                 // attachments: not fetch using cache but through a custom route
                 seeds: await helper.all<SeedEntity>(`SELECT * FROM ${qt("seeds")} WHERE ${qf("seeds", "projectId")} = $1`, filter.options.projectId),
-                sources: await helper.all<SourceImageEntity>(`SELECT * FROM ${qt("sources")} WHERE ${qf("sources", "projectId")} = $1`, filter.options.projectId)
+                sources: await helper.all<SourceImageEntity>(`SELECT * FROM ${qt("sources")} WHERE ${qf("sources", "projectId")} = $1`, filter.options.projectId),
+                promptSources: await helper.all<PromptSourceEntity>(`SELECT ${qt("promptSources")}.* FROM ${qt("promptSources")} JOIN ${qt("prompts")} ON ${qf("promptSources", "promptId")} = ${qf("prompts", "id")} WHERE ${qf("prompts", "projectId")} = $1`, filter.options.projectId)
             }
         case "pending":
             return {

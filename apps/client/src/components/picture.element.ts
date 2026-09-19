@@ -59,9 +59,9 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> implements
         return this.data.status >= ComputationStatus.REJECTED;
     }
 
-    /** A video cannot be used as a $image$ source (base64 img2img input), only a still image can */
+    /** Both an image and a video can be reused as a source of another prompt */
     public get canUseAsSource(): boolean {
-        return this.data.attachmentId != null && this.data.type === PictureType.IMAGE;
+        return this.data.attachmentId != null && (this.data.type === PictureType.IMAGE || this.data.type === PictureType.VIDEO);
     }
 
     //#region Events ----------------------------------------------------------

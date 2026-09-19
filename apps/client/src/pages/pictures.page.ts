@@ -6,7 +6,7 @@ import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
 import { COMFY_URL, ComfyAPI, ComfyHostStatus } from "@eurekai/shared/src/comfy.api";
 import { AppContexts, AppTables, AttachmentId, ComputationStatus, PictureEntity, PictureType, ProjectEntity, ProjectId, PromptEntity, Score, Seed } from "@eurekai/shared/src/entities";
 import { AppEvents } from "@eurekai/shared/src/events";
-import { deletePicture, generateNextPictures, isPreferredSeed, togglePreferredSeed, unstarPicture, zipPictures } from "@eurekai/shared/src/pictures.data";
+import { deletePicture, generateNextPictures, isPreferredSeed, setPromptSources, togglePreferredSeed, unstarPicture, zipPictures } from "@eurekai/shared/src/pictures.data";
 import { APP } from "src";
 import { PictureElement } from "src/components/picture.element";
 import { PromptElement } from "src/components/prompt.element";
@@ -537,7 +537,7 @@ export class PicturesPage extends AbstractPageElement {
             },
             useAsSource: async () => {
                 const attachmentId = picture.attachmentId;
-                if (attachmentId == null || picture.type !== PictureType.IMAGE) {
+                if (attachmentId == null || (picture.type !== PictureType.IMAGE && picture.type !== PictureType.VIDEO)) {
                     return;
                 }
                 // Only the current project is loaded on this page, fetch the full list first
@@ -557,6 +557,7 @@ export class PicturesPage extends AbstractPageElement {
                         id: asNamed(0),
                         projectId: result.projectId,
                         attachmentId,
+                        type: picture.type,
                         name: asNamed(result.name)
                     });
                 });
@@ -708,6 +709,7 @@ export class PicturesPage extends AbstractPageElement {
                         orderIndex = Math.max(orderIndex, prompt.orderIndex + 1);
                     }
                 }
+                const sourceIds = this._promptEditor.getSourceIds();
                 await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
                     const newPrompt = tr.insert("prompts", {
                         ...prompt,
@@ -715,6 +717,7 @@ export class PicturesPage extends AbstractPageElement {
                         projectId,
                         orderIndex: asNamed(orderIndex)
                     });
+                    setPromptSources(StaticDataProvider.entitiesHandler, tr, newPrompt.id, sourceIds);
                     // Create pictures for 1 seed only, this will allow to test the prompt quickly
                     // even if there are a lot of preferred seeds
                     generateNextPictures(StaticDataProvider.entitiesHandler, tr, newPrompt, 1, firstSeed);
