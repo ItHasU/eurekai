@@ -543,7 +543,10 @@ export class PicturesPage extends AbstractPageElement {
                 // Only the current project is loaded on this page, fetch the full list first
                 await StaticDataProvider.entitiesHandler.fetch({ type: "projects", options: undefined });
                 const projects = sortProjects(StaticDataProvider.entitiesHandler.getItems("projects"));
-                const defaultName = prompt.prompt.trim().slice(0, 60) || `Picture ${picture.id}`;
+                // A source image is most often reused across projects, so the project it comes
+                // from identifies it better than the prompt that generated it. No truncation
+                // here: project names are already short and cutting one would only mangle it.
+                const defaultName = project.name.trim() || `Picture ${picture.id}`;
                 const result = await showUseAsSourceDialog({
                     projects,
                     defaultProjectId: project.id,
