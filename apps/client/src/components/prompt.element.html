@@ -74,6 +74,20 @@
                 <i class="bi bi-box-arrow-up-right"></i>&nbsp;Move prompt and children...
               </a>
             </li>
+            <!-- Parent prompt, the one the prompt is displayed as a diff of -->
+            <li>
+              <a ref="attachToParent" class="dropdown-item" href="javascript: void(0)">
+                <i class="bi bi-diagram-2"></i>&nbsp;Attach to a parent prompt...
+              </a>
+            </li>
+            {{#if data.parentId}}
+            <!-- Only displayed when there is a parent to detach from -->
+            <li>
+              <a ref="detachFromParent" class="dropdown-item" href="javascript: void(0)">
+                <i class="bi bi-scissors"></i>&nbsp;Detach from parent prompt
+              </a>
+            </li>
+            {{/if}}
             <!-- Seeds -->
             <li>
               <a ref="updateSeeds" class="dropdown-item" href="javascript: void(0)">
