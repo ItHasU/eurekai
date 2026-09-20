@@ -332,6 +332,41 @@ export function deletePrompt(handler: EntitiesHandler<AppTables, AppContexts>, t
     tr.delete("prompts", prompt.id);
 }
 
+/**
+ * List the prompts the given prompt can be attached to.
+ *
+ * A prompt is displayed as a diff against its parent, so the parentage has to stay a tree: the
+ * prompt itself and all of its descendants are excluded, otherwise attaching would close a loop
+ * and the diff would never reach a root prompt.
+ * Only prompts of the same project are eligible, a parent from another project would not even be
+ * visible next to the prompt.
+ */
+export function getPossibleParentPrompts(handler: EntitiesHandler<AppTables, AppContexts>, prompt: PromptEntity): PromptEntity[] {
+    const prompts = handler.getItems("prompts");
+
+    // -- Gather the prompt and all its descendants --
+    // All the prompts are walked, not only the ones of the project, so a chain of children
+    // passing through another project is not missed.
+    const forbidden: PromptEntity[] = [prompt];
+    for (let i = 0; i < forbidden.length; i++) {
+        const parent = forbidden[i];
+        for (const child of prompts) {
+            if (handler.isSameId(child.parentId, parent.id) && !forbidden.includes(child)) {
+                forbidden.push(child);
+            }
+        }
+    }
+
+    return prompts.filter(candidate => handler.isSameId(candidate.projectId, prompt.projectId) && !forbidden.includes(candidate));
+}
+
+/** Attach a prompt to a parent prompt, or detach it from its parent when parentId is null */
+export function setPromptParent(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, prompt: PromptEntity, parentId: PromptId | null): void {
+    // The prompt entity itself is updated by the transaction, so the caller can refresh its view
+    // from the same object right away.
+    tr.update("prompts", prompt, { parentId });
+}
+
 /** Will move the firstPrompt and all its children and sub-children to the newProjectId */
 export function movePromptToProject(handler: EntitiesHandler<AppTables, AppContexts>, tr: SQLTransaction<AppTables, AppContexts>, firstPrompt: PromptEntity, newProjectId: ProjectId, withChildren: boolean): PromptEntity[] {
     const prompts = [...handler.getItems("prompts")];

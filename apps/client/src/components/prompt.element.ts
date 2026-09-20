@@ -2,7 +2,7 @@ import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from 
 import { ComfyHostStatus } from "@eurekai/shared/src/comfy.api";
 import { ComputationStatus, ProjectEntity, PromptEntity, Seed } from "@eurekai/shared/src/entities";
 import { ModelInfo } from "@eurekai/shared/src/models.api";
-import { cancelPicture, deletePrompt, generateNextPictures, movePromptToProject, updateSeeds } from "@eurekai/shared/src/pictures.data";
+import { cancelPicture, deletePrompt, generateNextPictures, getPossibleParentPrompts, movePromptToProject, setPromptParent, updateSeeds } from "@eurekai/shared/src/pictures.data";
 import { diff_match_patch } from "diff-match-patch";
 import { StaticDataProvider } from "src/tools/dataProvider";
 import { AbstractDTOElement } from "./abstract.dto.element";
@@ -17,6 +17,12 @@ function escapeHtml(text: string): string {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
+}
+
+/** Prompts are long, only the beginning of one is readable in a select */
+function shortenPrompt(prompt: string): string {
+    const MAX_LENGTH = 80;
+    return prompt.length <= MAX_LENGTH ? prompt : `${prompt.substring(0, MAX_LENGTH)}…`;
 }
 
 export type PromptEvents = {
@@ -301,6 +307,43 @@ export class PromptElement extends AbstractDTOElement<PromptEntity> implements E
         }
         this._bindClick("move", genMoveButtonCallback(false));
         this._bindClick("moveWithChildren", genMoveButtonCallback(true));
+        this._bindClick("attachToParent", async () => {
+            const candidates = getPossibleParentPrompts(StaticDataProvider.entitiesHandler, this.data);
+            if (candidates.length === 0) {
+                // No prompt can be a parent here, an empty select would only be confusing
+                return;
+            }
+            candidates.sort((p1, p2) => p1.orderIndex - p2.orderIndex);
+            // showSelect displays one property of the items it is given, so the label has to be
+            // built beforehand as a property of its own
+            const choices = candidates.map(candidate => ({
+                id: candidate.id,
+                label: `#${candidate.orderIndex} - ${escapeHtml(shortenPrompt(candidate.prompt))}`
+            }));
+            const selectedChoice = await showSelect(choices, {
+                valueKey: "id",
+                displayString: "label",
+                selected: choices.find(choice => StaticDataProvider.entitiesHandler.isSameId(choice.id, this.data.parentId)),
+                title: "Attach to a parent prompt"
+            });
+            if (selectedChoice == null || StaticDataProvider.entitiesHandler.isSameId(selectedChoice.id, this.data.parentId)) {
+                // Cancelled, or same parent as before : nothing to do
+                return;
+            }
+            await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
+                setPromptParent(StaticDataProvider.entitiesHandler, tr, this.data, selectedChoice.id);
+            });
+            // The transaction updated this.data in place, so refreshing displays the diff against
+            // the new parent
+            this.refresh();
+        });
+        this._bindClick("detachFromParent", async () => {
+            await StaticDataProvider.entitiesHandler.withTransaction((tr) => {
+                setPromptParent(StaticDataProvider.entitiesHandler, tr, this.data, null);
+            });
+            // Same as above : this.data no longer has a parent, the prompt is displayed as a whole
+            this.refresh();
+        });
         this._bindClick("updateSeeds", async () => {
             return StaticDataProvider.entitiesHandler.withTransaction((tr) => {
                 updateSeeds(StaticDataProvider.entitiesHandler, tr, this.data, false);

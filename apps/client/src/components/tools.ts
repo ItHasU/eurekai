@@ -79,14 +79,16 @@ export function showUseAsSourceDialog(options: {
 export function showSelect<T>(choices: T[], options: {
     valueKey: keyof T,
     displayString: keyof T,
-    selected?: T
+    selected?: T,
+    /** Title of the dialog, kept to the historical "Move to" when not given */
+    title?: string
 }): Promise<T | undefined> {
     // -- Create a dialog with a select --
     const dialog = htmlStringToElement<HTMLDivElement>(`<div class="modal">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Move to</h5>
+                        <h5 class="modal-title">${options.title ?? "Move to"}</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
