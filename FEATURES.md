@@ -92,8 +92,12 @@ Contextes de chargement : `users`, `projects`, `project` (un projet complet),
 
 ### Page « Stars » (notation)
 - Notation par comparaison : l'image à noter est confrontée aux références de chaque niveau.
+- Images et vidéos (lues en boucle, sans son).
 - Attribution d'une note de 1 à 4 étoiles, au clavier (y compris disposition AZERTY).
-- L'image notée devient la nouvelle référence de son niveau.
+- Le média noté bascule dans l'aperçu de son niveau sans être retéléchargé, puis laisse la
+  place à sa vignette dès qu'elle est disponible.
+- Les médias qui ne sont plus affichés sont déchargés (vidéos mises en pause et vidées) pour
+  que la mémoire n'augmente pas au fil des notations.
 - Retour automatique à la page images quand la file est vide.
 
 ## 6. Interface générale
