@@ -48,6 +48,11 @@ export class Generator {
             this._handler.markCacheDirty();
             await this._handler.fetch({ type: "pending", options: undefined });
 
+            // -- Drop the pictures that are not waiting for generation anymore --
+            // Before the shortcut below : cancelling adds nothing to queue, so it would exit
+            // before ever noticing the cancellation
+            await this._forgetCancelledPictures();
+
             // -- List pending pictures not queued yet --
             // A picture stays PENDING until it really starts being generated (see _queuePicture),
             // so the same picture must not be handed to _queuePicture more than once : the ids
@@ -97,6 +102,53 @@ export class Generator {
         } finally {
             // Re-schedule next
             setTimeout(this._dequeue.bind(this), 1000);
+        }
+    }
+
+    /**
+     * Forget the queued pictures that are not waiting for generation anymore : the user cancelled
+     * them, or deleted the prompt they belong to.
+     *
+     * A cancelled picture is only removed from the queue when it reaches the front of its lock,
+     * where _isCancelled skips it. Without this, the count of pictures left would stay wrong for
+     * as long as the pictures queued before it take to generate, which is minutes.
+     *
+     * The question asked is which pictures are still to generate, rather than which ones were
+     * cancelled : a picture deleted along with its prompt has no row left, so it is not CANCELLED
+     * either, and it must be forgotten just the same.
+     */
+    protected async _forgetCancelledPictures(): Promise<void> {
+        const ids = [...this._queuedPictureIds];
+        if (ids.length === 0) {
+            return;
+        }
+
+        try {
+            // The runner does not accept an array as a parameter, hence the placeholders
+            const placeholders = ids.map((_id, index) => `$${index + 1}`).join(",");
+            const rows = await this._db.all<Pick<PictureEntity, "id">>(
+                `SELECT ${qf("pictures", "id", false)} FROM ${qt("pictures")}`
+                + ` WHERE ${qf("pictures", "id", false)} IN (${placeholders})`
+                + ` AND ${qf("pictures", "status", false)} IN (${ComputationStatus.PENDING}, ${ComputationStatus.COMPUTING})`,
+                ...ids);
+
+            const stillToGenerate: Set<number> = new Set(rows.map(row => row.id));
+            let forgotten: number = 0;
+            for (const id of ids) {
+                if (!stillToGenerate.has(id)) {
+                    this._queuedPictureIds.delete(id);
+                    forgotten++;
+                }
+            }
+            if (forgotten > 0) {
+                console.log(`${forgotten} picture(s) cancelled or deleted, removed from the queue`);
+                this._notifyQueuedPictureCount();
+            }
+        } catch (e) {
+            // Not critical : the pictures are skipped when they reach the front of their lock
+            // anyway, this only makes the count right before that
+            console.error("Failed to look for cancelled pictures");
+            console.error(e);
         }
     }
 
@@ -161,7 +213,7 @@ export class Generator {
                             // Start the main transaction
                             // The user may have cancelled the picture while it was waiting behind the lock
                             if (await this._isCancelled(picture)) {
-                                console.log(`Picture ${picture.id} was cancelled, skipping generation`);
+                                console.log(`Picture ${picture.id} was cancelled or deleted, skipping generation`);
                                 return;
                             }
 
@@ -216,13 +268,17 @@ export class Generator {
         }
     }
 
-    /** @returns true if the user cancelled the picture since it was queued */
+    /**
+     * @returns true if the picture must not be generated anymore : the user cancelled it, or
+     * deleted the prompt it belongs to. A deleted picture has no row left to write the result to,
+     * generating it would only waste the machine.
+     */
     protected async _isCancelled(picture: PictureEntity): Promise<boolean> {
         try {
             const row = await this._db.get<Pick<PictureEntity, "status">>(
                 `SELECT ${qf("pictures", "status", false)} FROM ${qt("pictures")} WHERE ${qf("pictures", "id", false)}=$1`,
                 picture.id);
-            return row?.status === ComputationStatus.CANCELLED;
+            return row == null || row.status === ComputationStatus.CANCELLED;
         } catch (e) {
             // On error, generate the picture : losing an image is worse than generating one too many
             console.error(`Failed to check cancellation for picture ${picture.id}`);
