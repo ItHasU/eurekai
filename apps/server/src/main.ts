@@ -1,3 +1,4 @@
+import { SQLPushHelper } from "@dagda/server/push/impl/sql.push.helper";
 import { getEnvNumber, getEnvString } from "@dagda/server/tools/config";
 import { DiffusersRegistry } from "./diffusers";
 import { ENV_VARIABLES_NUMBER, ENV_VARIABLES_STR } from "./modules/config";
@@ -23,13 +24,18 @@ async function main(): Promise<void> {
         console.log(`- [${info.uid}] ${info.displayName}`);
     }
 
+    const baseURL = getEnvString<ENV_VARIABLES_STR>("BASE_URL");
+
+    // -- Push notifications --------------------------------------------------
+    // The URL of the application is the default contact given to the push services
+    const pushHelper = new SQLPushHelper(db, baseURL);
+
     // -- Generate ------------------------------------------------------------
-    new Generator(db);
+    new Generator(db, pushHelper);
 
     // -- Initialize HTTP server ----------------------------------------------
-    const baseURL = getEnvString<ENV_VARIABLES_STR>("BASE_URL");
     const port = getEnvNumber<ENV_VARIABLES_NUMBER>("PORT");
-    await initHTTPServer(db, baseURL, port);
+    await initHTTPServer(db, pushHelper, baseURL, port);
 
     console.log(`Server started, connect to ${baseURL}`);
 }

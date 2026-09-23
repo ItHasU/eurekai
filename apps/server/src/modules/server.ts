@@ -1,5 +1,6 @@
 import { registerAPI } from "@dagda/server/api";
 import { AuthHandler } from "@dagda/server/express/auth";
+import { AbstractPushHelper } from "@dagda/server/push/push.helper";
 import { AbstractSQLRunner } from "@dagda/server/sql/runner";
 import { generateSubmit } from "@dagda/server/sql/sql.adapter";
 import { getEnvStringOptional } from "@dagda/server/tools/config";
@@ -27,11 +28,14 @@ import { THUMBNAIL_MIME_TYPE, getOrCreateThumbnail } from "./thumbnail";
 
 const APP_START_TIME_MS = new Date().getTime();
 
+/** URL of the service worker displaying the push notifications, see apps/service-worker */
+const SERVICE_WORKER_PATH = "/sw.js";
+
 /** Minimum delay between two generation progress notifications, see _registerProgressNotifications */
 const PROGRESS_NOTIFICATION_MS = 1000;
 
 /** Initialize an Express app and register the routes */
-export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, port: number): Promise<void> {
+export async function initHTTPServer(db: AbstractSQLRunner, pushHelper: AbstractPushHelper, baseURL: string, port: number): Promise<void> {
     const app = express();
 
     // -- Update pictures with status computing --
@@ -85,7 +89,7 @@ export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, por
                 console.error(err);
                 return false;
             }
-        });
+        }, ["/assets/", SERVICE_WORKER_PATH]);
         auth.registerGoogleStrategy(clientID, clientSecret);
     }
 
@@ -97,6 +101,16 @@ export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, por
     // -- Register client files routes --
     const path: string = resolve("./apps/client/dist");
     app.use(express.static(path));
+
+    // -- Register the service worker --
+    // Served at the root : a worker only handles the pages under its own path.
+    // Never cached, so a new version of the worker is picked up by the browsers right away.
+    app.get(SERVICE_WORKER_PATH, (req, res) => {
+        res.sendFile(resolve("./apps/service-worker/dist/sw.js"), { headers: { "Cache-Control": "no-cache" } });
+    });
+
+    // -- Register push notifications routes --
+    pushHelper.installRouter(app);
 
     // -- Register SQL routes --
     const submit = generateSubmit<AppTables, AppContexts>(db, APP_MODEL);

@@ -1,3 +1,4 @@
+import { AbstractPushHelper } from "@dagda/server/push/push.helper";
 import { AbstractSQLRunner } from "@dagda/server/sql/runner";
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { SQLTransaction } from "@dagda/shared/sql/transaction";
@@ -23,8 +24,13 @@ export class Generator {
      * everything that is left to do, not only the picture currently being generated.
      */
     protected readonly _queuedPictureIds: Set<number> = new Set();
+    /** 
+     * Outcome of the pictures handled since the queue was last empty, reported by the push
+     * notification sent once it is empty again (see _pushGenerationEnd)
+     */
+    protected _batch: { done: number, errors: number } = { done: 0, errors: 0 };
 
-    constructor(protected _db: AbstractSQLRunner) {
+    constructor(protected _db: AbstractSQLRunner, protected _pushHelper?: AbstractPushHelper) {
         this._handler = buildServerEntitiesHandler(this._db);
         // -- Answer to clients asking for the current count --
         // Without this, a client connecting during a long generation would have to wait
@@ -39,6 +45,28 @@ export class Generator {
     /** Broadcast the current count of queued pictures to all the clients */
     protected _notifyQueuedPictureCount(): void {
         NotificationHelper.broadcast<AppEvents, "generating">("generating", { count: this._queuedPictureIds.size });
+        if (this._queuedPictureIds.size === 0) {
+            this._pushGenerationEnd();
+        }
+    }
+
+    /** 
+     * Push a notification once everything is generated, if something was : the push reaches
+     * the phones even when the application is closed, unlike the websocket.
+     */
+    protected _pushGenerationEnd(): void {
+        const { done, errors } = this._batch;
+        if (done + errors === 0) {
+            // Nothing generated since the last notification (or everything was cancelled)
+            return;
+        }
+        this._batch = { done: 0, errors: 0 };
+
+        const body = errors === 0
+            ? `All images generated (${done})`
+            : `Generation finished : ${done} generated, ${errors} failed`;
+        // Same tag and topic : a new notification replaces the previous one instead of piling up
+        this._pushHelper?.notifyAll({ body, tag: "generation" }, { urgency: "high", topic: "generation" });
     }
 
     /** Fetch data and queue them for computation */
@@ -199,6 +227,8 @@ export class Generator {
 
             // -- Queue the generation of the picture --
             const nextPromise = previousPromise.then(async () => {
+                // Stays null if the picture was cancelled
+                let outcome: keyof Generator["_batch"] | null = null;
                 try {
                     await this._handler.withTransaction(async (tr) => {
                         try {
@@ -227,10 +257,12 @@ export class Generator {
 
                             // Generate the picture
                             await this._generatePictureImpl(tr, diffuser, picture, prompt, img);
+                            outcome = "done";
                         } catch (e) {
                             // Image generation failed, try to mark picture as failed
                             console.error(`Failed to generate image for picture ${picture.id}`);
                             console.error(e);
+                            outcome = "errors";
                             try {
                                 tr.update("pictures", picture, {
                                     status: asNamed(ComputationStatus.ERROR)
@@ -243,7 +275,12 @@ export class Generator {
                 } catch (e) {
                     console.error(`An error occurred while handing picture ${picture.id}`);
                     console.error(e);
+                    // The picture may have been generated, but it could not be saved
+                    outcome = "errors";
                 } finally {
+                    if (outcome != null) {
+                        this._batch[outcome]++;
+                    }
                     // Whatever happens, the picture can now be considered as unqueued
                     this._queuedPictureIds.delete(picture.id);
                     this._notifyQueuedPictureCount();
@@ -262,6 +299,7 @@ export class Generator {
                     status: asNamed(ComputationStatus.ERROR)
                 });
             }).catch(e => console.error(e)).then(() => {
+                this._batch.errors++;
                 this._queuedPictureIds.delete(picture.id);
                 this._notifyQueuedPictureCount();
             });

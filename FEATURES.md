@@ -62,6 +62,12 @@ Contextes de chargement : `users`, `projects`, `project` (un projet complet),
 - Correction des dimensions a posteriori si le back-end a révisé la taille.
 - Remise à `ERROR` au démarrage du serveur des images restées en `COMPUTING`.
 - Notification temps réel du nombre d'images en cours de génération (`generating`).
+- Notification push (Web Push) quand la file est vide, avec le nombre d'images générées et en
+  erreur : envoyée par le serveur via le service de push du navigateur, elle arrive même
+  application fermée (Android, iOS avec l'application ajoutée à l'écran d'accueil, desktop).
+  Abonnements stockés dans `pushSubscriptions`, oubliés quand le service de push les refuse.
+  À défaut de push (clés absentes, navigateur non abonné), la page ouverte affiche elle-même
+  la notification.
 - Support des vidéos (le même pipeline produit un `PictureType.VIDEO`).
 
 ### Back-ends de génération supportés
@@ -118,7 +124,8 @@ Contextes de chargement : `users`, `projects`, `project` (un projet complet),
 - Date de démarrage et durée de fonctionnement du serveur.
 - Liste des erreurs non capturées côté serveur.
 - Bouton de déclenchement d'une erreur de test.
-- Demande de permission et test des notifications navigateur.
+- Activation et test des notifications : permission, abonnement push et envoi d'une
+  notification de test par le serveur, avec le message d'erreur en cas d'échec.
 
 ## 8. Authentification & administration
 
@@ -126,11 +133,17 @@ Contextes de chargement : `users`, `projects`, `project` (un projet complet),
 - Création automatique du compte au premier login, **désactivé par défaut**.
 - Accès conditionné à l'activation manuelle du compte en base (liste blanche).
 - Mode `NO_AUTH` explicite pour le développement local.
+- Le manifest, les icônes (`/assets/`) et le service worker (`/sw.js`) sont servis sans
+  connexion : le navigateur les télécharge sans cookie de session.
 
 ## 9. Déploiement
 
 - Dockerfile + `docker-compose.yml` (application + PostgreSQL).
 - Base PostgreSQL, scripts de migration SQL manuels dans `apps/sql/`.
+- Notifications push : clés VAPID dans `PUSH_PUBLIC` / `PUSH_PRIVATE` (une paire est générée
+  et affichée dans les logs au démarrage si elles manquent, push désactivé en attendant) et
+  contact optionnel dans `PUSH_SUBJECT` (`mailto:` ou `https:`, `BASE_URL` par défaut). Les
+  clés ne doivent plus changer ensuite : les abonnements y sont liés.
 - Intégration continue GitHub Actions.
 
 ---

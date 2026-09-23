@@ -1,6 +1,7 @@
 import { apiCall } from "@dagda/client/api";
+import { PushClient } from "@dagda/client/push/push.client";
 import { SYSTEM_URL, SystemAPI } from "@eurekai/shared/src/system.api";
-import { showNotificationIfPossible } from "src/tools/notification";
+import { setPushSubscribed } from "src/tools/notification";
 import { AbstractPageElement } from "./abstract.page.element";
 
 /** Display projects and fire an event on project change */
@@ -11,6 +12,7 @@ export class MaintenancePage extends AbstractPageElement {
     protected readonly _errorPre: HTMLPreElement;
     protected readonly _errorButton: HTMLButtonElement;
     protected readonly _notificationButton: HTMLButtonElement;
+    protected readonly _notificationStatus: HTMLDivElement;
 
     constructor() {
         super(require("./maintenance.page.html").default);
@@ -21,6 +23,7 @@ export class MaintenancePage extends AbstractPageElement {
         this._errorPre = this.querySelector("#errorPre") as HTMLPreElement;
         this._errorButton = this.querySelector("#errorButton") as HTMLButtonElement;
         this._notificationButton = this.querySelector("#notificationButton") as HTMLButtonElement;
+        this._notificationStatus = this.querySelector("#notificationStatus") as HTMLDivElement;
 
         this._errorButton.addEventListener("click", async () => {
             try {
@@ -34,17 +37,18 @@ export class MaintenancePage extends AbstractPageElement {
         });
 
         this._notificationButton.addEventListener("click", async () => {
+            // The whole chain is tested : permission, subscription, and a notification sent by
+            // the server through the push service, exactly like the end of a generation
+            this._notificationStatus.innerText = "Sending a test notification...";
             try {
-                // -- Request permission --
-                const permission: NotificationPermission = await Notification.requestPermission();
-                this._refresh_notificationButton(permission);
-
-                // -- Trigger a sample notification --
-                showNotificationIfPossible({
-                    body: "If you see this, notifications are set up correctly"
-                });
+                await PushClient.enableAndTest();
+                setPushSubscribed();
+                this._notificationStatus.innerText = "Test notification sent, it should show up in a few seconds";
             } catch (e) {
                 console.error(e);
+                this._notificationStatus.innerText = "" + (e instanceof Error ? e.message : e);
+            } finally {
+                this._refresh_notificationButton();
             }
         });
     }
@@ -62,10 +66,9 @@ export class MaintenancePage extends AbstractPageElement {
     }
 
     /** Refresh notification button based on current permission */
-    protected _refresh_notificationButton(permission?: NotificationPermission): void {
-        if (permission == null) {
-            permission = Notification.permission;
-        }
+    protected _refresh_notificationButton(): void {
+        // Notification is missing on iOS until the application is added to the home screen
+        const permission: NotificationPermission = "Notification" in window ? Notification.permission : "denied";
 
         this._notificationButton.classList.remove(
             "btn-outline-secondary",

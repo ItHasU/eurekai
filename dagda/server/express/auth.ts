@@ -20,7 +20,12 @@ export class AuthHandler {
     private readonly _router: Router = Router();
     private readonly _strategies: AuthStrategy[] = [];
 
-    public constructor(protected readonly _app: Express, protected _baseURL: string, protected _verifier: Verifier) {
+    /**
+     * @param _publicPaths Prefixes of the paths served without being logged in. Some files are
+     * fetched by the browser without the session cookie : the manifest (required to install the
+     * application, and so to get push notifications on iOS) and the icons it references.
+     */
+    public constructor(protected readonly _app: Express, protected _baseURL: string, protected _verifier: Verifier, protected readonly _publicPaths: string[] = []) {
         this._initialize();
     }
 
@@ -41,8 +46,8 @@ export class AuthHandler {
         // -- Configure the app to reject any unauthenticated request ---------
         this._app.use((req, res, next) => {
             // Send unauthorized if not logged in
-            if (req.path.startsWith("/login")) {
-                // Allow login routes
+            if (req.path.startsWith("/login") || this._publicPaths.some(path => req.path.startsWith(path))) {
+                // Allow login routes and public files
                 next();
             } else if (!req.user) {
                 res.redirect("/login");
