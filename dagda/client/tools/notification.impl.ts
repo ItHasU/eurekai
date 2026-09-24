@@ -4,13 +4,17 @@ export type SocketEvents = {
     connected: boolean;
 }
 
-/** Delay before connecting again once the connection is lost */
-const RECONNECT_DELAY_MS = 1000;
+/** Delay before the first attempt to connect again once the connection is lost */
+const RECONNECT_MIN_DELAY_MS = 1000;
+/** Longest delay between two attempts, once the server keeps refusing or not answering */
+const RECONNECT_MAX_DELAY_MS = 30_000;
 
 /** Notification server based on websocket protocol */
 export class ClientNotificationImpl<Notifications extends SocketEvents & Record<string, unknown>> extends AbstractNotificationImpl<Notifications> {
 
     protected _socket: WebSocket | null = null;
+    /** Delay before the next attempt to connect, see _reconnect */
+    protected _reconnectDelayMs: number = RECONNECT_MIN_DELAY_MS;
 
     /** Declares the connection dead when the server stays silent for too long, see _watchSilence */
     protected _silenceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -41,6 +45,7 @@ export class ClientNotificationImpl<Notifications extends SocketEvents & Record<
 
         socket.onopen = () => {
             console.log("Socket opened");
+            this._reconnectDelayMs = RECONNECT_MIN_DELAY_MS;
             this._watchSilence();
             this._onNotificationReceived("connected", true);
         };
@@ -57,7 +62,7 @@ export class ClientNotificationImpl<Notifications extends SocketEvents & Record<
             this._onNotificationReceived(notification.kind, notification.data);
         };
         socket.onclose = () => {
-            console.log(`Socket closed, reconnecting in ${RECONNECT_DELAY_MS / 1000} second(s)`);
+            console.log("Socket closed");
             this._reconnect();
         };
     }
@@ -71,7 +76,14 @@ export class ClientNotificationImpl<Notifications extends SocketEvents & Record<
         this._dropSocket();
         // Listeners ask for fresh data once connected again : what they missed meanwhile is lost
         this._onNotificationReceived("connected", false);
-        setTimeout(() => this._connect(), RECONNECT_DELAY_MS);
+
+        // Doubled on each attempt that does not open : the server refuses a page whose session
+        // expired (or whose user was disabled) on every attempt, which would otherwise retry every
+        // second for as long as it stays open. Back to the minimum once a connection opens.
+        const delay = this._reconnectDelayMs;
+        this._reconnectDelayMs = Math.min(2 * delay, RECONNECT_MAX_DELAY_MS);
+        console.log(`Reconnecting in ${delay / 1000} second(s)`);
+        setTimeout(() => this._connect(), delay);
     }
 
     /**

@@ -1,5 +1,6 @@
 import { registerAPI } from "@dagda/server/api";
 import { AuthHandler } from "@dagda/server/express/auth";
+import { SQLSessionStore } from "@dagda/server/express/impl/sql.session.store";
 import { AbstractPushHelper } from "@dagda/server/push/push.helper";
 import { AbstractSQLRunner } from "@dagda/server/sql/runner";
 import { generateSubmit } from "@dagda/server/sql/sql.adapter";
@@ -52,6 +53,8 @@ export async function initHTTPServer(db: AbstractSQLRunner, pushHelper: Abstract
     }
 
     // -- Create the authentication handler --
+    // Stays null when authentication is disabled
+    let auth: AuthHandler | null = null;
     // Read the google client id and secret from the environment variables
     const clientID = getEnvStringOptional("GOOGLE_CLIENT_ID");
     const clientSecret = getEnvStringOptional("GOOGLE_CLIENT_SECRET");
@@ -64,7 +67,15 @@ export async function initHTTPServer(db: AbstractSQLRunner, pushHelper: Abstract
             console.log("Authentication is disabled on purpose, continuing...");
         }
     } else {
-        const auth: AuthHandler = new AuthHandler(app, baseURL, async (profile: passport.Profile) => {
+        // -- Sessions --
+        // Kept in the database, so that a restart of the server does not log everybody out.
+        // Without the table, they are kept in memory as before rather than having every login fail.
+        const sessionStore = await SQLSessionStore.isAvailable(db) ? new SQLSessionStore(db) : undefined;
+        if (sessionStore == null) {
+            console.error("The sessions table is missing, apply apps/sql/009_sessions.sql to keep the users logged in when the server restarts. Sessions are kept in memory until then.");
+        }
+
+        auth = new AuthHandler(app, baseURL, async (profile: passport.Profile) => {
             try {
                 const handler = buildServerEntitiesHandler(db);
                 await handler.fetch({ type: "users", "options": undefined });
@@ -89,7 +100,16 @@ export async function initHTTPServer(db: AbstractSQLRunner, pushHelper: Abstract
                 console.error(err);
                 return false;
             }
-        }, ["/assets/", SERVICE_WORKER_PATH]);
+        }, ["/assets/", SERVICE_WORKER_PATH], {
+            store: sessionStore,
+            // Sessions last weeks : a user disabled in the meantime must lose its session, not keep
+            // it until it expires
+            sessionVerifier: async (userId: string) => {
+                const user = await db.get<Pick<UserEntity, "enabled">>(
+                    `SELECT ${qf("users", "enabled", false)} FROM ${qt("users")} WHERE ${qf("users", "uid", false)}=$1`, userId);
+                return user?.enabled === true;
+            }
+        });
         auth.registerGoogleStrategy(clientID, clientSecret);
     }
 
@@ -195,7 +215,11 @@ export async function initHTTPServer(db: AbstractSQLRunner, pushHelper: Abstract
     const server = app.listen(port);
 
     // -- Register websocket notification --
-    NotificationHelper.set(new ServerNotificationImpl(server));
+    // Only open to logged in users, unless authentication is disabled
+    const authHandler = auth;
+    NotificationHelper.set(new ServerNotificationImpl(server, {
+        authenticate: authHandler == null ? undefined : (req) => authHandler.isRequestAuthenticated(req)
+    }));
     _registerProgressNotifications();
 }
 

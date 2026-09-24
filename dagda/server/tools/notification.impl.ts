@@ -1,5 +1,5 @@
 import { AbstractNotificationImpl, HEARTBEAT_INTERVAL_MS, HEARTBEAT_NOTIFICATION_KIND } from "@dagda/shared/tools/notification.helper";
-import { Server } from "http";
+import { IncomingMessage, Server } from "http";
 import { WebSocket, WebSocketServer } from "ws";
 
 /** Notification server based on websocket protocol */
@@ -16,12 +16,35 @@ export class ServerNotificationImpl<Notifications extends Record<string, unknown
 
     protected readonly _heartbeat: NodeJS.Timeout;
 
-    /** @param options.heartbeatIntervalMs Only meant to be changed by tests */
-    public constructor(server: Server, options?: { heartbeatIntervalMs?: number }) {
+    /**
+     * @param options.authenticate Tells whether the connection request comes from a logged in user,
+     * the connection is refused otherwise. Every connection is accepted when not set.
+     * @param options.heartbeatIntervalMs Only meant to be changed by tests
+     */
+    public constructor(server: Server, options?: { authenticate?: (req: IncomingMessage) => Promise<boolean>, heartbeatIntervalMs?: number }) {
         super();
 
         // Register a websocket from ws on the Express server
-        this._socket = new WebSocketServer({ server });
+        const authenticate = options?.authenticate;
+        this._socket = new WebSocketServer({
+            server,
+            // The upgrade request goes from the HTTP server to ws directly, none of the express
+            // middlewares sees it : without this check, anyone reaching the server could listen to
+            // the notifications, and send some to every client
+            verifyClient: authenticate == null ? undefined : (info, callback) => {
+                authenticate(info.req).then(authenticated => {
+                    if (authenticated) {
+                        callback(true);
+                    } else {
+                        callback(false, 401, "Unauthorized");
+                    }
+                }, (e) => {
+                    console.error("Failed to authenticate a websocket connection");
+                    console.error(e);
+                    callback(false, 500, "Internal Server Error");
+                });
+            }
+        });
         this._socket.on('connection', (ws) => {
             // It just connected, so it is alive until the next heartbeat says otherwise
             this._aliveClients.add(ws);
