@@ -1,5 +1,17 @@
 import { EventHandlerData, EventHandlerImpl, EventListener } from "./events";
 
+/**
+ * Kind of the message the server sends to every client on each heartbeat, see
+ * HEARTBEAT_INTERVAL_MS. It carries nothing, receiving it is the point : a browser answers the
+ * websocket ping frames on its own but cannot observe them, so without a message it can see, a
+ * client could not tell a quiet connection from a dead one.
+ * The implementations handle it themselves, it never reaches the listeners.
+ */
+export const HEARTBEAT_NOTIFICATION_KIND = "__heartbeat";
+
+/** Delay between two heartbeats sent by the server to each client */
+export const HEARTBEAT_INTERVAL_MS = 30_000;
+
 /** 
  * A broadcast notification system. You should only instantiate one per node (server, client).
  * Communication is handled : 
