@@ -6,9 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <!-- iOS metadata -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <!-- Opaque status bar : with black-translucent, the page is drawn under the status bar, and the
-         navigation bar right below it showed up blurred once installed on the home screen -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="eurekAI">
     <link rel="apple-touch-icon" href="/assets/icon.png">
     <link rel="apple-touch-startup-image" href="/assets/icon.png">
@@ -140,58 +138,70 @@
     </style>
 </head>
 
-<body class="h-100 d-flex flex-column locked">
-    <nav class="navbar navbar-expand-sm bg-body-tertiary">
-        <div class="container-fluid flex-nowrap">
-            <a id="projectsButton" class="navbar-brand me-auto" href="javascript: void(0);">
-                <i class="bi bi-cpu"></i>
-                <span class="d-none d-md-inline">&nbsp;eurekAI</span>
-            </a>
-            <ul class="navbar-nav flex-row" style="overflow-x: auto;">
-                <li id="generationSpan" class="nav-item d-none">
-                    <a class="nav-link text-nowrap px-1" href="javascript: void(0);">
-                        <div class="badge rounded-pill text-bg-warning">
-                            <i class="bi bi-lightning-fill"></i>&nbsp;<span id="generationCount">-</span>
-                        </div>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a id="statusPlaceholder" class="nav-link text-nowrap pulse" href="javascript: void(0);"></a>
-                </li>
-                <li class="nav-item">
-                    <a id="lockButton" class="nav-link text-nowrap px-1" aria-current="page"
-                        href="javascript: void(0);">
-                        <i class="bi bi-lock onlocked" title="Hide lockables"></i>
-                        <i class="bi bi-unlock text-danger onunlocked" title="Show lockables"></i>
-                        <span class="onlocked">Locked</span>
-                        <span class="onunlocked">Unlocked</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a id="comfyButton" class="nav-link text-nowrap px-1" href="javascript: void(0);"
-                        title="ComfyUI">
-                        <i class="bi bi-hdd-network"></i>
-                        <span class="d-none d-md-inline">ComfyUI</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a id="maintenanceButton" class="nav-link text-nowrap px-1" href="javascript: void(0);"
-                        title="Maintenance">
-                        <i class="bi bi-wrench"></i>
-                        <span class="d-none d-md-inline">Maintenance</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-nowrap px-1" aria-current="page" href="/logout">
-                        <i class="bi bi-person-circle"></i>
-                        <span class="d-none d-md-inline">Logout</span>
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </nav>
+<body class="locked">
+    <!--
+        The whole app sits in a fixed frame with a background colour.
+        Installed on the home screen, iOS 26 and later draw the Liquid Glass scroll edge effect over
+        the top of the web view, which blurs the navigation bar. No meta tag nor CSS property turns it
+        off (apple-mobile-web-app-status-bar-style included), but WebKit skips it when a fixed or
+        sticky box with a background colour covers the top edge, and uses that colour instead.
+        The frame is a div and not the body : the background of the body is moved to the canvas, the
+        body itself would then have none. It takes the colour of the navigation bar, so the colour
+        iOS extends under the clock matches it, the pages keeping theirs (see pageDiv).
+    -->
+    <div class="position-fixed top-0 bottom-0 start-0 end-0 d-flex flex-column bg-body-tertiary">
+        <nav class="navbar navbar-expand-sm bg-body-tertiary">
+            <div class="container-fluid flex-nowrap">
+                <a id="projectsButton" class="navbar-brand me-auto" href="javascript: void(0);">
+                    <i class="bi bi-cpu"></i>
+                    <span class="d-none d-md-inline">&nbsp;eurekAI</span>
+                </a>
+                <ul class="navbar-nav flex-row" style="overflow-x: auto;">
+                    <li id="generationSpan" class="nav-item d-none">
+                        <a class="nav-link text-nowrap px-1" href="javascript: void(0);">
+                            <div class="badge rounded-pill text-bg-warning">
+                                <i class="bi bi-lightning-fill"></i>&nbsp;<span id="generationCount">-</span>
+                            </div>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a id="statusPlaceholder" class="nav-link text-nowrap pulse" href="javascript: void(0);"></a>
+                    </li>
+                    <li class="nav-item">
+                        <a id="lockButton" class="nav-link text-nowrap px-1" aria-current="page"
+                            href="javascript: void(0);">
+                            <i class="bi bi-lock onlocked" title="Hide lockables"></i>
+                            <i class="bi bi-unlock text-danger onunlocked" title="Show lockables"></i>
+                            <span class="onlocked">Locked</span>
+                            <span class="onunlocked">Unlocked</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a id="comfyButton" class="nav-link text-nowrap px-1" href="javascript: void(0);"
+                            title="ComfyUI">
+                            <i class="bi bi-hdd-network"></i>
+                            <span class="d-none d-md-inline">ComfyUI</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a id="maintenanceButton" class="nav-link text-nowrap px-1" href="javascript: void(0);"
+                            title="Maintenance">
+                            <i class="bi bi-wrench"></i>
+                            <span class="d-none d-md-inline">Maintenance</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-nowrap px-1" aria-current="page" href="/logout">
+                            <i class="bi bi-person-circle"></i>
+                            <span class="d-none d-md-inline">Logout</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
 
-    <div id="pageDiv" class="flex-grow-1" style="overflow-y: auto;">
+        <div id="pageDiv" class="flex-grow-1 bg-body" style="overflow-y: auto;">
+        </div>
     </div>
 </body>
 
