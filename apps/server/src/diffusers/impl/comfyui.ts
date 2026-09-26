@@ -28,25 +28,12 @@ const WOL_RESEND_MS = 60_000;
 const MAX_WAKE_CYCLES = 3;
 /** Duration during which the host is considered alive without probing it again */
 const ALIVE_CACHE_MS = 30_000;
-/** Default generation deadline, used when the manifest does not override it */
-const DEFAULT_TIMEOUT_MS = 300_000;
 /** Delay between two polls of the prompt status */
 const PROMPT_POLLING_MS = 1_000;
 
 //#endregion
 
 //#region Network tools
-
-/**
- * Convert a configured timeout into a duration budget.
- * @param timeout_ms undefined to use the default, 0 or less to disable the timeout
- */
-export function toBudget(timeout_ms?: number): number {
-    if (timeout_ms == null) {
-        return DEFAULT_TIMEOUT_MS;
-    }
-    return timeout_ms > 0 ? timeout_ms : Number.POSITIVE_INFINITY;
-}
 
 /** Build a fetch function aborting the request after the given delay */
 function fetchWithTimeout(timeout_ms: number): typeof fetch {
@@ -156,8 +143,6 @@ interface ComfyUIDiffuserOption {
     name: string;
     /** Is output video */
     video: boolean;
-    /** Override waiting timeout (default to 5 minutes, 0 to disable) */
-    timeout_ms?: number;
     /** Size ratio (eg 512, 1024) */
     size: number;
     /** Round the generated resolutions to a multiple of this value (default to 8) */
@@ -229,17 +214,13 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
      * (the machine rebooted), the prompt is enqueued again.
      *
      * Any other error (invalid workflow, GPU out of memory, ...) fails immediately.
+     *
+     * There is no generation timeout : as long as ComfyUI answers and knows the prompt, we keep
+     * following it, however long it takes. Only a machine that stops answering makes us give up,
+     * after MAX_WAKE_CYCLES failed wake ups.
      */
     public override async txt2img(image: ImageDescription, job?: GenerationJobInfo): Promise<{ data: AppTypes["BASE64_DATA"] }> {
         const pool = ComfyUIDiffuser.getPool(this._options.serverURL);
-        // Budget of the generation itself. It is not re-armed on each cycle, but the time spent
-        // waking the machine up is added back to it : the deadline must bound the generation,
-        // not the wake up. The total duration of txt2img stays bounded by
-        // MAX_WAKE_CYCLES * WAKE_BUDGET_MS + timeout_ms.
-        // A timeout_ms of 0 (or less) disables the deadline : Infinity flows through every
-        // computation below without any special case. This does NOT disable the fail fast on a
-        // sleeping machine, which relies on the per-request HTTP_TIMEOUT_MS.
-        let deadline = Date.now() + toBudget(this._options.timeout_ms);
         let promptId: string | null = null;
         // Timings, so that the logs tell how long the picture really took and how much of it
         // was spent waiting for the machine rather than generating
@@ -251,9 +232,7 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
                 // -- Make sure the machine is up before doing anything --
                 const wakeStart = Date.now();
                 await pool.ensureAwake(this._options.wolScript);
-                const wakeDuration = Date.now() - wakeStart;
-                wakeMs += wakeDuration;
-                deadline += wakeDuration;
+                wakeMs += Date.now() - wakeStart;
 
                 try {
                     // -- Enqueue the prompt, unless we already have one to resume --
@@ -268,20 +247,13 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
                     }
 
                     // -- Wait for the result --
-                    const remaining = deadline - Date.now();
-                    if (remaining <= 0) {
-                        throw `Timeout while generating image on ${this._options.serverURL}`;
-                    }
-                    const images = await pool.waitAndFetch(promptId, remaining);
+                    const images = await pool.waitAndFetch(promptId);
                     if (images == null) {
                         // ComfyUI does not know this prompt anymore, the queue was lost on a reboot
                         pool.monitor.log("error", `Prompt ${promptId} is unknown to the server, enqueuing it again`);
                         pool.monitor.clearJob(promptId);
                         promptId = null;
                         continue;
-                    }
-                    if (images.length === 0) {
-                        throw `Prompt ${promptId} succeeded but produced no media, check the output nodes of the workflow`;
                     }
                     const waking = wakeMs > 0 ? `, ${formatDuration(wakeMs)} of which waiting for the machine` : "";
                     pool.monitor.log("info", `Generated ${this._options.name} in ${formatDuration(Date.now() - started)}${waking} (prompt ${promptId})`);
@@ -290,10 +262,6 @@ export class ComfyUIDiffuser extends AbstractDiffuser {
                     if (!isNetworkError(e)) {
                         // A generation error, waking the machine up won't help
                         pool.monitor.log("error", `Generation failed on ${this._options.serverURL} after ${formatDuration(Date.now() - started)} : ${describeError(e)}`);
-                        throw e;
-                    }
-                    if (Date.now() >= deadline) {
-                        pool.monitor.log("error", `Giving up on ${this._options.serverURL} after ${formatDuration(Date.now() - started)}, deadline reached : ${describeError(e)}`);
                         throw e;
                     }
                     // The machine fell asleep, keep promptId so that the next cycle resumes it
@@ -615,25 +583,26 @@ export class ComfyUIPool {
      * The queue is checked before the history so that a prompt finishing between the two calls
      * is still found (no race).
      *
-     * @param timeout_ms Remaining time to wait for the prompt
-     * @returns The medias as base64 strings, or null if the server does not know this prompt
-     * anymore (its queue was lost on a reboot), meaning the caller should enqueue it again.
+     * There is no timeout : the prompt is followed for as long as it stays in the ComfyUI queue.
+     *
+     * The prompt is only deleted from the ComfyUI history once its medias are downloaded. On any
+     * failure it is left there, so that its outputs can still be retrieved by hand.
+     *
+     * @returns The medias as base64 strings (at least one), or null if the server does not know
+     * this prompt anymore (its queue was lost on a reboot), meaning the caller should enqueue it
+     * again.
      * @throws A network error as soon as the machine stops answering
      */
-    public async waitAndFetch(promptId: string, timeout_ms: number): Promise<string[] | null> {
-        const deadline = Date.now() + timeout_ms;
+    public async waitAndFetch(promptId: string): Promise<string[] | null> {
         try {
             // -- Wait for the prompt to leave the queue --
-            this.monitor.log("info", `Waiting for prompt ${promptId} (${Number.isFinite(timeout_ms) ? `up to ${timeout_ms} ms` : "no timeout"})`);
+            this.monitor.log("info", `Waiting for prompt ${promptId}`);
             let entry: HistoryEntry | null = null;
             while (true) {
                 if (!await this._isQueued(promptId)) {
                     // Not in the queue anymore : either it is done, or the server lost it
                     entry = await this._getHistoryEntry(promptId);
                     break;
-                }
-                if (Date.now() >= deadline) {
-                    throw `Timeout waiting for prompt ${promptId} on ${this._host}`;
                 }
                 await wait(PROMPT_POLLING_MS);
             }
@@ -646,10 +615,15 @@ export class ComfyUIPool {
                 throw `ComfyUI failed to execute prompt ${promptId} : ${this._getExecutionError(entry)}`;
             }
 
+            const urls = this._getMediaURLs(entry);
+            if (urls.length === 0) {
+                throw `Prompt ${promptId} succeeded but produced no media, check the output nodes of the workflow`;
+            }
+
             // -- Download the medias --
             const download = fetchWithTimeout(DOWNLOAD_TIMEOUT_MS);
             const results: string[] = [];
-            for (const url of this._getMediaURLs(entry)) {
+            for (const url of urls) {
                 const mediaResp = await download(url);
                 if (!mediaResp.ok) {
                     throw new Error(`Failed to download ${url} : ${mediaResp.status} ${mediaResp.statusText}`);
@@ -658,7 +632,7 @@ export class ComfyUIPool {
                 results.push(Buffer.from(buffer).toString("base64"));
             }
 
-            // -- Clean up --
+            // -- Clean up, only now that the medias are safe on our side --
             const client = this._newClient();
             try {
                 await client.deleteItem("history", promptId);
@@ -715,12 +689,6 @@ export interface Manifest {
     filename?: string;
     /** Is output video ? (will use false by default) */
     video?: boolean;
-    /**
-     * Override the generation timeout, in milliseconds.
-     * Omit it to use the default (5 minutes), set it to 0 to disable the timeout entirely.
-     * Disabling it does not prevent the wake up cycle from detecting a sleeping machine.
-     */
-    timeout_ms?: number;
 }
 
 /**
@@ -773,7 +741,6 @@ export async function getAllComfyTemplates(comfyHost: string, comfyPath: string,
             const duration = manifest.duration;
             const image = manifest.image;
             const video: boolean = manifest.video ?? false;
-            const timeout_ms = manifest.timeout_ms;
 
             // -- Read prompt -------------------------------------------------
             const promptFilename = manifest.filename ?? "api.json";
@@ -791,7 +758,6 @@ export async function getAllComfyTemplates(comfyHost: string, comfyPath: string,
                 duration,
                 image,
                 video,
-                timeout_ms,
                 promptTemplate
             }));
         } catch (e) {
