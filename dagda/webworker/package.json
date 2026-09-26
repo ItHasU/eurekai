@@ -1,0 +1,13 @@
+{
+    "name": "@dagda/webworker",
+    "version": "1.0.0",
+    "description": "Service worker tools",
+    "author": "Matthieu Aubry",
+    "license": "ISC",
+    "scripts": {},
+    "dependencies": {},
+    "devDependencies": {
+        "@dagda/build": "*",
+        "@dagda/shared": "*"
+    }
+}

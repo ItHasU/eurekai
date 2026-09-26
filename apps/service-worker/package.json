@@ -1,0 +1,16 @@
+{
+  "name": "@eurekai/service-worker",
+  "version": "1.0.0",
+  "description": "Service worker, displays the push notifications",
+  "author": "Matthieu Aubry",
+  "license": "ISC",
+  "scripts": {
+    "build": "webpack",
+    "w": "webpack --watch"
+  },
+  "devDependencies": {
+    "@dagda/build": "*",
+    "@dagda/shared": "*",
+    "@dagda/webworker": "*"
+  }
+}

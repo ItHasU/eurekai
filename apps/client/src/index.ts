@@ -16,7 +16,7 @@ import { MaintenancePage } from "./pages/maintenance.page";
 import { PicturesPage } from "./pages/pictures.page";
 import { ProjectsPage } from "./pages/projects.page";
 import { StaticDataProvider } from "./tools/dataProvider";
-import { showNotificationIfPossible } from "./tools/notification";
+import { initNotifications, isPushSubscribed, showNotificationIfPossible } from "./tools/notification";
 
 interface PageConstructor {
     new(): AbstractPageElement;
@@ -79,6 +79,9 @@ class App {
         // -- Notification helper --
         NotificationHelper.set(new ClientNotificationImpl());
 
+        // -- System notifications --
+        initNotifications();
+
         // -- Generation display --
         const generationSpan = document.getElementById("generationSpan");
         const generationCount = document.getElementById("generationCount");
@@ -87,7 +90,8 @@ class App {
             NotificationHelper.on<AppEvents, "generating">("generating", (event) => {
                 generationSpan.classList.toggle("d-none", event.data.count === 0);
                 generationCount.innerText = "" + event.data.count;
-                if (previousCount != 0 && event.data.count === 0) {
+                // When subscribed, the server pushes the notification itself
+                if (previousCount != 0 && event.data.count === 0 && !isPushSubscribed()) {
                     showNotificationIfPossible({
                         body: `All images generated`
                     });

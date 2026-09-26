@@ -1,5 +1,7 @@
 import { registerAPI } from "@dagda/server/api";
 import { AuthHandler } from "@dagda/server/express/auth";
+import { SQLSessionStore } from "@dagda/server/express/impl/sql.session.store";
+import { AbstractPushHelper } from "@dagda/server/push/push.helper";
 import { AbstractSQLRunner } from "@dagda/server/sql/runner";
 import { generateSubmit } from "@dagda/server/sql/sql.adapter";
 import { getEnvStringOptional } from "@dagda/server/tools/config";
@@ -27,11 +29,14 @@ import { THUMBNAIL_MIME_TYPE, getOrCreateThumbnail } from "./thumbnail";
 
 const APP_START_TIME_MS = new Date().getTime();
 
+/** URL of the service worker displaying the push notifications, see apps/service-worker */
+const SERVICE_WORKER_PATH = "/sw.js";
+
 /** Minimum delay between two generation progress notifications, see _registerProgressNotifications */
 const PROGRESS_NOTIFICATION_MS = 1000;
 
 /** Initialize an Express app and register the routes */
-export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, port: number): Promise<void> {
+export async function initHTTPServer(db: AbstractSQLRunner, pushHelper: AbstractPushHelper, baseURL: string, port: number): Promise<void> {
     const app = express();
 
     // -- Update pictures with status computing --
@@ -48,6 +53,8 @@ export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, por
     }
 
     // -- Create the authentication handler --
+    // Stays null when authentication is disabled
+    let auth: AuthHandler | null = null;
     // Read the google client id and secret from the environment variables
     const clientID = getEnvStringOptional("GOOGLE_CLIENT_ID");
     const clientSecret = getEnvStringOptional("GOOGLE_CLIENT_SECRET");
@@ -60,7 +67,15 @@ export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, por
             console.log("Authentication is disabled on purpose, continuing...");
         }
     } else {
-        const auth: AuthHandler = new AuthHandler(app, baseURL, async (profile: passport.Profile) => {
+        // -- Sessions --
+        // Kept in the database, so that a restart of the server does not log everybody out.
+        // Without the table, they are kept in memory as before rather than having every login fail.
+        const sessionStore = await SQLSessionStore.isAvailable(db) ? new SQLSessionStore(db) : undefined;
+        if (sessionStore == null) {
+            console.error("The sessions table is missing, apply apps/sql/009_sessions.sql to keep the users logged in when the server restarts. Sessions are kept in memory until then.");
+        }
+
+        auth = new AuthHandler(app, baseURL, async (profile: passport.Profile) => {
             try {
                 const handler = buildServerEntitiesHandler(db);
                 await handler.fetch({ type: "users", "options": undefined });
@@ -85,6 +100,15 @@ export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, por
                 console.error(err);
                 return false;
             }
+        }, ["/assets/", SERVICE_WORKER_PATH], {
+            store: sessionStore,
+            // Sessions last weeks : a user disabled in the meantime must lose its session, not keep
+            // it until it expires
+            sessionVerifier: async (userId: string) => {
+                const user = await db.get<Pick<UserEntity, "enabled">>(
+                    `SELECT ${qf("users", "enabled", false)} FROM ${qt("users")} WHERE ${qf("users", "uid", false)}=$1`, userId);
+                return user?.enabled === true;
+            }
         });
         auth.registerGoogleStrategy(clientID, clientSecret);
     }
@@ -97,6 +121,16 @@ export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, por
     // -- Register client files routes --
     const path: string = resolve("./apps/client/dist");
     app.use(express.static(path));
+
+    // -- Register the service worker --
+    // Served at the root : a worker only handles the pages under its own path.
+    // Never cached, so a new version of the worker is picked up by the browsers right away.
+    app.get(SERVICE_WORKER_PATH, (req, res) => {
+        res.sendFile(resolve("./apps/service-worker/dist/sw.js"), { headers: { "Cache-Control": "no-cache" } });
+    });
+
+    // -- Register push notifications routes --
+    pushHelper.installRouter(app);
 
     // -- Register SQL routes --
     const submit = generateSubmit<AppTables, AppContexts>(db, APP_MODEL);
@@ -181,7 +215,11 @@ export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, por
     const server = app.listen(port);
 
     // -- Register websocket notification --
-    NotificationHelper.set(new ServerNotificationImpl(server));
+    // Only open to logged in users, unless authentication is disabled
+    const authHandler = auth;
+    NotificationHelper.set(new ServerNotificationImpl(server, {
+        authenticate: authHandler == null ? undefined : (req) => authHandler.isRequestAuthenticated(req)
+    }));
     _registerProgressNotifications();
 }
 
