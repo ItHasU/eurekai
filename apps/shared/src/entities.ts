@@ -55,6 +55,17 @@ export function getPictureExtension(type: PictureType): string {
     }
 }
 
+/** MIME type of a media of the given type, as served by the attachment route */
+export function getPictureMimeType(type: PictureType): string {
+    switch (type) {
+        case PictureType.VIDEO:
+            return "video/mp4";
+        default:
+            // Fallback to image
+            return "image/png";
+    }
+}
+
 //#endregion
 
 //#region Entities model ------------------------------------------------------
