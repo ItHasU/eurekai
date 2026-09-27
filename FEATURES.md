@@ -83,7 +83,8 @@ Contextes de chargement : `users`, `projects`, `project` (un projet complet),
 - Filtres sur le statut des images (en attente, acceptées, rejetées, à évaluer…).
 - Panneau d'édition de prompt affiché contextuellement.
 - Actions par image : accepter, rejeter, supprimer, définir comme vignette de projet,
-  mémoriser la graine, dériver un nouveau prompt.
+  mémoriser la graine, dériver un nouveau prompt, télécharger le fichier original
+  (image ou vidéo, y compris sur mobile).
 
 ### Page « Quick » (tri rapide)
 - Affichage plein écran d'une image à la fois, à évaluer.

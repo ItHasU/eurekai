@@ -162,13 +162,21 @@ export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, por
                 res.status(500).send(`Attachment ${id} with unknown type (retry later)`);
             } else {
                 var img = Buffer.from(attachment.data, 'base64');
+                const isVideo = attachment.type === PictureType.VIDEO;
 
-                res.writeHead(200, {
+                const headers: Record<string, string | number> = {
                     // Detect the png prefix else we expect the content to be a video
-                    'Content-Type': attachment.type === PictureType.VIDEO ? 'video/mp4' : 'image/png' /* Fallback to image */,
+                    'Content-Type': isVideo ? 'video/mp4' : 'image/png' /* Fallback to image */,
                     'Content-Length': img.length,
                     'Cache-Control': 'max-age=86400' // 1 day in seconds
-                });
+                };
+                if (req.query['download'] != null) {
+                    // The download attribute of a link is not enough on mobile (ignored by the app
+                    // installed on the iOS home screen, which would open the media and trap the
+                    // user on it) : the attachment disposition makes every browser save the file.
+                    headers['Content-Disposition'] = `attachment; filename="eurekai-${id}.${isVideo ? 'mp4' : 'png'}"`;
+                }
+                res.writeHead(200, headers);
                 res.end(img);
             }
         } catch (err) {

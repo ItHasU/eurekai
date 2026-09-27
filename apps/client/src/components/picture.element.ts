@@ -59,6 +59,10 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> implements
         return this.data.status >= ComputationStatus.REJECTED;
     }
 
+    public get isVideo(): boolean {
+        return this.data.type === PictureType.VIDEO;
+    }
+
     /** A video cannot be used as a $image$ source (base64 img2img input), only a still image can */
     public get canUseAsSource(): boolean {
         return this.data.attachmentId != null && this.data.type === PictureType.IMAGE;
