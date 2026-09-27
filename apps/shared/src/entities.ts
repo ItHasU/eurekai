@@ -44,6 +44,17 @@ export enum PictureType {
     VIDEO
 }
 
+/** File extension of a media of the given type, as served by the attachment route */
+export function getPictureExtension(type: PictureType): string {
+    switch (type) {
+        case PictureType.VIDEO:
+            return "mp4";
+        default:
+            // Fallback to image, as the attachment route does
+            return "png";
+    }
+}
+
 //#endregion
 
 //#region Entities model ------------------------------------------------------

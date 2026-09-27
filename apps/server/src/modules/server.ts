@@ -11,7 +11,7 @@ import { OperationType } from "@dagda/shared/sql/transaction";
 import { NotificationHelper } from "@dagda/shared/tools/notification.helper";
 import { throttle } from "@dagda/shared/tools/throttle";
 import { COMFY_URL, ComfyAPI, ComfyHostStatus, ComfyLogEntry, ComfyStatus } from "@eurekai/shared/src/comfy.api";
-import { APP_MODEL, AppContexts, AppTables, AttachmentEntity, ComputationStatus, PictureEntity, PictureType, ProjectEntity, PromptEntity, SeedEntity, SourceImageEntity, UserEntity } from "@eurekai/shared/src/entities";
+import { APP_MODEL, AppContexts, AppTables, AttachmentEntity, ComputationStatus, getPictureExtension, PictureEntity, PictureType, ProjectEntity, PromptEntity, SeedEntity, SourceImageEntity, UserEntity } from "@eurekai/shared/src/entities";
 import { AppEvents } from "@eurekai/shared/src/events";
 import { MODELS_URL, ModelInfo, ModelsAPI } from "@eurekai/shared/src/models.api";
 import { SYSTEM_URL, SystemAPI, SystemInfo } from "@eurekai/shared/src/system.api";
@@ -174,7 +174,7 @@ export async function initHTTPServer(db: AbstractSQLRunner, baseURL: string, por
                     // The download attribute of a link is not enough on mobile (ignored by the app
                     // installed on the iOS home screen, which would open the media and trap the
                     // user on it) : the attachment disposition makes every browser save the file.
-                    headers['Content-Disposition'] = `attachment; filename="eurekai-${id}.${isVideo ? 'mp4' : 'png'}"`;
+                    headers['Content-Disposition'] = `attachment; filename="eurekai-${id}.${getPictureExtension(attachment.type)}"`;
                 }
                 res.writeHead(200, headers);
                 res.end(img);

@@ -97,7 +97,7 @@
         {{#if data.attachmentId}}
         <li>
           <a class="dropdown-item" href="/attachment/{{data.attachmentId}}?download"
-            download="eurekai-{{data.attachmentId}}.{{#if isVideo}}mp4{{else}}png{{/if}}" title="Download the original file">
+            download="eurekai-{{data.attachmentId}}.{{extension}}" title="Download the original file">
             <i class="bi bi-download"></i>&nbsp;Download
           </a>
         </li>

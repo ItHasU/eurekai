@@ -1,6 +1,6 @@
 import { asNamed } from "@dagda/shared/entities/named.types";
 import { EventHandler, EventHandlerData, EventHandlerImpl, EventListener } from "@dagda/shared/tools/events";
-import { ComputationStatus, PictureEntity, PictureType, PromptEntity, Score } from "@eurekai/shared/src/entities";
+import { ComputationStatus, getPictureExtension, PictureEntity, PictureType, PromptEntity, Score } from "@eurekai/shared/src/entities";
 import { AbstractDTOElement } from "./abstract.dto.element";
 import { PromptEvents } from "./prompt.element";
 import { htmlStringToElement } from "./tools";
@@ -59,8 +59,9 @@ export class PictureElement extends AbstractDTOElement<PictureEntity> implements
         return this.data.status >= ComputationStatus.REJECTED;
     }
 
-    public get isVideo(): boolean {
-        return this.data.type === PictureType.VIDEO;
+    /** Extension of the downloaded file */
+    public get extension(): string {
+        return getPictureExtension(this.data.type);
     }
 
     /** A video cannot be used as a $image$ source (base64 img2img input), only a still image can */
